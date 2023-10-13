@@ -5,7 +5,7 @@ use crate::systems::UnitCell;
 
 use super::{System, SimpleSystem};
 
-impl<'a> From<&'a chemfiles::Frame> for Box<dyn System> {
+impl<'a> From<&'a chemfiles::Frame> for System {
     fn from(frame: &chemfiles::Frame) -> Self {
         let mut assigned_types = HashMap::new();
         let mut get_atomic_type = |atom: chemfiles::AtomRef| {
@@ -35,11 +35,11 @@ impl<'a> From<&'a chemfiles::Frame> for Box<dyn System> {
             system.add_atom(get_atomic_type(atom), positions[i].into());
         }
 
-        return Box::new(system) as Box<dyn System>;
+        return System::new(system);
     }
 }
 
-impl From<chemfiles::Frame> for Box<dyn System> {
+impl From<chemfiles::Frame> for System {
     fn from(frame: chemfiles::Frame) -> Self {
         return (&frame).into();
     }

@@ -420,7 +420,7 @@ impl CalculatorBase for SoapPowerSpectrum {
         self.spherical_expansion.cutoffs()
     }
 
-    fn keys(&self, systems: &mut [Box<dyn System>]) -> Result<metatensor::Labels, Error> {
+    fn keys(&self, systems: &mut [System]) -> Result<metatensor::Labels, Error> {
         let builder = CenterTwoNeighborsTypesKeys {
             cutoff: self.parameters.cutoff.radius,
             self_pairs: true,
@@ -433,7 +433,7 @@ impl CalculatorBase for SoapPowerSpectrum {
         AtomCenteredSamples::sample_names()
     }
 
-    fn samples(&self, keys: &metatensor::Labels, systems: &mut [Box<dyn System>]) -> Result<Vec<Labels>, Error> {
+    fn samples(&self, keys: &metatensor::Labels, systems: &mut [System]) -> Result<Vec<Labels>, Error> {
         assert_eq!(keys.names(), ["center_type", "neighbor_1_type", "neighbor_2_type"]);
         let mut result = Vec::new();
         for [center_type, neighbor_1_type, neighbor_2_type] in keys.iter_fixed_size() {
@@ -457,7 +457,7 @@ impl CalculatorBase for SoapPowerSpectrum {
         return Ok(result);
     }
 
-    fn positions_gradient_samples(&self, keys: &Labels, samples: &[Labels], systems: &mut [Box<dyn System>]) -> Result<Vec<Labels>, Error> {
+    fn positions_gradient_samples(&self, keys: &Labels, samples: &[Labels], systems: &mut [System]) -> Result<Vec<Labels>, Error> {
         assert_eq!(keys.names(), ["center_type", "neighbor_1_type", "neighbor_2_type"]);
         assert_eq!(keys.count(), samples.len());
 
@@ -526,7 +526,7 @@ impl CalculatorBase for SoapPowerSpectrum {
 
     #[time_graph::instrument(name = "SoapPowerSpectrum::compute")]
     #[allow(clippy::too_many_lines)]
-    fn compute(&mut self, systems: &mut [Box<dyn System>], descriptor: &mut TensorMap) -> Result<(), Error> {
+    fn compute(&mut self, systems: &mut [System], descriptor: &mut TensorMap) -> Result<(), Error> {
         assert!(descriptor.keys().count() > 0);
 
         let mut gradients = Vec::new();

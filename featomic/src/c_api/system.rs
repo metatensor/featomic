@@ -2,7 +2,7 @@ use std::os::raw::c_void;
 
 use crate::types::{Vector3D, Matrix3};
 use crate::systems::{SimpleSystem, Pair, UnitCell};
-use crate::{Error, System};
+use crate::{Error, SystemBase};
 
 use super::FEATOMIC_SYSTEM_ERROR;
 
@@ -110,7 +110,7 @@ pub struct featomic_system_t {
 unsafe impl Send for featomic_system_t {}
 unsafe impl Sync for featomic_system_t {}
 
-impl<'a> System for &'a mut featomic_system_t {
+impl<'a> SystemBase for &'a mut featomic_system_t {
     fn size(&self) -> Result<usize, Error> {
         let function = self.size.ok_or_else(|| Error::External {
             status: FEATOMIC_SYSTEM_ERROR,

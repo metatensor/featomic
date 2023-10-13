@@ -2,7 +2,7 @@ use metatensor::Labels;
 use featomic::{Calculator, System, CalculationOptions};
 use chemfiles::{Trajectory, Frame};
 
-fn read_systems_from_file(path: &str) -> Vec<Box<dyn System>> {
+fn read_systems_from_file(path: &str) -> Vec<System> {
     let mut trajectory = Trajectory::open(path, 'r').expect("could not open the trajectory");
     let mut frame = Frame::new();
     let mut systems = Vec::new();
