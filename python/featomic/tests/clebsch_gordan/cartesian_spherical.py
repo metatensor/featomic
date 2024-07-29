@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from metatensor import Labels, TensorBlock, TensorMap
 
-from featomic.clebsch_gordan import cartesian_to_spherical
+from featomic.clebsch_gordan import cartesian_to_spherical, spherical_to_cartesian
 
 
 @pytest.fixture
@@ -154,6 +154,9 @@ def test_cartesian_to_spherical_and_back(cartesian, components, cg_backend):
     )
 
     assert "o3_lambda" in spherical.keys.names
+
+    reconstructed = spherical_to_cartesian(spherical)
+    raise "TODO"
     # TODO: check for identity after spherical_to_cartesian
 
 

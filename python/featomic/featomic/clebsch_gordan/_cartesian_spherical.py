@@ -442,3 +442,138 @@ def _do_coupling(
         _dispatch.int_array_like(new_keys_values, new_keys.values),
     )
     return TensorMap(new_keys, new_blocks)
+
+
+def spherical_to_cartesian(
+    tensor: TensorMap,
+    new_component_names: Optional[List[str]] = None,
+    cg_backend: Optional[str] = None,
+    cg_coefficients: Optional[TensorMap] = None,
+) -> TensorMap:
+    """
+    TODO
+    """
+    if len(tensor) == 0:
+        # nothing to do
+        return tensor
+
+    if torch_jit_is_scripting():
+        use_torch = True
+    else:
+        if isinstance(tensor.block(0).values, TorchTensor):
+            use_torch = True
+        elif isinstance(tensor.block(0).values, np.ndarray):
+            use_torch = False
+        else:
+            raise TypeError(
+                f"unknown array type in tensor ({type(tensor.block(0).values)}), "
+                "only numpy and torch are supported"
+            )
+
+    if cg_backend is None:
+        # TODO: benchmark & change the default?
+        if use_torch:
+            cg_backend = "python-dense"
+        else:
+            cg_backend = "python-sparse"
+
+    key_names = tensor.keys.names
+    if "o3_lambda" not in key_names or "o3_sigma" not in key_names:
+        raise ValueError(
+            "this tensor is missing one of `o3_lambda` or `o3_sigma` in the keys, "
+            "is it already in cartesian form?"
+        )
+
+    if "o3_mu" not in tensor.component_names:
+        raise ValueError(
+            "this tensor does not have an `o3_mu` component, "
+            "is it already in cartesian form?"
+        )
+
+    new_keys = tensor.keys
+    array_of_ones = _dispatch.int_array_like([1] * len(new_keys), new_keys.values)
+
+    # add back l_1, l_2 keys if they are missing from a rank 1 or 2 tensor
+    lambda_min = _dispatch.min(tensor.keys.column("o3_lambda"))
+    lambda_max = _dispatch.max(tensor.keys.column("o3_lambda"))
+    if lambda_min < 0:
+        raise ValueError("expected all o3_lambda to be >= 0 in the keys")
+    elif lambda_max < 1:
+        raise ValueError("expected o3_lambda to got at least to 1 in the keys")
+    elif lambda_max == 1:
+        if "l_1" not in key_names:
+            new_keys = new_keys.insert(0, "l_1", array_of_ones)
+    elif lambda_max == 2:
+        if "l_1" not in key_names:
+            new_keys = new_keys.insert(0, "l_1", array_of_ones)
+        if "l_2" not in key_names:
+            new_keys = new_keys.insert(0, "l_2", array_of_ones)
+
+    # check the l_x and k_x keys
+    l_keys = []
+    for n in range(1, lambda_max + 1):
+        if f"l_{n}" not in key_names:
+            raise ValueError(f"expected a l_{n} dimension in the keys")
+        one = _dispatch.int_array_like([1], new_keys.values)
+        column = _dispatch.unique(new_keys.column(f"l_{n}"))
+        if not _dispatch.all(column == one):
+            raise ValueError(f"expected only 1 as value for the l_{n} dimension")
+
+        if n > 2:
+            if f"k_{n - 2}" not in key_names:
+                raise ValueError(f"expected a k_{n - 2} dimension in the keys")
+
+            column = _dispatch.unique(new_keys.column(f"k_{n - 2}"))
+            if not _dispatch.max(column) < lambda_max:
+                raise ValueError(
+                    f"expected only all values for k_{n - 2} to be below {lambda_max}"
+                )
+
+            l_keys.insert(0, f"k_{n - 2}")
+
+        l_keys.insert(0, f"l_{n}")
+
+    # de-couple the basis back into a product of L=1 spherical harmonics
+    if cg_coefficients is None:
+        if torch_jit_is_scripting():
+            raise ValueError(
+                "in TorchScript mode, `cg_coefficients` must be pre-computed "
+                "and given to this function explicitly"
+            )
+        else:
+            cg_coefficients = _coefficients.calculate_cg_coefficients(
+                lambda_max=lambda_max,
+                cg_backend=cg_backend,
+                use_torch=use_torch,
+            )
+
+    if lambda_max == 1:
+        raise "TODO"
+    else:
+        _do_decoupling(
+            tensor,
+            keys=new_keys,
+            l_keys=l_keys,
+            cg_coefficients=cg_coefficients,
+            cg_backend=cg_backend,
+        )
+        raise "TODO"
+
+    # finally, transform the various L=1 into cartesian components
+    raise "TODO"
+    if new_component_names is None:
+        new_component_names = [f"xyz_{i}" for i in range(1, lambda_max + 1)]
+
+    # TODO: check that components are not already there
+
+
+def _do_decoupling(
+    tensor: TensorMap,
+    keys: Labels,
+    l_keys: List[str],
+    cg_coefficients: TensorMap,
+    cg_backend: str,
+) -> TensorMap:
+    l_keys_values = _dispatch.unique(keys.view(l_keys).values, axis=0)
+    print(l_keys)
+    print(l_keys_values)

@@ -340,7 +340,7 @@ def all(array, axis: Optional[int] = None):
 
 def max(array):
     """
-    Takes the maximun value of the array.
+    Takes the largest value of the array.
 
     This function has the same behavior as
     ``np.max(array)`` or ``torch.max(array)``.
@@ -349,6 +349,21 @@ def max(array):
         return torch.max(array)
     elif isinstance(array, np.ndarray):
         return np.max(array)
+    else:
+        raise TypeError(UNKNOWN_ARRAY_TYPE)
+
+
+def min(array):
+    """
+    Takes the smallest value of the array.
+
+    This function has the same behavior as
+    ``np.min(array)`` or ``torch.min(array)``.
+    """
+    if isinstance(array, TorchTensor):
+        return torch.min(array)
+    elif isinstance(array, np.ndarray):
+        return np.min(array)
     else:
         raise TypeError(UNKNOWN_ARRAY_TYPE)
 
