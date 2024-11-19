@@ -205,6 +205,53 @@ class SphericalExpansionByPair(CalculatorBase):
         super().__init__("spherical_expansion_by_pair", json.dumps(parameters))
 
 
+class SphericalExpansionForBonds(CalculatorBase):
+    """A SOAP-like spherical expansion coefficients for bond-centered environments
+    In other words, the spherical expansion of the neighbor density function centered
+    on the center of a bond,
+    'after' rotating the system so that the bond is aligned with the z axis.
+
+    This is not rotationally invariant, and as such you should use some
+    not-implemented-here matheatical trick
+    similar to what SOAP (the :py:class:`SoapPowerSpectrum` class) uses.
+
+    Most hyperparameters are identical to that of the regulat spherical expansion:
+    :ref:`documentation <spherical-expansion>`.
+
+    the few changes to this are:
+
+    - "cutoff" renamed to "third_cutoff"
+    - "bond_cutoff" which expresses how the pairs of atoms used for the 'bonds' are
+      chosen.
+    - "center_atomS_weight" (caps only used for emphasis): the weight multiplier
+      for the coefficients of the self interactions
+      (where the neighboring atom is one of the pair's atoms).
+    """
+
+    def __init__(
+        self, *,
+        third_cutoff,
+        density,
+        basis,
+        bond_cutoff_radius,
+        center_atoms_weight=None
+    ):
+        if center_atoms_weight is None:
+            center_atoms_weight = 1
+
+        parameters = hypers_to_json({
+            "bond_cutoff_radius": bond_cutoff_radius,
+            "center_atoms_weight": center_atoms_weight,
+            "raw_spherical_expansion": {
+                "cutoff": third_cutoff,
+                "density": density,
+                "basis": basis,
+            },
+        })
+
+        super().__init__("spherical_expansion_for_bonds", json.dumps(parameters))
+
+
 class SoapRadialSpectrum(CalculatorBase):
     """Radial spectrum of Smooth Overlap of Atomic Positions (SOAP).
 
