@@ -13,7 +13,7 @@ use super::super::shared::{Density, SoapRadialBasis, SphericalExpansionBasis};
 
 use crate::math::SphericalHarmonicsCache;
 
-use super::super::CalculatorBase;
+use crate::calculators::{CalculatorBase,GradientsOptions};
 use super::super::neighbor_list::FullNeighborList;
 
 use super::SoapRadialIntegralCacheByAngular;
@@ -64,32 +64,17 @@ pub struct SphericalExpansionByPair {
     pub(crate) parameters: SphericalExpansionParameters,
     /// implementation + cached allocation to compute the radial integral for a
     /// single pair
-    radial_integral: ThreadLocal<RefCell<SoapRadialIntegralCacheByAngular>>,
+    pub(crate) radial_integral: ThreadLocal<RefCell<SoapRadialIntegralCacheByAngular>>,
     /// implementation + cached allocation to compute the spherical harmonics
     /// for a single pair
-    spherical_harmonics: ThreadLocal<RefCell<SphericalHarmonicsCache>>,
+    pub(crate) spherical_harmonics: ThreadLocal<RefCell<SphericalHarmonicsCache>>,
     /// Cache for (-1)^l values
-    m_1_pow_l: Vec<f64>,
+    pub(crate) m_1_pow_l: Vec<f64>,
 }
 
 impl std::fmt::Debug for SphericalExpansionByPair {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.parameters)
-    }
-}
-
-
-/// Which gradients are we computing
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) struct GradientsOptions {
-    pub positions: bool,
-    pub cell: bool,
-    pub strain: bool,
-}
-
-impl GradientsOptions {
-    pub fn any(self) -> bool {
-        return self.positions || self.cell || self.strain;
     }
 }
 
@@ -186,7 +171,7 @@ impl SphericalExpansionByPair {
     }
 
     /// Compute the product of radial scaling & cutoff smoothing functions
-    fn scaling_functions(&self, r: f64) -> f64 {
+    pub(crate) fn scaling_functions(&self, r: f64) -> f64 {
         let mut scaling = 1.0;
         if let Some(scaler) = self.parameters.density.scaling {
             scaling = scaler.compute(r);
@@ -195,7 +180,7 @@ impl SphericalExpansionByPair {
     }
 
     /// Compute the gradient of the product of radial scaling & cutoff smoothing functions
-    fn scaling_functions_gradient(&self, r: f64) -> f64 {
+    pub(crate) fn scaling_functions_gradient(&self, r: f64) -> f64 {
         let mut scaling = 1.0;
         let mut scaling_grad = 0.0;
         if let Some(scaler) = self.parameters.density.scaling {

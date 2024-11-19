@@ -91,7 +91,7 @@ class PyscfSystem(SystemBase):
         return self._types
 
     def positions(self):
-        return pyscf.data.nist.BOHR * self._system.atom_coords()
+        return self._system.atom_coords("angstrom")
 
     def cell(self):
         if self.is_periodic:
