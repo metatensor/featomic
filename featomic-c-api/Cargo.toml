@@ -1,6 +1,6 @@
 [package]
 name = "featomic-c-api"
-version = "0.1.0"
+version = "0.0.0"
 authors = ["Guillaume Fraux <guillaume.fraux@epfl.ch>"]
 edition = "2021"
 rust-version = "1.74"
@@ -17,7 +17,7 @@ default = ["chemfiles"]
 chemfiles = ["featomic/chemfiles"]
 
 [dependencies]
-featomic = {path = "../featomic", version = "0.1.0", default-features = false}
+featomic = {path = "../featomic", version = "0.0.0", default-features = false}
 metatensor = "0.2"
 
 ndarray = "0.16"

@@ -5,21 +5,24 @@ prune docs
 
 recursive-include featomic *
 recursive-include featomic-c-api *
-recursive-include docs/featomic-json-schema *
 
 # include the minimal crates from the Cargo workspace
 include python/Cargo.toml
 include python/lib.rs
 include featomic-torch/Cargo.toml
 include featomic-torch/lib.rs
+include docs/featomic-json-schema/Cargo.toml
+include docs/featomic-json-schema/main.rs
 
-include Cargo.*
+include Cargo.toml
+include Cargo.lock
 include pyproject.toml
 include AUTHORS
 include LICENSE
+include git_version_info
 
 prune python/tests
-prune python/*.egg-info
+prune python/*/*.egg-info
 
 prune featomic/tests
 prune featomic/benches/data
