@@ -49,9 +49,11 @@ else()
     string(TOLOWER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE)
 endif()
 
-set(FEATOMIC_ENABLE_CHEMFILES ON)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/.. ${CMAKE_CURRENT_BINARY_DIR}/featomic)
 
+find_package(chemfiles 0.10 REQUIRED)
+# The prebuilt library for chemfiles version 0.10.4 are using the pre-cxx11 ABI
+target_compile_definitions(chemfiles INTERFACE -D_GLIBCXX_USE_CXX11_ABI=0)
 
 # Add featomic and metatensor to the rpath of tests, so we can load the shared
 # library directly from `target/{debug,release}/`
@@ -94,7 +96,7 @@ enable_testing()
 foreach(_file_ ${ALL_TESTS})
     get_filename_component(_name_ ${_file_} NAME_WE)
     add_executable(${_name_} ${_file_})
-    target_link_libraries(${_name_} featomic::shared catch tests_helpers)
+    target_link_libraries(${_name_} featomic::shared catch tests_helpers chemfiles)
     add_test(
         NAME ${_name_}
         COMMAND ${TEST_COMMAND} $<TARGET_FILE:${_name_}>
@@ -114,7 +116,7 @@ foreach(_file_ ${EXAMPLES})
     get_filename_component(_name_ ${_file_} NAME_WE)
     set(_name_ example-c-${_name_})
     add_executable(${_name_} ${_file_})
-    target_link_libraries(${_name_} featomic::shared)
+    target_link_libraries(${_name_} featomic::shared chemfiles)
 
     add_test(
         NAME ${_name_}
