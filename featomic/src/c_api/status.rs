@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use std::os::raw::c_char;
 use std::ffi::CString;
 
-use featomic::Error;
+use crate::Error;
 
 // Save the last error message in thread local storage.
 //
@@ -43,8 +43,6 @@ pub const FEATOMIC_INVALID_PARAMETER_ERROR: i32 = 1;
 pub const FEATOMIC_JSON_ERROR: i32 = 2;
 /// Status code used when a string contains non-utf8 data
 pub const FEATOMIC_UTF8_ERROR: i32 = 3;
-/// Status code used for error related to reading files with chemfiles
-pub const FEATOMIC_CHEMFILES_ERROR: i32 = 4;
 /// Status code used for errors coming from the system implementation if we
 /// don't have a more specific status
 pub const FEATOMIC_SYSTEM_ERROR: i32 = 128;
@@ -65,7 +63,6 @@ impl From<Error> for featomic_status_t {
             Error::InvalidParameter(_) => featomic_status_t(FEATOMIC_INVALID_PARAMETER_ERROR),
             Error::Json(_) => featomic_status_t(FEATOMIC_JSON_ERROR),
             Error::Utf8(_) => featomic_status_t(FEATOMIC_UTF8_ERROR),
-            Error::Chemfiles(_) => featomic_status_t(FEATOMIC_CHEMFILES_ERROR),
             Error::BufferSize(_) => featomic_status_t(FEATOMIC_BUFFER_SIZE_ERROR),
             Error::External{status, ..} => {
                 if status < 0 {
@@ -95,7 +92,7 @@ pub fn catch_unwind<F>(function: F) -> featomic_status_t where F: FnOnce() -> Re
 macro_rules! check_pointers {
     ($pointer: ident) => {
         if $pointer.is_null() {
-            return Err(featomic::Error::InvalidParameter(
+            return Err($crate::Error::InvalidParameter(
                 format!(
                     "got invalid NULL pointer for {} at {}:{}",
                     stringify!($pointer), file!(), line!()

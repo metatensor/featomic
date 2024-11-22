@@ -2,9 +2,9 @@ file(GLOB ALL_TESTS *.cpp)
 
 foreach(_file_ ${ALL_TESTS})
     get_filename_component(_name_ ${_file_} NAME_WE)
-    set(_name_ cxx-${_name_})
+    set(_name_ c-${_name_})
     add_executable(${_name_} ${_file_})
-    target_link_libraries(${_name_} featomic::shared catch)
+    target_link_libraries(${_name_} featomic::shared tests_helpers catch)
     add_test(
         NAME ${_name_}
         COMMAND ${TEST_COMMAND} $<TARGET_FILE:${_name_}>
@@ -19,9 +19,9 @@ endforeach()
 file(GLOB EXAMPLES ../../examples/*.cpp)
 foreach(_file_ ${EXAMPLES})
     get_filename_component(_name_ ${_file_} NAME_WE)
-    set(_name_ example-cxx-${_name_})
+    set(_name_ example-c-${_name_})
     add_executable(${_name_} ${_file_})
-    target_link_libraries(${_name_} featomic::shared)
+    target_link_libraries(${_name_} featomic::shared chemfiles)
 
     add_test(
         NAME ${_name_}

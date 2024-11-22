@@ -1,104 +1,39 @@
+#include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
 
-#include <metatensor.h>
 #include <featomic.h>
+#include <metatensor.h>
 
-/// Compute SOAP power spectrum, this is the same code as the 'compute-soap'
-/// example
-static mts_tensormap_t* compute_soap(const char* path);
-
-int main(int argc, char* argv[]) {
-    featomic_status_t status = FEATOMIC_SUCCESS;
-    char* buffer = NULL;
-    size_t buffer_size = 8192;
-    bool got_error = true;
-
-    if (argc < 2) {
-        printf("error: expected a command line argument");
-        goto cleanup;
-    }
-
-    // enable collection of profiling data
-    status = featomic_profiling_enable(true);
-    if (status != FEATOMIC_SUCCESS) {
-        printf("Error: %s\n", featomic_last_error());
-        goto cleanup;
-    }
-
-    // clear any existing collected data
-    status = featomic_profiling_clear();
-    if (status != FEATOMIC_SUCCESS) {
-        printf("Error: %s\n", featomic_last_error());
-        goto cleanup;
-    }
-
-    mts_tensormap_t* descriptor = compute_soap(argv[1]);
-    if (descriptor == NULL) {
-        goto cleanup;
-    }
-
-    buffer = calloc(buffer_size, sizeof(char));
-    if (buffer == NULL) {
-        printf("Error: failed to allocate memory\n");
-        goto cleanup;
-    }
-
-    // Get the profiling data as a table to display it directly
-    status = featomic_profiling_get("short_table", buffer, buffer_size);
-    if (status != FEATOMIC_SUCCESS) {
-        printf("Error: %s\n", featomic_last_error());
-        goto cleanup;
-    }
-    printf("%s\n", buffer);
-
-    // Or save this data as json for future usage
-    status = featomic_profiling_get("json", buffer, buffer_size);
-    if (status != FEATOMIC_SUCCESS) {
-        printf("Error: %s\n", featomic_last_error());
-        goto cleanup;
-    }
-    printf("%s\n", buffer);
-
-    got_error = false;
-cleanup:
-    free(buffer);
-    mts_tensormap_free(descriptor);
-
-    if (got_error) {
-        return 1;
-    } else {
-        return 0;
-    }
-}
+#include "common/systems.h"
 
 static mts_tensormap_t* move_keys_to_samples(mts_tensormap_t* descriptor, const char* keys_to_move[], size_t keys_to_move_len);
 static mts_tensormap_t* move_keys_to_properties(mts_tensormap_t* descriptor, const char* keys_to_move[], size_t keys_to_move_len);
 
-// this is the same function as in the compute-soap.c example
-mts_tensormap_t* compute_soap(const char* path) {
+int main(int argc, char* argv[]) {
     int status = FEATOMIC_SUCCESS;
     featomic_calculator_t* calculator = NULL;
     featomic_system_t* systems = NULL;
     uintptr_t n_systems = 0;
-    const double* values = NULL;
+    double* values = NULL;
     const uintptr_t* shape = NULL;
     uintptr_t shape_count = 0;
     bool got_error = true;
     const char* keys_to_samples[] = {"center_type"};
     const char* keys_to_properties[] = {"neighbor_1_type", "neighbor_2_type"};
-
-    // use the default set of options, computing all samples and all features
+    // use the default set of options, computing all samples and all features,
+    // and including gradients with respect to positions
     featomic_calculation_options_t options = {0};
     const char* gradients_list[] = {"positions"};
     options.gradients = gradients_list;
     options.gradients_count = 1;
+    options.use_native_system = true;
 
     mts_tensormap_t* descriptor = NULL;
-    const mts_block_t* block = NULL;
-    mts_array_t data = {0};
-    mts_labels_t keys_to_move = {0};
+    mts_block_t* block = NULL;
+    mts_array_t array = {0};
 
+    // hyper-parameters for the calculation as JSON
     const char* parameters = "{\n"
         "\"cutoff\": {\n"
         "    \"radius\": 5.0,\n"
@@ -115,19 +50,24 @@ mts_tensormap_t* compute_soap(const char* path) {
         "}\n"
     "}";
 
-
-    status = featomic_basic_systems_read(path, &systems, &n_systems);
-    if (status != FEATOMIC_SUCCESS) {
-        printf("Error: %s\n", featomic_last_error());
+    // load systems from command line arguments
+    if (argc < 2) {
+        printf("error: expected a command line argument");
+        goto cleanup;
+    }
+    status = read_systems_example(argv[1], &systems, &n_systems);
+    if (status != 0) {
         goto cleanup;
     }
 
+    // create the calculator with its name and parameters
     calculator = featomic_calculator("soap_power_spectrum", parameters);
     if (calculator == NULL) {
         printf("Error: %s\n", featomic_last_error());
         goto cleanup;
     }
 
+    // run the calculation
     status = featomic_calculator_compute(
         calculator, &descriptor, systems, n_systems, options
     );
@@ -136,6 +76,9 @@ mts_tensormap_t* compute_soap(const char* path) {
         goto cleanup;
     }
 
+    // The descriptor is a metatensor `TensorMap`, containing multiple blocks.
+    // We can transform it to a single block containing a dense representation,
+    // with one sample for each atom-centered environment.
     descriptor = move_keys_to_samples(descriptor, keys_to_samples, 1);
     if (descriptor == NULL) {
         printf("Error: %s\n", mts_last_error());
@@ -148,11 +91,53 @@ mts_tensormap_t* compute_soap(const char* path) {
         goto cleanup;
     }
 
-cleanup:
-    featomic_calculator_free(calculator);
-    featomic_basic_systems_free(systems, n_systems);
+    // extract the unique block and corresponding values from the descriptor
+    status = mts_tensormap_block_by_id(descriptor, &block, 0);
+    if (status != MTS_SUCCESS) {
+        printf("Error: %s\n", mts_last_error());
+        goto cleanup;
+    }
 
-    return descriptor;
+    status = mts_block_data(block, &array);
+    if (status != MTS_SUCCESS) {
+        printf("Error: %s\n", mts_last_error());
+        goto cleanup;
+    }
+
+    // callback the functions on the mts_array_t to extract the shape/data pointer
+    status = array.shape(array.ptr, &shape, &shape_count);
+    if (status != MTS_SUCCESS) {
+        printf("Error: %s\n", mts_last_error());
+        goto cleanup;
+    }
+
+    status = array.data(array.ptr, &values);
+    if (status != MTS_SUCCESS) {
+        printf("Error: %s\n", mts_last_error());
+        goto cleanup;
+    }
+
+    if (status != MTS_SUCCESS) {
+        printf("Error: %s\n", mts_last_error());
+        goto cleanup;
+    }
+    assert(shape_count == 2);
+
+    // you can now use `values` as the input of a machine learning algorithm
+    printf("the value array shape is %lu x %lu\n", shape[0], shape[1]);
+
+    got_error = false;
+cleanup:
+    mts_tensormap_free(descriptor);
+    featomic_calculator_free(calculator);
+
+    free_systems_example(systems, n_systems);
+
+    if (got_error) {
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 
@@ -186,3 +171,5 @@ mts_tensormap_t* move_keys_to_properties(mts_tensormap_t* descriptor, const char
 
     return moved_descriptor;
 }
+
+#include "common/systems.c"

@@ -60,7 +60,6 @@ set(RUST_BUILD_TARGET "" CACHE STRING "Cross-compilation target for rust code. L
 set(EXTRA_RUST_FLAGS "" CACHE STRING "Flags used to build rust code")
 mark_as_advanced(RUST_BUILD_TARGET EXTRA_RUST_FLAGS)
 
-option(FEATOMIC_ENABLE_CHEMFILES "Enable the usage of chemfiles for reading structures from files" OFF)
 option(FEATOMIC_FETCH_METATENSOR "Download and build the metatensor C API before building featomic" OFF)
 
 set(CMAKE_MACOSX_RPATH ON)
@@ -134,6 +133,7 @@ endif()
 
 set(CARGO_TARGET_DIR ${CMAKE_CURRENT_BINARY_DIR}/target)
 set(CARGO_BUILD_ARG "${CARGO_BUILD_ARG};--target-dir=${CARGO_TARGET_DIR}")
+set(CARGO_BUILD_ARG "${CARGO_BUILD_ARG};--features=c-api")
 
 # Handle cross compilation with RUST_BUILD_TARGET
 if ("${RUST_BUILD_TARGET}" STREQUAL "")
@@ -156,10 +156,6 @@ else()
 
     set(CARGO_BUILD_ARG "${CARGO_BUILD_ARG};--target=${RUST_BUILD_TARGET}")
     set(CARGO_OUTPUT_DIR "${CARGO_TARGET_DIR}/${RUST_BUILD_TARGET}/${CARGO_BUILD_TYPE}")
-endif()
-
-if (NOT ${FEATOMIC_ENABLE_CHEMFILES})
-    set(CARGO_BUILD_ARG "${CARGO_BUILD_ARG};--no-default-features")
 endif()
 
 # Get the list of libraries linked by default by cargo/rustc to add when linking
@@ -309,13 +305,26 @@ if (NOT "$ENV{RUSTC_WRAPPER}" STREQUAL "")
     list(APPEND CARGO_ENV "RUSTC_WRAPPER=$ENV{RUSTC_WRAPPER}")
 endif()
 
+if (FEATOMIC_INSTALL_BOTH_STATIC_SHARED)
+    set(CARGO_BUILD_ARG "${CARGO_BUILD_ARG};--crate-type=cdylib;--crate-type=staticlib")
+    set(FILES_CREATED_BY_CARGO "${FEATOMIC_SHARED_LIB_NAME} and ${FEATOMIC_STATIC_LIB_NAME}")
+else()
+    if (BUILD_SHARED_LIBS)
+        set(CARGO_BUILD_ARG "${CARGO_BUILD_ARG};--crate-type=cdylib")
+        set(FILES_CREATED_BY_CARGO "${FEATOMIC_SHARED_LIB_NAME}")
+    else()
+        set(CARGO_BUILD_ARG "${CARGO_BUILD_ARG};--crate-type=staticlib")
+        set(FILES_CREATED_BY_CARGO "${FEATOMIC_STATIC_LIB_NAME}")
+    endif()
+endif()
+
 add_custom_target(cargo-build-featomic ALL
     COMMAND
         ${CMAKE_COMMAND} -E env ${CARGO_ENV}
         cargo rustc ${CARGO_BUILD_ARG} -- ${CARGO_RUSTC_ARGS}
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     DEPENDS ${ALL_RUST_SOURCES}
-    COMMENT "Building ${FEATOMIC_SHARED_LIB_NAME} and ${FEATOMIC_STATIC_LIB_NAME} with cargo"
+    COMMENT "Building ${FILES_CREATED_BY_CARGO} with cargo"
     BYPRODUCTS ${FEATOMIC_STATIC_LOCATION} ${FEATOMIC_SHARED_LOCATION} ${FEATOMIC_IMPLIB_LOCATION}
 )
 
@@ -331,9 +340,6 @@ set(FEATOMIC_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include/)
 set_target_properties(featomic::shared PROPERTIES
     IMPORTED_LOCATION ${FEATOMIC_SHARED_LOCATION}
     INTERFACE_INCLUDE_DIRECTORIES ${FEATOMIC_INCLUDE_DIR}
-    # the library will need to be linked as C++ code
-    # since it might contains chemfiles
-    IMPORTED_LINK_INTERFACE_LANGUAGES CXX
 )
 target_compile_features(featomic::shared INTERFACE cxx_std_17)
 
@@ -347,9 +353,6 @@ set_target_properties(featomic::static PROPERTIES
     IMPORTED_LOCATION ${FEATOMIC_STATIC_LOCATION}
     INTERFACE_INCLUDE_DIRECTORIES ${FEATOMIC_INCLUDE_DIR}
     INTERFACE_LINK_LIBRARIES "${CARGO_DEFAULT_LIBRARIES}"
-    # the library will need to be linked as C++ code
-    # since it might contains chemfiles
-    IMPORTED_LINK_INTERFACE_LANGUAGES CXX
 )
 
 if (BUILD_SHARED_LIBS)
