@@ -1,3 +1,4 @@
+import glob
 import os
 import subprocess
 import sys
@@ -11,27 +12,28 @@ from setuptools.command.sdist import sdist
 
 ROOT = os.path.realpath(os.path.dirname(__file__))
 
-FEATOMIC_C_API = os.path.join(ROOT, "..", "..", "featomic-c-api")
+FEATOMIC_SRC = os.path.join(ROOT, "..", "..", "featomic")
 
-FEATOMIC_TORCH = os.path.join(ROOT, "..", "..", "featomic-torch")
-if not os.path.exists(FEATOMIC_TORCH):
-    # we are building from a sdist, which should include metatensor-torch
+FEATOMIC_TORCH_SRC = os.path.join(ROOT, "..", "..", "featomic-torch")
+if not os.path.exists(FEATOMIC_TORCH_SRC):
+    # we are building from a sdist, which should include featomic-torch
     # sources as a tarball
-    cxx_sources = os.path.join(ROOT, "featomic-torch.tar.gz")
+    tarballs = glob.glob(os.path.join(ROOT, "featomic-torch-cxx-*.tar.gz"))
 
-    if not os.path.exists(cxx_sources):
+    if not len(tarballs) == 1:
         raise RuntimeError(
-            "expected an 'featomic-torch.tar.gz' file containing "
+            "expected a single 'featomic-torch-cxx-*.tar.gz' file containing "
             "featomic-torch C++ sources"
         )
 
+    FEATOMIC_TORCH_SRC = os.path.realpath(tarballs[0])
     subprocess.run(
-        ["cmake", "-E", "tar", "xf", cxx_sources],
+        ["cmake", "-E", "tar", "xf", FEATOMIC_TORCH_SRC],
         cwd=ROOT,
         check=True,
     )
 
-    FEATOMIC_TORCH = os.path.join(ROOT, "featomic-torch")
+    FEATOMIC_TORCH_SRC = ".".join(FEATOMIC_TORCH_SRC.split(".")[:-2])
 
 
 class cmake_ext(build_ext):
@@ -44,7 +46,7 @@ class cmake_ext(build_ext):
 
         import featomic
 
-        source_dir = FEATOMIC_TORCH
+        source_dir = FEATOMIC_TORCH_SRC
         build_dir = os.path.join(ROOT, "build", "cmake-build")
         install_dir = os.path.join(os.path.realpath(self.build_lib), "featomic/torch")
 
@@ -229,7 +231,7 @@ if __name__ == "__main__":
     else:
         extra_version = git_extra_version()
 
-    with open(os.path.join(FEATOMIC_TORCH, "VERSION")) as fd:
+    with open(os.path.join(FEATOMIC_TORCH_SRC, "VERSION")) as fd:
         version = fd.read().strip()
     version += extra_version
 
@@ -245,7 +247,7 @@ if __name__ == "__main__":
         "torch >= 1.12",
         "metatensor-torch >=0.6.0,<0.7.0",
     ]
-    if os.path.exists(FEATOMIC_C_API):
+    if os.path.exists(FEATOMIC_SRC):
         # we are building from a git checkout
         featomic_path = os.path.realpath(os.path.join(ROOT, "..", ".."))
 

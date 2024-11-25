@@ -114,6 +114,8 @@ jobs:
         run: cargo test --lib --target ${{ matrix.rust-target }} ${{ matrix.cargo-build-flags }}
 
       - name: documentation tests
+        # we need rustc 1.78 to load libmetatensor.so in doctests
+        if: matrix.rust-version == 'stable'
         run: cargo test --doc --target ${{ matrix.rust-target }} ${{ matrix.cargo-build-flags }}
 
       - name: integration tests
@@ -121,7 +123,6 @@ jobs:
           FEATOMIC_TEST_WITH_STATIC_LIB: ${{ matrix.test-static-lib || 0 }}
         run: |
           cargo test --test "*" --package featomic --target ${{ matrix.rust-target }} ${{ matrix.cargo-build-flags }}
-          cargo test --test "*" --package featomic-c-api --target ${{ matrix.rust-target }} ${{ matrix.cargo-build-flags }}
 
   # second set of jobs checking that (non-test) code still compiles/run as expected
   prevent-bitrot:
@@ -148,7 +149,9 @@ jobs:
           echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
 
       - name: check that examples compile & run
-        run: cargo run --release --example compute-soap -- featomic/examples/data/water.xyz
+        run: |
+          cargo run --release --features chemfiles --example compute-soap -- featomic/examples/data/water.xyz
+          cargo run --release --features chemfiles --example profiling -- featomic/examples/data/water.xyz
 
       - name: check that benchmarks compile and run once
         run: cargo bench -- --test

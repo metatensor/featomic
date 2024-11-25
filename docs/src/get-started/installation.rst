@@ -49,7 +49,7 @@ well as CMake files that can be used with ``find_package(featomic)``.
 .. code-block:: bash
 
     git clone https://github.com/metatensor/featomic
-    cd featomic/featomic-c-api
+    cd featomic/featomic
     mkdir build
     cd build
     cmake <CMAKE_OPTIONS_HERE> ..
@@ -78,9 +78,6 @@ The build and installation can be configures with a few cmake options, using
 | FEATOMIC_INSTALL_BOTH_STATIC_SHARED  | Install both the shared and static version    | ON             |
 |                                      | of the library                                |                |
 +--------------------------------------+-----------------------------------------------+----------------+
-| FEATOMIC_ENABLE_CHEMFILES            | Enable the usage of chemfiles for reading     | ON             |
-|                                      | systems from files                            |                |
-+--------------------------------------+-----------------------------------------------+----------------+
 | FEATOMIC_FETCH_METATENSOR            | Automatically fetch, build and install        | OFF            |
 |                                      | metatensor (a dependency of featomic)         |                |
 +--------------------------------------+-----------------------------------------------+----------------+
@@ -94,14 +91,6 @@ Add the following to your project ``Cargo.toml``
 
     [dependencies]
     featomic = {git = "https://github.com/metatensor/featomic"}
-
-Featomic has one optional dependency (chemfiles), which is enabled by default.
-If you want to disable it, you can use:
-
-.. code-block:: toml
-
-    [dependencies]
-    featomic = {git = "https://github.com/metatensor/featomic", default-features = false}
 
 
 .. _install-torch-script:
