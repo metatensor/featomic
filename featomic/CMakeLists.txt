@@ -33,10 +33,17 @@ foreach(line ${CARGO_TOML_CONTENT})
     endif()
 endforeach()
 
+include(cmake/dev-versions.cmake)
+create_development_version("${FEATOMIC_VERSION}" FEATOMIC_FULL_VERSION)
+message(STATUS "Building featomic v${FEATOMIC_FULL_VERSION}")
+
+# strip any -dev/-rc suffix on the version since project(VERSION) does not support it
+string(REGEX REPLACE "([0-9]*)\\.([0-9]*)\\.([0-9]*).*" "\\1.\\2.\\3" FEATOMIC_VERSION ${FEATOMIC_FULL_VERSION})
 project(featomic
     VERSION ${FEATOMIC_VERSION}
-    LANGUAGES C CXX
+    LANGUAGES C CXX # we need to declare a language to access CMAKE_SIZEOF_VOID_P later
 )
+set(PROJECT_VERSION ${FEATOMIC_FULL_VERSION})
 
 # We follow the standard CMake convention of using BUILD_SHARED_LIBS to provide
 # either a shared or static library as a default target. But since cargo always
@@ -115,16 +122,21 @@ endif()
 # ============================================================================ #
 # determine Cargo flags
 
+set(CARGO_BUILD_ARG "")
+
+if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/Cargo.lock)
+    set(CARGO_BUILD_ARG "${CARGO_BUILD_ARG};--locked")
+endif()
+
 # TODO: support multiple configuration generators (MSVC, ...)
 string(TOLOWER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
 if ("${BUILD_TYPE}" STREQUAL "debug")
-    set(CARGO_BUILD_ARG "")
     set(CARGO_BUILD_TYPE "debug")
 elseif("${BUILD_TYPE}" STREQUAL "release")
-    set(CARGO_BUILD_ARG "--release")
+    set(CARGO_BUILD_ARG "${CARGO_BUILD_ARG};--release")
     set(CARGO_BUILD_TYPE "release")
 elseif("${BUILD_TYPE}" STREQUAL "relwithdebinfo")
-    set(CARGO_BUILD_ARG "--release")
+    set(CARGO_BUILD_ARG "${CARGO_BUILD_ARG};--release")
     set(CARGO_BUILD_TYPE "release")
 else()
     message(FATAL_ERROR "unsuported build type: ${CMAKE_BUILD_TYPE}")
@@ -178,7 +190,7 @@ if (CARGO_VERSION_CHANGED)
     file(APPEND "${TMPDIR}/_cargo_required_libs/Cargo.toml" "[lib]\ncrate-type=[\"staticlib\"]")
 
     execute_process(
-        COMMAND ${CARGO_EXE} rustc --verbose --color never --target=${RUST_BUILD_TARGET} -- --print=native-static-libs
+        COMMAND ${CARGO_EXE} rustc --color never --target=${RUST_BUILD_TARGET} -- --print=native-static-libs
         WORKING_DIRECTORY "${TMPDIR}/_cargo_required_libs"
         RESULT_VARIABLE cargo_build_result
         ERROR_VARIABLE cargo_build_error_message
@@ -220,7 +232,7 @@ endif()
 set(METATENSOR_FETCH_VERSION "0.1.11")
 set(METATENSOR_REQUIRED_VERSION "0.1")
 if (FEATOMIC_FETCH_METATENSOR)
-    message(STATUS "Fetching metatensor @ ${METATENSOR_FETCH_VERSION} from github")
+    message(STATUS "Fetching metatensor-core from github")
 
     include(FetchContent)
     set(URL_ROOT "https://github.com/lab-cosmo/metatensor/releases/download")
@@ -245,12 +257,13 @@ if (FEATOMIC_FETCH_METATENSOR)
     set(METATENSOR_RPATH "$$\\{ORIGIN\\}")
 else()
     find_package(metatensor ${METATENSOR_REQUIRED_VERSION} REQUIRED CONFIG)
-
     # in case featomic gets installed in a different place than metatensor,
     # set the RPATH to the directory where we found metatensor
     get_target_property(METATENSOR_LOCATION metatensor::shared IMPORTED_LOCATION)
     get_filename_component(METATENSOR_LOCATION ${METATENSOR_LOCATION} DIRECTORY)
     set(METATENSOR_RPATH "${METATENSOR_LOCATION}")
+
+    message(STATUS "Using local metatensor from ${METATENSOR_LOCATION}")
 endif()
 
 # ============================================================================ #
@@ -339,6 +352,7 @@ set(FEATOMIC_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include/)
 set_target_properties(featomic::shared PROPERTIES
     IMPORTED_LOCATION ${FEATOMIC_SHARED_LOCATION}
     INTERFACE_INCLUDE_DIRECTORIES ${FEATOMIC_INCLUDE_DIR}
+    BUILD_VERSION "${FEATOMIC_FULL_VERSION}"
 )
 target_compile_features(featomic::shared INTERFACE cxx_std_17)
 
@@ -352,6 +366,7 @@ set_target_properties(featomic::static PROPERTIES
     IMPORTED_LOCATION ${FEATOMIC_STATIC_LOCATION}
     INTERFACE_INCLUDE_DIRECTORIES ${FEATOMIC_INCLUDE_DIR}
     INTERFACE_LINK_LIBRARIES "${CARGO_DEFAULT_LIBRARIES}"
+    BUILD_VERSION "${FEATOMIC_FULL_VERSION}"
 )
 
 if (BUILD_SHARED_LIBS)

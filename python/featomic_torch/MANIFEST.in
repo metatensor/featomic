@@ -1,0 +1,7 @@
+include featomic-torch-cxx-*.tar.gz
+include git_version_info
+include build-backend/backend.py
+
+include pyproject.toml
+include AUTHORS
+include LICENSE

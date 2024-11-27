@@ -1,0 +1,62 @@
+[project]
+name = "featomic"
+dynamic = ["version", "authors", "optional-dependencies"]
+requires-python = ">=3.9"
+
+readme = "README.rst"
+license = {text = "BSD-3-Clause"}
+description = "Computing representations for atomistic machine learning"
+
+keywords = ["computational science", "machine learning", "molecular modeling", "atomistic representations"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: POSIX",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    "metatensor-core >=0.1.0,<0.2.0",
+    "metatensor-operations >=0.3.0,<0.4.0",
+    "wigners",
+]
+
+[project.urls]
+homepage = "https://metatensor.github.io/featomic/latest/"
+documentation = "https://metatensor.github.io/featomic/latest/"
+repository = "https://github.com/metatensor/featomic"
+# changelog = "TODO"
+
+### ======================================================================== ###
+
+[build-system]
+requires = [
+    "setuptools >=61",
+    "wheel >=0.38",
+    "packaging",
+    "cmake",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+zip-safe = true
+
+[tool.setuptools.packages.find]
+include = ["featomic*"]
+namespaces = false
+
+### ======================================================================== ###
+
+[tool.pytest.ini_options]
+python_files = ["*.py"]
+testpaths = ["tests"]
