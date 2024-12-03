@@ -34,9 +34,9 @@ repository = "https://github.com/metatensor/featomic"
 ### ======================================================================== ###
 [build-system]
 requires = [
-    "setuptools >=61",
-    "wheel >=0.38",
-    "cmake",
+    "setuptools",
+    "wheel",
+    "packaging",
 ]
 
 # use a custom build backend to add a dependency on the right version of featomic
@@ -51,6 +51,12 @@ include = ["featomic*"]
 namespaces = true
 
 ### ======================================================================== ###
+
 [tool.pytest.ini_options]
 python_files = ["*.py"]
 testpaths = ["tests"]
+
+### ======================================================================== ###
+
+[tool.uv.pip]
+reinstall-package = ["featomic", "featomic-torch"]
