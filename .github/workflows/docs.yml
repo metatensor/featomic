@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-22.04
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - name: free disk space
         run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android || true
@@ -49,6 +50,12 @@ jobs:
           name: docs
           path: docs/build/html/*
           overwrite: true  # only keep the latest version of the documentation
+
+      - name: Comment with download link
+        uses: PicoCentauri/comment-artifact@v1
+        with:
+          name: docs
+          description: 📚 Download documentation for this pull-request
 
       - name: put documentation in the website
         run: |
