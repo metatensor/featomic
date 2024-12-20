@@ -17,6 +17,7 @@ a changelog](https://keepachangelog.com/en/1.1.0/) format. This project follows
 ### Removed
 -->
 
+## [Version 0.6.0](https://github.com/metatensor/metatensor/releases/tag/featomic-v0.6.0) - 2024-12-20
 
 ### Added
 
