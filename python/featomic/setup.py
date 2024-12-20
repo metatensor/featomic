@@ -302,7 +302,7 @@ if __name__ == "__main__":
         extras_require["torch"] = f"featomic-torch @ file://{FEATOMIC_TORCH_SRC}"
     else:
         # we are building from a sdist/installing from a wheel
-        extras_require["torch"] = "featomic-torch >=0.1.0.dev0,<0.2.0"
+        extras_require["torch"] = "featomic-torch"
 
     setup(
         version=create_version_number(get_rust_version()),
