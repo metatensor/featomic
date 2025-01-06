@@ -5,6 +5,12 @@ authors = ["Guillaume Fraux <guillaume.fraux@epfl.ch>"]
 edition = "2021"
 rust-version = "1.74"
 
+description = "Library to compute representations for atomistic machine learning"
+# readme = "TODO"
+documentation = "https://metatensor.github.io/featomic/"
+repository = "https://github.com/metatensor/featomic"
+license = "BSD-3-Clause"
+
 [lib]
 bench = false
 
