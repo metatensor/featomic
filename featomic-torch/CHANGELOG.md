@@ -17,6 +17,8 @@ a changelog](https://keepachangelog.com/en/1.1.0/) format. This project follows
 ### Removed
 -->
 
+## [Version 0.6.0](https://github.com/metatensor/featomic/releases/tag/featomic-torch-v0.6.0) - 2025-01-07
+
 ### Added
 
 - C++ and Python TorchScript bindings to `featomic`, making all calculators
