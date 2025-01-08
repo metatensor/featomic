@@ -42,7 +42,7 @@ jobs:
             python-version: "3.12"
             cargo-test-flags: --release
 
-          - os: windows-2019
+          - os: windows-2022
             # Torch 2.3.0 is broken on Windows, and 2.2 has https://github.com/pytorch/pytorch/issues/118862
             torch-version: 2.1.*
             python-version: "3.11"

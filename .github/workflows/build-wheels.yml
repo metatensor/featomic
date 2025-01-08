@@ -48,7 +48,7 @@ jobs:
             rust-target: aarch64-apple-darwin
             cibw-arch: arm64
           - name: x86_64 Windows
-            os: windows-2019
+            os: windows-2022
             rust-target: x86_64-pc-windows-msvc
             cibw-arch: AMD64
     steps:
@@ -105,13 +105,13 @@ jobs:
       matrix:
         torch-version: ['2.1', '2.2', '2.3', '2.4', '2.5']
         arch: ['arm64', 'x86_64']
-        os: ['ubuntu-22.04', 'macos-13', 'macos-14', 'windows-2019']
+        os: ['ubuntu-22.04', 'macos-13', 'macos-14', 'windows-2022']
         exclude:
           # remove mismatched arch for macOS
           - {os: macos-14, arch: x86_64}
           - {os: macos-13, arch: arm64}
           # no arm64-windows build
-          - {os: windows-2019, arch: arm64}
+          - {os: windows-2022, arch: arm64}
           # arch x86_64 on macos is only supported for torch <2.3
           - {os: macos-13, arch: x86_64, torch-version: '2.3'}
           - {os: macos-13, arch: x86_64, torch-version: '2.4'}
@@ -139,7 +139,7 @@ jobs:
             rust-target: aarch64-apple-darwin
             cibw-arch: arm64
           - name: x86_64 Windows
-            os: windows-2019
+            os: windows-2022
             arch: x86_64
             rust-target: x86_64-pc-windows-msvc
             cibw-arch: AMD64
@@ -237,7 +237,7 @@ jobs:
             os: macos-14
             arch: arm64
           - name: x86_64 Windows
-            os: windows-2019
+            os: windows-2022
             arch: x86_64
     steps:
       - uses: actions/checkout@v4
