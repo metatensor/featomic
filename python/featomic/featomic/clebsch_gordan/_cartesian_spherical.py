@@ -245,6 +245,9 @@ def cartesian_to_spherical(
     #           [..., 3, 5, ...] => [..., 3, ...] (o3_lambda=1, o3_sigma=+1)
     #                            => [..., 5, ...] (o3_lambda=2, o3_sigma=-1)
     #                            => [..., 7, ...] (o3_lambda=3, o3_sigma=+1)
+
+    tensor = TensorMap(tensor.keys, new_blocks)
+
     if cg_coefficients is None:
         if torch_jit_is_scripting():
             raise ValueError(
