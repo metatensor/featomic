@@ -76,7 +76,7 @@ def permute(array, axes: List[int]):
         raise TypeError(UNKNOWN_ARRAY_TYPE)
 
 
-def tensordot(array_1, array_2, axes: Union[int, List[int]]):
+def tensordot(array_1, array_2, axes: List[List[int]]):
     """
     Compute tensor dot product along specified axes for arrays.
 

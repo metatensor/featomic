@@ -4,7 +4,7 @@ from metatensor import Labels, TensorBlock, TensorMap, operations
 
 from featomic.clebsch_gordan import cartesian_to_spherical
 
-from .rotations import cartesian_rotation, WignerDReal
+from .rotations import WignerDReal, cartesian_rotation
 
 
 @pytest.fixture
@@ -382,9 +382,9 @@ def test_cartesian_to_spherical_rank_3_by_equation(cg_backend):
     assert operations.equal_metadata(l3_input, l3_reference)
     assert operations.allclose(l3_input, l3_reference)
 
+
 @pytest.mark.parametrize("cg_backend", ["python-dense", "python-sparse"])
 def test_cartesian_to_spherical_equivariance(cg_backend):
-
     # Define a random cartesian rank 2 tensor
     random_rank_2_arr = np.random.rand(100, 3, 3, 1)
 
@@ -396,10 +396,10 @@ def test_cartesian_to_spherical_equivariance(cg_backend):
 
     # Rotate the cartesian tensor
     random_rank_2_arr_rot = (
-            (
-            random_rank_2_arr.copy().reshape(100, 3, 3) @ R.T
-        ).transpose(0, 2, 1) @ R.T
-    ).transpose(0, 2, 1).reshape(100, 3, 3, 1)
+        ((random_rank_2_arr.copy().reshape(100, 3, 3) @ R.T).transpose(0, 2, 1) @ R.T)
+        .transpose(0, 2, 1)
+        .reshape(100, 3, 3, 1)
+    )
 
     # Build the Cartesian TMs and do cartesian to spherical
     # Build the cartesian tensor and do cartesian to spherical
