@@ -435,6 +435,13 @@ def cg_couple(
             for o3_lambda in o3_lambdas
         ]
     elif cg_backend == "python-dense":
+
+        n_samples = array.shape[0]
+        n_properties = array.shape[3]
+
+        array = array.swapaxes(1, 3)
+        array = array.reshape(n_samples * n_properties, 2 * l2 + 1, 2 * l1 + 1)
+
         return [
             _cg_couple_dense(array, o3_lambda, cg_coefficients)
             for o3_lambda in o3_lambdas
@@ -505,18 +512,14 @@ def _cg_couple_dense(
     :param cg_coefficients: CG coefficients as returned by
         :py:func:`calculate_cg_coefficients` with ``cg_backed="python-dense"``
     """
-    # TODO: fix this!
-    # assert len(array.shape) == 3
+    assert len(array.shape) == 3
 
-    l1 = (array.shape[1] - 1) // 2
-    l2 = (array.shape[2] - 1) // 2
+    l1 = (array.shape[2] - 1) // 2
+    l2 = (array.shape[1] - 1) // 2
 
     cg_l1l2lam = cg_coefficients.block({"l1": l1, "l2": l2, "lambda": o3_lambda}).values
 
-    return _dispatch.permute(
-        _dispatch.tensordot(array, cg_l1l2lam[0, ..., 0], axes=([1, 2], [0, 1])),
-        [0, 2, 1]
-    )
+    return _dispatch.tensordot(array, cg_l1l2lam[0, ..., 0], axes=([2, 1], [0, 1]))
 
 
 # ======================================================================= #
