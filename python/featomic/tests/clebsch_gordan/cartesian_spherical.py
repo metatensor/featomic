@@ -314,7 +314,9 @@ def test_cartesian_to_spherical_rank_2_by_equation(cg_backend):
             )
         ]
     )
-    rank_2_input_sph = cartesian_to_spherical(rank_2_input_cart, ["xyz1", "xyz2"])
+    rank_2_input_sph = cartesian_to_spherical(
+        rank_2_input_cart, ["xyz1", "xyz2"], cg_backend=cg_backend
+    )
 
     # Extract the lambda = 2 component
     l2_input = operations.drop_blocks(
@@ -364,7 +366,9 @@ def test_cartesian_to_spherical_rank_3_by_equation(cg_backend):
             )
         ]
     )
-    rank_3_input_sph = cartesian_to_spherical(rank_3_input_cart, ["xyz1", "xyz2", "xyz3"])
+    rank_3_input_sph = cartesian_to_spherical(
+        rank_3_input_cart, ["xyz1", "xyz2", "xyz3"], cg_backend=cg_backend
+    )
 
     # Extract the lambda = 3 component
     l3_input = operations.drop_blocks(
