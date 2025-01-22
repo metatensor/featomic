@@ -63,6 +63,28 @@ def concatenate(arrays: List[TorchTensor], axis: int):
         raise TypeError(UNKNOWN_ARRAY_TYPE)
 
 
+def einsum(equation: str, *operands):
+    if isinstance(operands[0], TorchTensor):
+        return torch.einsum(equation, *operands)
+    elif isinstance(operands[0], np.ndarray):
+        return np.einsum(equation, *operands)
+    else:
+        raise TypeError(UNKNOWN_ARRAY_TYPE)
+
+
+def permute(array, axes: List[int]):
+    """
+    Permute the axes of the given ``array``. For numpy and torch, ``transpose`` and
+    ``permute`` are equivalent operations.
+    """
+    if isinstance(array, TorchTensor):
+        return torch.permute(array, axes)
+    elif isinstance(array, np.ndarray):
+        return np.transpose(array, axes)
+    else:
+        raise TypeError(UNKNOWN_ARRAY_TYPE)
+
+
 def empty_like(array, shape: Optional[List[int]] = None, requires_grad: bool = False):
     """
     Create an uninitialized array, with the given ``shape``, and similar dtype, device

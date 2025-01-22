@@ -197,28 +197,15 @@ def _build_dense_cg_coeff_dict(
                     device=device,
                     dtype=complex_like.dtype,
                 )
-
-                # real_cg = (r2c[l1] @ complex_cg.reshape(2 * l1 + 1, -1)).reshape(
-                #     complex_cg.shape
-                # )
-                real_cg = (complex_cg.permute(2, 1, 0) @ r2c[l1]).swapaxes(
+                # TODO: comment to explain what is happening here and the shapes
+                # involved
+                real_cg = (_dispatch.permute(complex_cg, [2, 1, 0]) @ r2c[l1]).swapaxes(
                     1, 2
-                )  # this has shape 2*L+1, 2*l1+1, 2*l2+1)
+                )  # this has shape (2*L+1, 2*l1+1, 2*l2+1)
 
-                # real_cg = real_cg.swapaxes(0, 1)
-                # real_cg = (r2c[l2] @ real_cg.reshape(2 * l2 + 1, -1)).reshape(
-                #     real_cg.shape
-                # )
+                real_cg = real_cg @ r2c[l2]  # this has shape (2*L+1, 2*l1+1, 2*l2+1)
 
-                real_cg = (
-                    real_cg @ r2c[l2]
-                )  # This has shape (2*o3_lambda+1, 2*l1+1, 2*l2+1)
-
-                # real_cg = real_cg.swapaxes(0, 1)
-
-                # real_cg = real_cg @ c2r[o3_lambda]
-
-                real_cg = real_cg.permute(1, 2, 0) @ c2r[o3_lambda].T
+                real_cg = _dispatch.permute(real_cg, [1, 2, 0]) @ c2r[o3_lambda].T
 
                 if (l1 + l2 + o3_lambda) % 2 == 0:
                     cg_l1l2lam_dense = _dispatch.real(real_cg)
@@ -448,22 +435,10 @@ def cg_couple(
             for o3_lambda in o3_lambdas
         ]
     elif cg_backend == "python-dense":
-
-        results = []
-
-        # n_samples = array.shape[0]
-        # n_properties = array.shape[3]
-
-        # array = array.swapaxes(1, 3)
-        # array = array.reshape(n_samples * n_properties, 2 * l2 + 1, 2 * l1 + 1)
-
-        for o3_lambda in o3_lambdas:
-            result = _cg_couple_dense(array, o3_lambda, cg_coefficients)
-            # result = result.reshape(n_samples, n_properties, -1)
-            # result = result.swapaxes(1, 2)
-            results.append(result)
-
-        return results
+        return [
+            _cg_couple_dense(array, o3_lambda, cg_coefficients)
+            for o3_lambda in o3_lambdas
+        ]
 
     else:
         raise ValueError(
@@ -530,27 +505,15 @@ def _cg_couple_dense(
     :param cg_coefficients: CG coefficients as returned by
         :py:func:`calculate_cg_coefficients` with ``cg_backed="python-dense"``
     """
-    # assert len(array.shape) == 3
-
-    # l1 = (array.shape[1] - 1) // 2
-    # l2 = (array.shape[2] - 1) // 2
+    assert len(array.shape) == 3
 
     l1 = (array.shape[1] - 1) // 2
     l2 = (array.shape[2] - 1) // 2
 
     cg_l1l2lam = cg_coefficients.block({"l1": l1, "l2": l2, "lambda": o3_lambda}).values
 
-    # [samples, l1, l2] => [samples, (l1 l2)]
-    # array = array.reshape(-1, (2 * l1 + 1) * (2 * l2 + 1))
-
-    # [l1, l2, lambda] -> [(l1 l2), lambda]
-    # cg_l1l2lam = cg_l1l2lam.reshape(-1, 2 * o3_lambda + 1)
-
-    # [samples, (l1 l2)] @ [(l1 l2), lambda] => [samples, lambda]
-    # return array @ cg_l1l2lam
-    import torch
-
-    return torch.einsum("smnp,mnM->sMp", array, cg_l1l2lam[0, ..., 0])
+    # TODO: use something more efficient than an einsum
+    return _dispatch.einsum("smnp,mnM->sMp", array, cg_l1l2lam[0, ..., 0])
 
 
 # ======================================================================= #
