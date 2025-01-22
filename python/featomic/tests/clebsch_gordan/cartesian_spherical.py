@@ -4,6 +4,8 @@ from metatensor import Labels, TensorBlock, TensorMap, operations
 
 from featomic.clebsch_gordan import cartesian_to_spherical
 
+from .rotations import cartesian_rotation, WignerDReal
+
 
 @pytest.fixture
 def cartesian():
@@ -379,3 +381,75 @@ def test_cartesian_to_spherical_rank_3_by_equation(cg_backend):
 
     assert operations.equal_metadata(l3_input, l3_reference)
     assert operations.allclose(l3_input, l3_reference)
+
+@pytest.mark.parametrize("cg_backend", ["python-dense", "python-sparse"])
+def test_cartesian_to_spherical_equivariance(cg_backend):
+
+    # Define a random cartesian rank 2 tensor
+    random_rank_2_arr = np.random.rand(100, 3, 3, 1)
+
+    # Define some rotation angles, the cartesian rotation matrix, and the Wigner
+    # matrices
+    angles = np.random.randn(3) * np.pi
+    R = cartesian_rotation(angles)
+    wigner = WignerDReal(max_angular=2, angles=angles)
+
+    # Rotate the cartesian tensor
+    random_rank_2_arr_rot = (
+            (
+            random_rank_2_arr.copy().reshape(100, 3, 3) @ R.T
+        ).transpose(0, 2, 1) @ R.T
+    ).transpose(0, 2, 1).reshape(100, 3, 3, 1)
+
+    # Build the Cartesian TMs and do cartesian to spherical
+    # Build the cartesian tensor and do cartesian to spherical
+    rank_2_input_cart = TensorMap(
+        keys=Labels.single(),
+        blocks=[
+            TensorBlock(
+                values=random_rank_2_arr,
+                samples=Labels(["system"], np.arange(100).reshape(-1, 1)),
+                components=[
+                    Labels([a], np.arange(3).reshape(-1, 1)) for a in ["xyz1", "xyz2"]
+                ],
+                properties=Labels(["_"], np.array([[0]])),
+            )
+        ],
+    )
+    rank_2_input_sph = cartesian_to_spherical(
+        rank_2_input_cart, ["xyz1", "xyz2"], cg_backend=cg_backend
+    )
+    rank_2_input_cart_rot = TensorMap(
+        keys=Labels.single(),
+        blocks=[
+            TensorBlock(
+                values=random_rank_2_arr_rot,
+                samples=Labels(["system"], np.arange(100).reshape(-1, 1)),
+                components=[
+                    Labels([a], np.arange(3).reshape(-1, 1)) for a in ["xyz1", "xyz2"]
+                ],
+                properties=Labels(["_"], np.array([[0]])),
+            )
+        ],
+    )
+    rank_2_input_sph_rot = cartesian_to_spherical(
+        rank_2_input_cart_rot, ["xyz1", "xyz2"], cg_backend=cg_backend
+    )
+
+    # Extract the lambda = 2 components
+    l2_input = operations.drop_blocks(
+        operations.remove_dimension(rank_2_input_sph, "keys", "_"),
+        keys=Labels(["o3_lambda"], np.array([[0], [1]])),
+    )
+    l2_input_rot = operations.drop_blocks(
+        operations.remove_dimension(rank_2_input_sph_rot, "keys", "_"),
+        keys=Labels(["o3_lambda"], np.array([[0], [1]])),
+    )
+
+    # Rotate the unrotated L=2 component
+    l2_input_original_rot = wigner.transform_tensormap_so3(l2_input)
+
+    print(l2_input_rot[0].values[0], l2_input_original_rot[0].values[0])
+
+    assert operations.equal_metadata(l2_input_rot, l2_input_original_rot)
+    assert operations.allclose(l2_input_rot, l2_input_original_rot)
