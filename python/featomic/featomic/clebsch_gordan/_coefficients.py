@@ -512,8 +512,10 @@ def _cg_couple_dense(
 
     cg_l1l2lam = cg_coefficients.block({"l1": l1, "l2": l2, "lambda": o3_lambda}).values
 
-    # TODO: use something more efficient than an einsum
-    return _dispatch.einsum("smnp,mnM->sMp", array, cg_l1l2lam[0, ..., 0])
+    return _dispatch.permute(
+        _dispatch.tensordot(array, cg_l1l2lam[0, ..., 0], axes=([1, 2], [0, 1])),
+        [0, 2, 1]
+    )
 
 
 # ======================================================================= #

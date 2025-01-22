@@ -63,15 +63,6 @@ def concatenate(arrays: List[TorchTensor], axis: int):
         raise TypeError(UNKNOWN_ARRAY_TYPE)
 
 
-def einsum(equation: str, *operands):
-    if isinstance(operands[0], TorchTensor):
-        return torch.einsum(equation, *operands)
-    elif isinstance(operands[0], np.ndarray):
-        return np.einsum(equation, *operands)
-    else:
-        raise TypeError(UNKNOWN_ARRAY_TYPE)
-
-
 def permute(array, axes: List[int]):
     """
     Permute the axes of the given ``array``. For numpy and torch, ``transpose`` and
@@ -81,6 +72,20 @@ def permute(array, axes: List[int]):
         return torch.permute(array, axes)
     elif isinstance(array, np.ndarray):
         return np.transpose(array, axes)
+    else:
+        raise TypeError(UNKNOWN_ARRAY_TYPE)
+    
+def tensordot(array_1, array_2, axes: Union[int, List[int]]):
+    """
+    Compute tensor dot product along specified axes for arrays.
+
+    This function has the same behavior as ``np.tensordot(array_1, array_2, axes)`` and
+    ``torch.tensordot(array_1, array_2, axes)``.
+    """
+    if isinstance(array_1, TorchTensor):
+        return torch.tensordot(array_1, array_2, axes)
+    elif isinstance(array_1, np.ndarray):
+        return np.tensordot(array_1, array_2, axes)
     else:
         raise TypeError(UNKNOWN_ARRAY_TYPE)
 
