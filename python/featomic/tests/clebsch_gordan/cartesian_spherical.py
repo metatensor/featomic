@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from metatensor import Labels, TensorBlock, TensorMap
+from metatensor import operations
 
 from featomic.clebsch_gordan import cartesian_to_spherical
 
@@ -198,3 +199,180 @@ def test_cartesian_to_spherical_errors(cartesian):
             components=["xyz_1", "xyz_2", "xyz_3"],
             keep_l_in_keys=False,
         )
+
+def _l2_components_from_matrix(A):
+    """
+    *The* reference equations for projecting a cartesian rank 2 tensor to the
+    irreducible spherical component with lambda = 2.
+    """
+    A = A.reshape(3, 3)
+
+    l2_A = np.empty((5,))
+    l2_A[0] = (A[0, 1] + A[1, 0]) / 2.0
+    l2_A[1] = (A[1, 2] + A[2, 1]) / 2.0
+    l2_A[2] = (2.0 * A[2, 2] - A[0, 0] - A[1, 1]) / ((2.0) * np.sqrt(3.0))
+    l2_A[3] = (A[0, 2] + A[2, 0]) / 2.0
+    l2_A[4] = (A[0, 0] - A[1, 1]) / 2.0
+
+    return l2_A * np.sqrt(2)
+
+def _l3_components_from_matrix(A):
+    """
+    *The* reference equations for projecting a cartesian rank 3 tensor to the
+    irreducible spherical component with lambda = 3.
+    """
+    A = A.reshape(3, 3, 3)
+
+    l3_A = np.empty((7,))
+
+    # -3
+    l3_A[0] = (A[0, 1, 0] + A[1, 0, 0] + A[0, 0, 1] - A[1, 1, 1]) / 2.0
+
+    # -2
+    l3_A[1] = (
+        A[0, 1, 2] + A[1, 0, 2] + A[1, 2, 0] + A[2, 1, 0] + A[0, 2, 1] + A[2, 0, 1]
+    ) / np.sqrt(6)
+
+    # -1
+    l3_A[2] = (
+        4.0 * A[1, 2, 2]
+        + 4.0 * A[2, 1, 2]
+        + 4.0 * A[2, 2, 1]
+        - 3.0 * A[1, 1, 1]
+        - A[0, 0, 1]
+        - A[0, 1, 0]
+        - A[1, 0, 0]
+    ) / np.sqrt(60)
+
+    # 0
+    l3_A[3] = (
+        2.0 * A[2, 2, 2]
+        - A[0, 2, 0]
+        - A[2, 0, 0]
+        - A[0, 0, 2]
+        - A[1, 2, 1]
+        - A[2, 1, 1]
+        - A[1, 1, 2]
+    ) / np.sqrt(10)
+
+    # 1
+    l3_A[4] = (
+        4.0 * A[0, 2, 2]
+        + 4.0 * A[2, 0, 2]
+        + 4.0 * A[2, 2, 0]
+        - 3.0 * A[0, 0, 0]
+        - A[1, 1, 0]
+        - A[0, 1, 1]
+        - A[1, 0, 1]
+    ) / np.sqrt(60)
+
+    # 2
+    l3_A[5] = (
+        A[0, 0, 2] + A[0, 2, 0] + A[2, 0, 0] - A[1, 1, 2] - A[1, 2, 1] - A[2, 1, 1]
+    ) / np.sqrt(6)
+
+    # 3
+    l3_A[6] = (A[0, 0, 0] - A[1, 1, 0] - A[0, 1, 1] - A[1, 0, 1]) / 2.0
+
+    return l3_A 
+
+@pytest.mark.parametrize("cg_backend", ["python-dense", "python-sparse"])
+def test_cartesian_to_spherical_rank_2_by_equation(cg_backend):
+    """
+    Tests cartesian_to_spherical for a random rank-2 tensor by comparing the result to
+    the result from *the* reference equation.
+    """
+    # Build the reference lambda = 2 component
+    random_rank_2_arr = np.random.rand(100, 3, 3, 1)
+    l2_reference = TensorMap(
+        keys=Labels(["o3_lambda", "o3_sigma"], np.array([[2, 1]])),
+        blocks=[
+            TensorBlock(
+                samples=Labels(["system"], np.arange(100).reshape(-1, 1)),
+                components=[
+                    Labels(["o3_mu"], np.arange(-2, 3).reshape(-1, 1))
+                ],
+                properties=Labels(["_"], np.array([[0]])),
+                values=np.stack(
+                    [_l2_components_from_matrix(A[..., 0]) for A in random_rank_2_arr]
+                ).reshape(random_rank_2_arr.shape[0], 5, 1),
+            )
+        ],
+    )
+
+    # Build the cartesian tensor and do cartesian to spherical
+    rank_2_input_cart = TensorMap(
+        keys=Labels.single(),
+        blocks=[
+            TensorBlock(
+                values=random_rank_2_arr,
+                samples=Labels(["system"], np.arange(100).reshape(-1, 1)),
+                components=[
+                    Labels([a], np.arange(3).reshape(-1, 1)) for a in ["xyz1", "xyz2"]
+                ],
+                properties=Labels(["_"], np.array([[0]])),
+            )
+        ]
+    )
+    rank_2_input_sph = cartesian_to_spherical(rank_2_input_cart, ["xyz1", "xyz2"])
+
+    # Extract the lambda = 2 component
+    l2_input = operations.drop_blocks(
+        operations.remove_dimension(rank_2_input_sph, "keys", "_"),
+        keys=Labels(["o3_lambda"], np.array([[0], [1]])),
+    )
+
+    assert operations.equal_metadata(l2_input, l2_reference)
+    assert operations.allclose(l2_input, l2_reference)
+
+
+@pytest.mark.parametrize("cg_backend", ["python-dense", "python-sparse"])
+def test_cartesian_to_spherical_rank_3_by_equation(cg_backend):
+    """
+    Tests cartesian_to_spherical for a random rank-2 tensor by comparing the result to
+    the result from *the* reference equation.
+    """
+    # Build the reference lambda = 2 component
+    random_rank_3_arr = np.random.rand(100, 3, 3, 3, 1)
+    l3_reference = TensorMap(
+        keys=Labels(["o3_lambda", "o3_sigma"], np.array([[3, 1]])),
+        blocks=[
+            TensorBlock(
+                samples=Labels(["system"], np.arange(100).reshape(-1, 1)),
+                components=[
+                    Labels(["o3_mu"], np.arange(-3, 4).reshape(-1, 1))
+                ],
+                properties=Labels(["_"], np.array([[0]])),
+                values=np.stack(
+                    [_l3_components_from_matrix(A[..., 0]) for A in random_rank_3_arr]
+                ).reshape(random_rank_3_arr.shape[0], 7, 1),
+            )
+        ],
+    )
+
+    # Build the cartesian tensor and do cartesian to spherical
+    rank_3_input_cart = TensorMap(
+        keys=Labels.single(),
+        blocks=[
+            TensorBlock(
+                values=random_rank_3_arr,
+                samples=Labels(["system"], np.arange(100).reshape(-1, 1)),
+                components=[
+                    Labels([a], np.arange(3).reshape(-1, 1)) for a in ["xyz1", "xyz2", "xyz3"]
+                ],
+                properties=Labels(["_"], np.array([[0]])),
+            )
+        ]
+    )
+    rank_3_input_sph = cartesian_to_spherical(rank_3_input_cart, ["xyz1", "xyz2", "xyz3"])
+
+    # Extract the lambda = 3 component
+    l3_input = operations.drop_blocks(
+        operations.remove_dimension(rank_3_input_sph, "keys", "_"),
+        keys=Labels(["o3_lambda"], np.array([[0], [1], [2]])),
+    )
+    for dim in ["l_3", "k_1", "l_2", "l_1"]:
+        l3_input = operations.remove_dimension(l3_input, "keys", dim)
+
+    assert operations.equal_metadata(l3_input, l3_reference)
+    assert operations.allclose(l3_input, l3_reference)
