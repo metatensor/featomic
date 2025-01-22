@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
-from metatensor import Labels, TensorBlock, TensorMap
-from metatensor import operations
+from metatensor import Labels, TensorBlock, TensorMap, operations
 
 from featomic.clebsch_gordan import cartesian_to_spherical
 
@@ -200,6 +199,7 @@ def test_cartesian_to_spherical_errors(cartesian):
             keep_l_in_keys=False,
         )
 
+
 def _l2_components_from_matrix(A):
     """
     *The* reference equations for projecting a cartesian rank 2 tensor to the
@@ -215,6 +215,7 @@ def _l2_components_from_matrix(A):
     l2_A[4] = (A[0, 0] - A[1, 1]) / 2.0
 
     return l2_A * np.sqrt(2)
+
 
 def _l3_components_from_matrix(A):
     """
@@ -274,7 +275,8 @@ def _l3_components_from_matrix(A):
     # 3
     l3_A[6] = (A[0, 0, 0] - A[1, 1, 0] - A[0, 1, 1] - A[1, 0, 1]) / 2.0
 
-    return l3_A 
+    return l3_A
+
 
 @pytest.mark.parametrize("cg_backend", ["python-dense", "python-sparse"])
 def test_cartesian_to_spherical_rank_2_by_equation(cg_backend):
@@ -289,9 +291,7 @@ def test_cartesian_to_spherical_rank_2_by_equation(cg_backend):
         blocks=[
             TensorBlock(
                 samples=Labels(["system"], np.arange(100).reshape(-1, 1)),
-                components=[
-                    Labels(["o3_mu"], np.arange(-2, 3).reshape(-1, 1))
-                ],
+                components=[Labels(["o3_mu"], np.arange(-2, 3).reshape(-1, 1))],
                 properties=Labels(["_"], np.array([[0]])),
                 values=np.stack(
                     [_l2_components_from_matrix(A[..., 0]) for A in random_rank_2_arr]
@@ -312,7 +312,7 @@ def test_cartesian_to_spherical_rank_2_by_equation(cg_backend):
                 ],
                 properties=Labels(["_"], np.array([[0]])),
             )
-        ]
+        ],
     )
     rank_2_input_sph = cartesian_to_spherical(
         rank_2_input_cart, ["xyz1", "xyz2"], cg_backend=cg_backend
@@ -341,9 +341,7 @@ def test_cartesian_to_spherical_rank_3_by_equation(cg_backend):
         blocks=[
             TensorBlock(
                 samples=Labels(["system"], np.arange(100).reshape(-1, 1)),
-                components=[
-                    Labels(["o3_mu"], np.arange(-3, 4).reshape(-1, 1))
-                ],
+                components=[Labels(["o3_mu"], np.arange(-3, 4).reshape(-1, 1))],
                 properties=Labels(["_"], np.array([[0]])),
                 values=np.stack(
                     [_l3_components_from_matrix(A[..., 0]) for A in random_rank_3_arr]
@@ -360,11 +358,12 @@ def test_cartesian_to_spherical_rank_3_by_equation(cg_backend):
                 values=random_rank_3_arr,
                 samples=Labels(["system"], np.arange(100).reshape(-1, 1)),
                 components=[
-                    Labels([a], np.arange(3).reshape(-1, 1)) for a in ["xyz1", "xyz2", "xyz3"]
+                    Labels([a], np.arange(3).reshape(-1, 1))
+                    for a in ["xyz1", "xyz2", "xyz3"]
                 ],
                 properties=Labels(["_"], np.array([[0]])),
             )
-        ]
+        ],
     )
     rank_3_input_sph = cartesian_to_spherical(
         rank_3_input_cart, ["xyz1", "xyz2", "xyz3"], cg_backend=cg_backend

@@ -85,6 +85,7 @@ def spherical_expansion_by_pair(frames: List[ase.Atoms]):
     calculator = featomic.SphericalExpansionByPair(**SPHEX_HYPERS)
     return calculator.compute(frames)
 
+
 @pytest.mark.parametrize("cg_backend", ["python-sparse", "python-dense"])
 def test_keys_are_matched(cg_backend):
     """
@@ -445,8 +446,6 @@ def test_dense_sparse_agree():
 
     results = []
     for cg_backend in ["python-sparse", "python-dense"]:
-    
-
         # max_angular to be twice as big here if not using an angular cutoff
         calculator = ClebschGordanProduct(
             max_angular=MAX_ANGULAR,

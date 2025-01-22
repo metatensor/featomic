@@ -435,17 +435,28 @@ def cg_couple(
             for o3_lambda in o3_lambdas
         ]
     elif cg_backend == "python-dense":
-
         n_samples = array.shape[0]
         n_properties = array.shape[3]
 
-        array = array.swapaxes(1, 3)
-        array = array.reshape(n_samples * n_properties, 2 * l2 + 1, 2 * l1 + 1)
+        # Move properties next to samples
+        array = _dispatch.permute(array, [0, 3, 1, 2])
 
-        return [
-            _cg_couple_dense(array, o3_lambda, cg_coefficients)
-            for o3_lambda in o3_lambdas
-        ]
+        # Reshape to [n_samples * n_properties, 2*l1 + 1, 2*l2 + 1]
+        array = array.reshape(n_samples * n_properties, 2 * l1 + 1, 2 * l2 + 1)
+
+        results = []
+        for o3_lambda in o3_lambdas:
+            result = _cg_couple_dense(array, o3_lambda, cg_coefficients)
+
+            # Separate samples and properties
+            result = result.reshape(n_samples, n_properties, -1)
+
+            # Back to TensorBlock-like axes
+            result = result.swapaxes(1, 2)
+
+            results.append(result)
+
+        return results
 
     else:
         raise ValueError(
@@ -507,19 +518,22 @@ def _cg_couple_dense(
     degree ``o3_lambda``) using CG coefficients. This is a "dense" implementation, using
     all CG coefficients at the same time.
 
-    :param array: input array, we expect a shape of ``[samples, 2*l1 + 1, 2*l2 + 1]``
+    :param array: input array, we expect a shape of ``[samples * properties, 2*l1 + 1,
+        2*l2 + 1]``
     :param o3_lambda: value of lambda for the output spherical harmonic
     :param cg_coefficients: CG coefficients as returned by
         :py:func:`calculate_cg_coefficients` with ``cg_backed="python-dense"``
+
+    :return: array of shape ``[samples * properties, 2 * o3_lambda + 1]``
     """
     assert len(array.shape) == 3
 
-    l1 = (array.shape[2] - 1) // 2
-    l2 = (array.shape[1] - 1) // 2
+    l1 = (array.shape[1] - 1) // 2
+    l2 = (array.shape[2] - 1) // 2
 
     cg_l1l2lam = cg_coefficients.block({"l1": l1, "l2": l2, "lambda": o3_lambda}).values
 
-    return _dispatch.tensordot(array, cg_l1l2lam[0, ..., 0], axes=([2, 1], [0, 1]))
+    return _dispatch.tensordot(array, cg_l1l2lam[0, ..., 0], axes=([2, 1], [1, 0]))
 
 
 # ======================================================================= #
