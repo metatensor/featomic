@@ -143,7 +143,7 @@ def funcdecl_to_ctypes(type, ndpointer=False):
     restype = type_to_ctypes(type.type, ndpointer)
     args = [type_to_ctypes(t.type, ndpointer) for t in type.args.params]
 
-    return f'CFUNCTYPE({restype}, {", ".join(args)})'
+    return f"CFUNCTYPE({restype}, {', '.join(args)})"
 
 
 def type_to_ctypes(type, ndpointer=False):
