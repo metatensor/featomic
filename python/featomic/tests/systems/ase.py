@@ -128,7 +128,7 @@ def test_partial_pbc():
     atoms.pbc = [True, True, False]
 
     message = (
-        "different periodic boundary conditions on different axis " "are not supported"
+        "different periodic boundary conditions on different axis are not supported"
     )
     with pytest.raises(ValueError, match=message):
         AseSystem(atoms)

@@ -365,7 +365,7 @@ def _compute_labels_full_cartesian_product(
     # Check for no shared labels dimensions
     for name in labels_1.names:
         assert name not in labels_2.names, (
-            "`labels_1` and `labels_2` must not have a" " dimension ({name}) in common"
+            "`labels_1` and `labels_2` must not have a dimension ({name}) in common"
         )
     # Create the new labels names by concatenating the names of the two input labels
     labels_names: List[str] = labels_1.names + labels_2.names

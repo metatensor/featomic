@@ -35,7 +35,7 @@ def test_log_message():
     calculator.compute(SystemForTests())
 
     message = (
-        "featomic::calculators::dummy_calculator -- " "log-test-info: test info message"
+        "featomic::calculators::dummy_calculator -- log-test-info: test info message"
     )
     event = (FEATOMIC_LOG_LEVEL_INFO, message)
     assert event in recorded_events
