@@ -90,7 +90,7 @@ pub struct TensorMapView<'a> {
     marker: std::marker::PhantomData<&'a mut TensorMap>,
 }
 
-impl<'a> std::ops::Deref for TensorMapView<'a> {
+impl std::ops::Deref for TensorMapView<'_> {
     type Target = TensorMap;
 
     fn deref(&self) -> &Self::Target {
@@ -98,7 +98,7 @@ impl<'a> std::ops::Deref for TensorMapView<'a> {
     }
 }
 
-impl<'a> std::ops::DerefMut for TensorMapView<'a> {
+impl std::ops::DerefMut for TensorMapView<'_> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.data
     }
