@@ -275,7 +275,7 @@ impl Neg for Vector3D {
     }
 }
 
-impl<'a> Neg for &'a Vector3D {
+impl Neg for &Vector3D {
     type Output = Vector3D;
     #[inline]
     fn neg(self) -> Vector3D {
@@ -283,7 +283,7 @@ impl<'a> Neg for &'a Vector3D {
     }
 }
 
-impl<'a> Neg for &'a mut Vector3D {
+impl Neg for &mut Vector3D {
     type Output = Vector3D;
     #[inline]
     fn neg(self) -> Vector3D {
