@@ -94,7 +94,7 @@ class DensityCorrelations(TorchModule):
 
         For instance, if the key dimensions of ``density`` are ``"o3_lambda"``,
         ``"o3_sigma"``, ``"center_type"``, and ``"neighbor_type"``, pairs of blocks will
-        only be combined if they have both the same center and neighbor atom type. To
+        only be combined if they have both the same ``"center_type"`` and ``"neighbor_type"``. To
         fully correlate all combinations of ``"neighbor_type"``, for example, this key
         dimension should be moved to properties first, using the :py:class:`TensorMap`
         ``keys_to_properties`` method.
