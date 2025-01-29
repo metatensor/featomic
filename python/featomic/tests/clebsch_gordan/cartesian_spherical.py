@@ -202,6 +202,21 @@ def test_cartesian_to_spherical_errors(cartesian):
         )
 
 
+def _l1_components_from_matrix(A):
+    """
+    *The* reference equations for projecting a cartesian rank 2 tensor to the
+    irreducible spherical component with lambda = 1 and sigma = -1.
+    """
+    A = A.reshape(3, 3)
+
+    l1_A = np.empty((3,))
+    l1_A[0] = A[2, 0] - A[0, 2]  # y
+    l1_A[1] = A[0, 1] - A[1, 0]  # z
+    l1_A[2] = A[1, 2] - A[2, 1]  # x
+
+    return -l1_A / np.sqrt(2)
+
+
 def _l2_components_from_matrix(A):
     """
     *The* reference equations for projecting a cartesian rank 2 tensor to the
@@ -286,11 +301,20 @@ def test_cartesian_to_spherical_rank_2_by_equation(cg_backend):
     Tests cartesian_to_spherical for a random rank-2 tensor by comparing the result to
     the result from *the* reference equation.
     """
-    # Build the reference lambda = 2 component
+    # Build the reference (lambda, sigma) = (1, -1) and (lambda, sigma) = (2, 1)
+    # components
     random_rank_2_arr = np.random.rand(100, 3, 3, 1)
-    l2_reference = TensorMap(
-        keys=Labels(["o3_lambda", "o3_sigma"], np.array([[2, 1]])),
+    l1_and_l2_reference = TensorMap(
+        keys=Labels(["o3_lambda", "o3_sigma"], np.array([[1, -1], [2, 1]])),
         blocks=[
+            TensorBlock(
+                samples=Labels(["system"], np.arange(100).reshape(-1, 1)),
+                components=[Labels(["o3_mu"], np.arange(-1, 2).reshape(-1, 1))],
+                properties=Labels(["_"], np.array([[0]])),
+                values=np.stack(
+                    [_l1_components_from_matrix(A[..., 0]) for A in random_rank_2_arr]
+                ).reshape(random_rank_2_arr.shape[0], 3, 1),
+            ),
             TensorBlock(
                 samples=Labels(["system"], np.arange(100).reshape(-1, 1)),
                 components=[Labels(["o3_mu"], np.arange(-2, 3).reshape(-1, 1))],
@@ -298,7 +322,7 @@ def test_cartesian_to_spherical_rank_2_by_equation(cg_backend):
                 values=np.stack(
                     [_l2_components_from_matrix(A[..., 0]) for A in random_rank_2_arr]
                 ).reshape(random_rank_2_arr.shape[0], 5, 1),
-            )
+            ),
         ],
     )
 
@@ -320,14 +344,14 @@ def test_cartesian_to_spherical_rank_2_by_equation(cg_backend):
         rank_2_input_cart, ["xyz1", "xyz2"], cg_backend=cg_backend
     )
 
-    # Extract the lambda = 2 component
-    l2_input = operations.drop_blocks(
+    # Extract the lambda = 1 and lambda = 2 components
+    l1_and_l2_input = operations.drop_blocks(
         operations.remove_dimension(rank_2_input_sph, "keys", "_"),
-        keys=Labels(["o3_lambda"], np.array([[0], [1]])),
+        keys=Labels(["o3_lambda"], np.array([[0]])),
     )
 
-    assert operations.equal_metadata(l2_input, l2_reference)
-    assert operations.allclose(l2_input, l2_reference)
+    assert operations.equal_metadata(l1_and_l2_input, l1_and_l2_reference)
+    assert operations.allclose(l1_and_l2_input, l1_and_l2_reference)
 
 
 @pytest.mark.parametrize("cg_backend", ["python-dense", "python-sparse"])
