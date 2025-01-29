@@ -67,7 +67,7 @@ fn map_selection_error<'a>(
     };
 }
 
-impl<'a> LabelsSelection<'a> {
+impl LabelsSelection<'_> {
     fn select<'call, F, G, H>(
         &self,
         label_kind: &str,
