@@ -503,7 +503,11 @@ def _cg_couple_sparse(
         m2 = int(m1m2mu[1])
         mu = int(m1m2mu[2])
         # Broadcast arrays, multiply together and with CG coeff
-        output[mu, :, :] += arrays[str((m1, m2))] * cg_l1l2lam.values[i, 0]
+        output[mu, :, :] += (
+            arrays[str((m1, m2))]
+            * (-1) ** (l1 + l2 + o3_lambda)
+            * cg_l1l2lam.values[i, 0]
+        )
 
     return output.swapaxes(0, 1)
 
@@ -531,7 +535,9 @@ def _cg_couple_dense(
     l1 = (array.shape[1] - 1) // 2
     l2 = (array.shape[2] - 1) // 2
 
-    cg_l1l2lam = cg_coefficients.block({"l1": l1, "l2": l2, "lambda": o3_lambda}).values
+    cg_l1l2lam = (-1) ** (l1 + l2 + o3_lambda) * cg_coefficients.block(
+        {"l1": l1, "l2": l2, "lambda": o3_lambda}
+    ).values
 
     return _dispatch.tensordot(array, cg_l1l2lam[0, ..., 0], axes=([2, 1], [1, 0]))
 
