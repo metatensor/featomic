@@ -4,6 +4,7 @@ import metatensor
 import numpy as np
 import pytest
 from metatensor import Labels, TensorBlock, TensorMap
+from metatensor.operations import equal, join
 from numpy.testing import assert_equal
 
 from featomic import SphericalExpansion
@@ -134,6 +135,41 @@ def test_equivariant_power_spectrum_neighbors_to_properties():
     # Check equivalent
     metatensor.equal_metadata_raise(powspec_1, powspec_2)
     metatensor.equal_raise(powspec_1, powspec_2)
+
+
+def tests_sample_selection() -> None:
+    """Tests that the sample selection works as expected.
+    By first computing the powerspectruim for all atoms in H2O
+    Then first for atom 1 and then atom 2  and 3.
+    Their join should be identical to computing it for all atoms.
+    """
+
+    frame = h2o_periodic()
+
+    powspec_calc = EquivariantPowerSpectrum(SphericalExpansion(**SPHEX_HYPERS_SMALL))
+
+    label_1st = metatensor.Labels(
+        ["system", "atom"], np.array([[0, 0]], dtype=np.int32)
+    )
+
+    label_2nd = metatensor.Labels(
+        ["system", "atom"], np.array([[0, 1], [0, 2]], dtype=np.int32)
+    )
+
+    powspec_1 = powspec_calc.compute(
+        frame, neighbors_to_properties=True, selected_samples=label_1st
+    )
+
+    powspec_2 = powspec_calc.compute(
+        frame, neighbors_to_properties=True, selected_samples=label_2nd
+    )
+
+    powspec_3 = join([powspec_1, powspec_2], axis="samples", remove_tensor_name=True)
+    powspec_4 = powspec_calc.compute(frame, neighbors_to_properties=True)
+
+    assert equal(powspec_3, powspec_4)
+    assert not equal(powspec_2, powspec_4)
+    assert not equal(powspec_1, powspec_4)
 
 
 def test_fill_types_option() -> None:
