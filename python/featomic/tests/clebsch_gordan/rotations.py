@@ -99,6 +99,7 @@ class WignerDReal:
         # Randomly generate Euler angles between 0 and 2 pi if none are provided
         if angles is None:
             angles = np.random.uniform(size=(3)) * 2 * np.pi
+            angles[1] = angles[1]/2
         self.angles = angles
         self.rotation = cartesian_rotation(angles)
 
