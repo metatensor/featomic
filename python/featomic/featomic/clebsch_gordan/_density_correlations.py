@@ -96,8 +96,7 @@ class DensityCorrelations(TorchModule):
         ``"o3_sigma"``, ``"center_type"``, and ``"neighbor_type"``, pairs of blocks will
         only be combined if they have both the same ``"center_type"`` and ``"neighbor_type"``. To
         fully correlate all combinations of ``"neighbor_type"``, for example, this key
-        dimension should be moved to properties first, using the :py:class:`TensorMap`
-        ``keys_to_properties`` method.
+        dimension should be moved to properties first, using :py:meth:`TensorMap.keys_to_properties`.
 
         Before performing any correlations, the properties dimensions of ``density`` are
         modified to carry a "_1" suffix. At each iteration, the dimension names of the
