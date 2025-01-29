@@ -1,6 +1,7 @@
+import metatensor as mts
 import numpy as np
 import pytest
-from metatensor import Labels, TensorBlock, TensorMap, operations
+from metatensor import Labels, TensorBlock, TensorMap
 
 from featomic.clebsch_gordan import cartesian_to_spherical
 
@@ -243,15 +244,15 @@ def _l3_components_from_matrix(A):
 
     l3_A = np.empty((7,))
 
-    # -3
+    # o3_mu = -3
     l3_A[0] = (A[0, 1, 0] + A[1, 0, 0] + A[0, 0, 1] - A[1, 1, 1]) / 2.0
 
-    # -2
+    # o3_mu = -2
     l3_A[1] = (
         A[0, 1, 2] + A[1, 0, 2] + A[1, 2, 0] + A[2, 1, 0] + A[0, 2, 1] + A[2, 0, 1]
     ) / np.sqrt(6)
 
-    # -1
+    # o3_mu = -1
     l3_A[2] = (
         4.0 * A[1, 2, 2]
         + 4.0 * A[2, 1, 2]
@@ -262,7 +263,7 @@ def _l3_components_from_matrix(A):
         - A[1, 0, 0]
     ) / np.sqrt(60)
 
-    # 0
+    # o3_mu = 0
     l3_A[3] = (
         2.0 * A[2, 2, 2]
         - A[0, 2, 0]
@@ -273,7 +274,7 @@ def _l3_components_from_matrix(A):
         - A[1, 1, 2]
     ) / np.sqrt(10)
 
-    # 1
+    # o3_mu = 1
     l3_A[4] = (
         4.0 * A[0, 2, 2]
         + 4.0 * A[2, 0, 2]
@@ -284,12 +285,12 @@ def _l3_components_from_matrix(A):
         - A[1, 0, 1]
     ) / np.sqrt(60)
 
-    # 2
+    # o3_mu = 2
     l3_A[5] = (
         A[0, 0, 2] + A[0, 2, 0] + A[2, 0, 0] - A[1, 1, 2] - A[1, 2, 1] - A[2, 1, 1]
     ) / np.sqrt(6)
 
-    # 3
+    # o3_mu = 3
     l3_A[6] = (A[0, 0, 0] - A[1, 1, 0] - A[0, 1, 1] - A[1, 0, 1]) / 2.0
 
     return l3_A
@@ -345,13 +346,13 @@ def test_cartesian_to_spherical_rank_2_by_equation(cg_backend):
     )
 
     # Extract the lambda = 1 and lambda = 2 components
-    l1_and_l2_input = operations.drop_blocks(
-        operations.remove_dimension(rank_2_input_sph, "keys", "_"),
+    l1_and_l2_input = mts.drop_blocks(
+        mts.remove_dimension(rank_2_input_sph, "keys", "_"),
         keys=Labels(["o3_lambda"], np.array([[0]])),
     )
 
-    assert operations.equal_metadata(l1_and_l2_input, l1_and_l2_reference)
-    assert operations.allclose(l1_and_l2_input, l1_and_l2_reference)
+    assert mts.equal_metadata(l1_and_l2_input, l1_and_l2_reference)
+    assert mts.allclose(l1_and_l2_input, l1_and_l2_reference)
 
 
 @pytest.mark.parametrize("cg_backend", ["python-dense", "python-sparse"])
@@ -396,15 +397,15 @@ def test_cartesian_to_spherical_rank_3_by_equation(cg_backend):
     )
 
     # Extract the lambda = 3 component
-    l3_input = operations.drop_blocks(
-        operations.remove_dimension(rank_3_input_sph, "keys", "_"),
+    l3_input = mts.drop_blocks(
+        mts.remove_dimension(rank_3_input_sph, "keys", "_"),
         keys=Labels(["o3_lambda"], np.array([[0], [1], [2]])),
     )
     for dim in ["l_3", "k_1", "l_2", "l_1"]:
-        l3_input = operations.remove_dimension(l3_input, "keys", dim)
+        l3_input = mts.remove_dimension(l3_input, "keys", dim)
 
-    assert operations.equal_metadata(l3_input, l3_reference)
-    assert operations.allclose(l3_input, l3_reference)
+    assert mts.equal_metadata(l3_input, l3_reference)
+    assert mts.allclose(l3_input, l3_reference)
 
 
 @pytest.mark.parametrize("cg_backend", ["python-dense", "python-sparse"])
@@ -461,19 +462,17 @@ def test_cartesian_to_spherical_equivariance(cg_backend):
     )
 
     # Extract the lambda = 2 components
-    l2_input = operations.drop_blocks(
-        operations.remove_dimension(rank_2_input_sph, "keys", "_"),
+    l2_input = mts.drop_blocks(
+        mts.remove_dimension(rank_2_input_sph, "keys", "_"),
         keys=Labels(["o3_lambda"], np.array([[0], [1]])),
     )
-    l2_input_rot = operations.drop_blocks(
-        operations.remove_dimension(rank_2_input_sph_rot, "keys", "_"),
+    l2_input_rot = mts.drop_blocks(
+        mts.remove_dimension(rank_2_input_sph_rot, "keys", "_"),
         keys=Labels(["o3_lambda"], np.array([[0], [1]])),
     )
 
     # Rotate the unrotated L=2 component
     l2_input_original_rot = wigner.transform_tensormap_so3(l2_input)
 
-    print(l2_input_rot[0].values[0], l2_input_original_rot[0].values[0])
-
-    assert operations.equal_metadata(l2_input_rot, l2_input_original_rot)
-    assert operations.allclose(l2_input_rot, l2_input_original_rot)
+    assert mts.equal_metadata(l2_input_rot, l2_input_original_rot)
+    assert mts.allclose(l2_input_rot, l2_input_original_rot)

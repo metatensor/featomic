@@ -197,20 +197,53 @@ def _build_dense_cg_coeff_dict(
                     device=device,
                     dtype=complex_like.dtype,
                 )
-                # TODO: comment to explain what is happening here and the shapes
-                # involved
-                real_cg = (_dispatch.permute(complex_cg, [2, 1, 0]) @ r2c[l1]).swapaxes(
-                    1, 2
-                )  # this has shape (2*L+1, 2*l1+1, 2*l2+1)
-
-                real_cg = real_cg @ r2c[l2]  # this has shape (2*L+1, 2*l1+1, 2*l2+1)
-
-                real_cg = _dispatch.permute(real_cg, [1, 2, 0]) @ c2r[o3_lambda].T
+                # We want to create a CG coefficient for a real representation, using
+                # the expression:
+                #
+                #  C_{l1m1l2m2}^{lm}
+                #       = \sum_{m'm1'm2'} ...
+                #             ... U_{mm'}^{l} C_{l1m1'm2m2'}^{lm'} ...
+                #             ... U^{\dagger}_{m1'm1}^{l1} U^{\dagger}_{m2'm2}^{l2}
+                #
+                # where:
+                #       U is the "c2r" transformation matrix below
+                #       U^{\dagger} is the "r2c" transformation matrix below
+                #
+                # 0) We have a CG coefficient of shape:
+                #       complex_cg.shape = (2*l1+1, 2*l2+1, 2*L+1)
+                #    and transormation matrices of shape:
+                #       c2r[L].shape = (2*L+1, 2*L+1)
+                #       r2c[L].shape = (2*L+1, 2*L+1)
+                #
+                # 1) take the matrix product:
+                #       \sum_{m1'} C_{l1m1'm2m2'}^{lm'} U^{\dagger}_{m1'm1}^{l1}
+                #    this requires some permuting of axes of the objects involved to
+                #    ensure proper matching for matmul. i.e. permute axes of the complex
+                #    CG coefficient from: (m1, m2, m) -> (m, m2, m1)
+                first_step = _dispatch.permute(complex_cg, [2, 1, 0]) @ r2c[l1]
+                # The result `first_step` has shape (2*L+1, 2*l2+1, 2*l1+1)
+                #
+                # 2) take the matrix product:
+                #       \sum_{m2'} ...
+                #          ... (first_step)_{m',m1,m2'}^{l,l1} U^{\dagger}_{m2'm2}^{l2}
+                first_step_swap = first_step.swapaxes(1, 2)
+                # The result `first_step_swap` has shape (2*L+1, 2*l1+1, 2*l2+1)
+                second_step = first_step_swap @ r2c[l2]
+                # The result `second_step` has shape (2*L+1, 2*l1+1, 2*l2+1)
+                #
+                # 3) take the matrix product:
+                #       \sum_{m'} U_{mm'}^{l} (second_step)_{m',m1,m2}^{l,l1,l2}
+                second_step_swap = _dispatch.permute(second_step, [1, 0, 2])
+                # The result `second_step_swap` has shape (2*l1+1, 2*L+1, 2*l2+1)
+                third_step = c2r[o3_lambda] @ second_step_swap
+                # The result `third_step` has shape (2*l1+1, 2*L+1, 2*l2+1)
+                third_step_swap = _dispatch.permute(third_step, [0, 2, 1])
+                # The result `third_step_swap` has shape (2*l1+1, 2*l2+1, 2*L+1)
 
                 if (l1 + l2 + o3_lambda) % 2 == 0:
-                    cg_l1l2lam_dense = _dispatch.real(real_cg)
+                    cg_l1l2lam_dense = _dispatch.real(third_step_swap)
                 else:
-                    cg_l1l2lam_dense = _dispatch.imag(real_cg)
+                    cg_l1l2lam_dense = _dispatch.imag(third_step_swap)
 
                 coeff_dict[(l1, l2, o3_lambda)] = _dispatch.to(
                     cg_l1l2lam_dense,
