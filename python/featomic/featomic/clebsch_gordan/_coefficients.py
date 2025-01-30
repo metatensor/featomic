@@ -701,7 +701,7 @@ def _cg_tensor_product_dense(
         # output shape is [(samples q p), lambda]
         output = _cg_couple_dense(tensor_product, o3_lambda, cg_coefficients)
         #  => [samples, (q p), lambda]
-        output = output.reshape(n_s, (n_p * n_q), -1)
+        output = output.reshape(n_s, (n_p * n_q), 2 * o3_lambda + 1)
         #  => [samples, lambda, (q p)]
         output = _dispatch.swapaxes(output, 1, 2)
         result.append(output)
