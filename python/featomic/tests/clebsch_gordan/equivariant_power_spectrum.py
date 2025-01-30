@@ -136,7 +136,7 @@ def test_equivariant_power_spectrum_neighbors_to_properties():
     metatensor.equal_raise(powspec_1, powspec_2)
 
 
-def tests_sample_selection() -> None:
+def test_sample_selection() -> None:
     """Tests that the sample selection works as expected.
     By first computing the powerspectruim for all atoms in H2O
     Then first for atom 1 and then atom 2  and 3.
