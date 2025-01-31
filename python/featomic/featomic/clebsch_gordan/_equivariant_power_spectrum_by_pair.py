@@ -333,6 +333,11 @@ class EquivariantPowerSpectrumByPair(TorchModule):
         density_1 = operations.rename_dimension(density_1, "properties", "n", "n_1")
 
         # Compute pair density
+        if selected_samples is not None:
+            if "atom" in selected_samples.names:
+                new_names = selected_samples.names
+                new_names[selected_samples.names.index("atom")] = "first_atom"
+                selected_samples = Labels(new_names, selected_samples.values)
         density_2 = self.calculator_2.compute(
             systems, selected_samples=selected_samples
         )

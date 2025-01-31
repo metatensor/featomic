@@ -52,12 +52,11 @@ def h2o_periodic():
     ]
 
 
-# ============ Test EquivariantPowerSpectrum vs PowerSpectrum ============
+# =========== Test EquivariantPowerSpectrumByPair vs EquivariantPowerSpectrum ==========
 
 
 def test_equivariant_power_spectrum_vs_equivariant_power_spectrum_by_pair():
     """
-    TODO
     Tests for exact equivalence between EquivariantPowerSpectrumByPair and
     EquivariantPowerSpectrum after metadata manipulation and reduction over samples.
     """
@@ -110,36 +109,44 @@ def test_equivariant_power_spectrum_vs_equivariant_power_spectrum_by_pair():
             assert np.allclose(b1.values, b2.values)
 
 
-# def test_equivariant_power_spectrum_by_pair_neighbors_to_properties():
-#     """
-#     TODO
-#     Tests that computing an EquivariantPowerSpectrum is equivalent when passing
-#     `neighbors_to_properties` as both True and False (after metadata manipulation).
-#     """
-#     # Build an EquivariantPowerSpectrum
-#     powspec_calc = EquivariantPowerSpectrum(SphericalExpansion(**SPHEX_HYPERS_SMALL))
+def test_sample_selection() -> None:
+    """Tests that the sample selection works as expected.
+    By first computing the equivariant power spectrum by pair for all atoms in H2O.
+    Then first for atom 1 and then atom 2  and 3.
+    Their join should be identical to computing it for all atoms.
+    """
 
-#     # Compute the first. Move keys after CG step
-#     powspec_1 = powspec_calc.compute(
-#         h2o_periodic(),
-#         neighbors_to_properties=False,
-#     )
-#     powspec_1 = powspec_1.keys_to_properties(["neighbor_1_type", "neighbor_2_type"])
+    frame = h2o_periodic()
 
-#     # Compute the second.  Move keys before the CG step
-#     powspec_2 = powspec_calc.compute(
-#         h2o_periodic(),
-#         neighbors_to_properties=True,
-#     )
+    powspec_by_pair_calc = EquivariantPowerSpectrumByPair(
+        SphericalExpansion(**SPHEX_HYPERS_SMALL),
+        SphericalExpansionByPair(**SPHEX_HYPERS_SMALL),
+    )
 
-#     # Permute properties dimensions to match ``powspec_1`` and sort
-#     powspec_2 = metatensor.sort(
-#         metatensor.permute_dimensions(powspec_2, "properties", [2, 4, 0, 1, 3, 5])
-#     )
+    label_1st = metatensor.Labels(
+        ["system", "atom"], np.array([[0, 0]], dtype=np.int32)
+    )
 
-#     # Check equivalent
-#     metatensor.equal_metadata_raise(powspec_1, powspec_2)
-#     metatensor.equal_raise(powspec_1, powspec_2)
+    label_2nd = metatensor.Labels(
+        ["system", "atom"], np.array([[0, 1], [0, 2]], dtype=np.int32)
+    )
+
+    powspec_1 = powspec_by_pair_calc.compute(
+        frame, neighbors_to_properties=True, selected_samples=label_1st
+    )
+
+    powspec_2 = powspec_by_pair_calc.compute(
+        frame, neighbors_to_properties=True, selected_samples=label_2nd
+    )
+
+    powspec_3 = metatensor.join(
+        [powspec_1, powspec_2], axis="samples", remove_tensor_name=True
+    )
+    powspec_4 = powspec_by_pair_calc.compute(frame, neighbors_to_properties=True)
+
+    assert metatensor.equal(powspec_3, powspec_4)
+    assert not metatensor.equal(powspec_2, powspec_4)
+    assert not metatensor.equal(powspec_1, powspec_4)
 
 
 def test_fill_types_option() -> None:
