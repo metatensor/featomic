@@ -1,8 +1,7 @@
-
 import metatensor
 import numpy as np
 import pytest
-from metatensor import Labels 
+from metatensor import Labels
 from numpy.testing import assert_equal
 
 from featomic import SphericalExpansion, SphericalExpansionByPair
