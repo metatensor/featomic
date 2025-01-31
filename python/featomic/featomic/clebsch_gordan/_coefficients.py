@@ -474,7 +474,6 @@ def cg_couple(
         # Move properties next to samples
         array = _dispatch.permute(array, [0, 3, 1, 2])
 
-        # Reshape to [n_samples * n_properties, 2*l1 + 1, 2*l2 + 1]
         array = array.reshape(n_samples * n_properties, 2 * l1 + 1, 2 * l2 + 1)
 
         results = []
