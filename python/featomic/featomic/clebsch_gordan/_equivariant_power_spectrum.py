@@ -217,6 +217,7 @@ class EquivariantPowerSpectrum(TorchModule):
         self,
         systems: Union[IntoSystem, List[IntoSystem]],
         selected_keys: Optional[Labels] = None,
+        selected_samples: Optional[Labels] = None,
         neighbors_to_properties: bool = False,
     ) -> TensorMap:
         """
@@ -245,6 +246,11 @@ class EquivariantPowerSpectrum(TorchModule):
         :param selected_keys: :py:class:`Labels`, the output keys to computed. If
             ``None``, all keys are computed. Subsets of key dimensions can be passed to
             compute output blocks that match in these dimensions.
+        :param selected_samples: :py:class:`Labels`, Set of samples on which to run the
+            calculation. Use ``None`` to run the calculation on all samples in
+            the systems (this is the default). Gets passed to ``calculator_1``  and
+            ``calculator_2``, therefore requiring that both calculators support sample
+            selection.
         :param neighbors_to_properties: :py:class:`bool`, if true, densifies the
             spherical expansion by moving key dimension "neighbor_type" to properties
             prior to performing the Clebsch Gordan product step. Defaults to false.
@@ -254,6 +260,7 @@ class EquivariantPowerSpectrum(TorchModule):
         return self._equivariant_power_spectrum(
             systems=systems,
             selected_keys=selected_keys,
+            selected_samples=selected_samples,
             neighbors_to_properties=neighbors_to_properties,
             compute_metadata=False,
         )
@@ -262,6 +269,7 @@ class EquivariantPowerSpectrum(TorchModule):
         self,
         systems: Union[IntoSystem, List[IntoSystem]],
         selected_keys: Optional[Labels] = None,
+        selected_samples: Optional[Labels] = None,
         neighbors_to_properties: bool = False,
     ) -> TensorMap:
         """
@@ -275,6 +283,7 @@ class EquivariantPowerSpectrum(TorchModule):
         return self.compute(
             systems=systems,
             selected_keys=selected_keys,
+            selected_samples=selected_samples,
             neighbors_to_properties=neighbors_to_properties,
         )
 
@@ -282,6 +291,7 @@ class EquivariantPowerSpectrum(TorchModule):
         self,
         systems: Union[IntoSystem, List[IntoSystem]],
         selected_keys: Optional[Labels] = None,
+        selected_samples: Optional[Labels] = None,
         neighbors_to_properties: bool = False,
     ) -> TensorMap:
         """
@@ -294,6 +304,7 @@ class EquivariantPowerSpectrum(TorchModule):
         return self._equivariant_power_spectrum(
             systems=systems,
             selected_keys=selected_keys,
+            selected_samples=selected_samples,
             neighbors_to_properties=neighbors_to_properties,
             compute_metadata=True,
         )
@@ -302,6 +313,7 @@ class EquivariantPowerSpectrum(TorchModule):
         self,
         systems: Union[IntoSystem, List[IntoSystem]],
         selected_keys: Optional[Labels],
+        selected_samples: Optional[Labels],
         neighbors_to_properties: bool,
         compute_metadata: bool,
     ) -> TensorMap:
@@ -309,12 +321,16 @@ class EquivariantPowerSpectrum(TorchModule):
         Computes the equivariant power spectrum, either fully or just metadata
         """
         # Compute density
-        density_1 = self.calculator_1.compute(systems)
+        density_1 = self.calculator_1.compute(
+            systems, selected_samples=selected_samples
+        )
 
         if self.calculator_2 is None:
             density_2 = density_1
         else:
-            density_2 = self.calculator_2.compute(systems)
+            density_2 = self.calculator_2.compute(
+                systems, selected_samples=selected_samples
+            )
 
         # Rename "neighbor_type" dimension so they are correlated
         density_1 = operations.rename_dimension(
