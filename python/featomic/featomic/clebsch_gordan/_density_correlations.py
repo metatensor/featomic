@@ -85,18 +85,19 @@ class DensityCorrelations(TorchModule):
 
         where \\rho^{\\nu=1} is the input ``density`` of correlation order 1 (body order
         2), and \\rho^{\\nu=n_{corr} + 1} is the output density of correlation order
-        ``n_correlations + 1``. 
-        
-        The input ``density`` must have at least ``"o3_lambda"`` and  ``"o3_sigma"``
-        key dimensions, as well as a single components axis with the ``"o3_mu"``
-        dimension. Any other key dimensions present will be matched, while all properties
+        ``n_correlations + 1``.
+
+        The input ``density`` must have at least ``"o3_lambda"`` and  ``"o3_sigma"`` key
+        dimensions, as well as a single components axis with the ``"o3_mu"`` dimension.
+        Any other key dimensions present will be matched, while all properties
         dimensions will have their full tensor product computed.
 
         For instance, if the key dimensions of ``density`` are ``"o3_lambda"``,
         ``"o3_sigma"``, ``"center_type"``, and ``"neighbor_type"``, pairs of blocks will
-        only be combined if they have both the same ``"center_type"`` and ``"neighbor_type"``. To
-        fully correlate all combinations of ``"neighbor_type"``, for example, this key
-        dimension should be moved to properties first, using :py:meth:`TensorMap.keys_to_properties`.
+        only be combined if they have both the same ``"center_type"`` and
+        ``"neighbor_type"``. To fully correlate all combinations of ``"neighbor_type"``,
+        for example, this key dimension should be moved to properties first, using
+        :py:meth:`TensorMap.keys_to_properties`.
 
         Before performing any correlations, the properties dimensions of ``density`` are
         modified to carry a "_1" suffix. At each iteration, the dimension names of the

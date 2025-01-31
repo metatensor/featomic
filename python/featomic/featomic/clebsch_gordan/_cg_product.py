@@ -117,8 +117,7 @@ class ClebschGordanProduct(TorchModule):
 
         if max_angular < 0:
             raise ValueError(
-                f"Given `max_angular={max_angular}` negative. "
-                "Must be greater equal 0."
+                f"Given `max_angular={max_angular}` negative. Must be greater equal 0."
             )
         self._max_angular = max_angular
 
