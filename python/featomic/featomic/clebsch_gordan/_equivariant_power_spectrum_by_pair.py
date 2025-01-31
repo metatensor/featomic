@@ -29,8 +29,6 @@ class EquivariantPowerSpectrumByPair(TorchModule):
     Example
     -------
 
-    TODO: update docstring
-
     As an example we calculate the equivariant power spectrum by pair for a spherical
     expansion and a spherical expansion by pair for a NaCl crystal.
 
@@ -212,6 +210,7 @@ class EquivariantPowerSpectrumByPair(TorchModule):
         self,
         systems: Union[IntoSystem, List[IntoSystem]],
         selected_keys: Optional[Labels] = None,
+        selected_samples: Optional[Labels] = None,
         neighbors_to_properties: bool = False,
     ) -> TensorMap:
         """
@@ -241,6 +240,11 @@ class EquivariantPowerSpectrumByPair(TorchModule):
         :param selected_keys: :py:class:`Labels`, the output keys to computed. If
             ``None``, all keys are computed. Subsets of key dimensions can be passed to
             compute output blocks that match in these dimensions.
+        :param selected_samples: :py:class:`Labels`, Set of samples on which to run the
+            calculation. Use ``None`` to run the calculation on all samples in
+            the systems (this is the default). Gets passed to ``calculator_1``  and
+            ``calculator_2``, therefore requiring that both calculators support sample
+            selection.
         :param neighbors_to_properties: :py:class:`bool`, if true, densifies the
             spherical expansion by moving key dimension "neighbor_type" to properties
             prior to performing the Clebsch Gordan product step. Defaults to false.
@@ -250,6 +254,7 @@ class EquivariantPowerSpectrumByPair(TorchModule):
         return self._equivariant_power_spectrum_by_pair(
             systems=systems,
             selected_keys=selected_keys,
+            selected_samples=selected_samples,
             neighbors_to_properties=neighbors_to_properties,
             compute_metadata=False,
         )
@@ -258,6 +263,7 @@ class EquivariantPowerSpectrumByPair(TorchModule):
         self,
         systems: Union[IntoSystem, List[IntoSystem]],
         selected_keys: Optional[Labels] = None,
+        selected_samples: Optional[Labels] = None,
         neighbors_to_properties: bool = False,
     ) -> TensorMap:
         """
@@ -271,6 +277,7 @@ class EquivariantPowerSpectrumByPair(TorchModule):
         return self.compute(
             systems=systems,
             selected_keys=selected_keys,
+            selected_samples=selected_samples,
             neighbors_to_properties=neighbors_to_properties,
         )
 
@@ -278,6 +285,7 @@ class EquivariantPowerSpectrumByPair(TorchModule):
         self,
         systems: Union[IntoSystem, List[IntoSystem]],
         selected_keys: Optional[Labels] = None,
+        selected_samples: Optional[Labels] = None,
         neighbors_to_properties: bool = False,
     ) -> TensorMap:
         """
@@ -298,6 +306,7 @@ class EquivariantPowerSpectrumByPair(TorchModule):
         self,
         systems: Union[IntoSystem, List[IntoSystem]],
         selected_keys: Optional[Labels],
+        selected_samples: Optional[Labels],
         neighbors_to_properties: bool,
         compute_metadata: bool,
     ) -> TensorMap:
@@ -305,7 +314,9 @@ class EquivariantPowerSpectrumByPair(TorchModule):
         Computes the equivariant power spectrum, either fully or just metadata
         """
         # Compute density
-        density_1 = self.calculator_1.compute(systems)
+        density_1 = self.calculator_1.compute(
+            systems, selected_samples=selected_samples
+        )
         # Rename "center_type" dimension to match "first_atom_type"
         density_1 = operations.rename_dimension(
             density_1, "keys", "center_type", "first_atom_type"
@@ -322,7 +333,9 @@ class EquivariantPowerSpectrumByPair(TorchModule):
         density_1 = operations.rename_dimension(density_1, "properties", "n", "n_1")
 
         # Compute pair density
-        density_2 = self.calculator_2.compute(systems)
+        density_2 = self.calculator_2.compute(
+            systems, selected_samples=selected_samples
+        )
 
         # Rename properties so they are correlated
         density_2 = operations.rename_dimension(density_2, "properties", "n", "n_2")
