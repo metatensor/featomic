@@ -17,6 +17,11 @@ a changelog](https://keepachangelog.com/en/1.1.0/) format. This project follows
 ### Removed
 -->
 
+### Added
+
+- `clebsch_gordan.EquivariantPowerSpectrumByPair` calculator for two-center equivariant 
+   descriptors. Similar API to `clebsch_gordan.EquivariantPowerSpectrum` (#378)
+
 ## [Version 0.6.0](https://github.com/metatensor/featomic/releases/tag/featomic-v0.6.0) - 2024-12-20
 
 ### Added
