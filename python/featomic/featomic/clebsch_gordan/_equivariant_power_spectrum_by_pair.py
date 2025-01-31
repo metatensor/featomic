@@ -166,7 +166,8 @@ class EquivariantPowerSpectrumByPair(TorchModule):
         self.dtype = dtype
         self.device = device
 
-        supported_calculators = ["lode_spherical_expansion", "spherical_expansion"]
+        supported_calculators_1 = ["lode_spherical_expansion", "spherical_expansion"]
+        supported_calculators_2 = ["spherical_expansion_by_pair"]
 
         if self.calculator_1.c_name not in supported_calculators:
             raise ValueError(
