@@ -98,9 +98,9 @@ class WignerDReal:
         self.max_angular = max_angular
         # Randomly generate Euler angles between if none are provided
         if angles is None:
-            psi = 2 * np.pi * np.random.uniform(size=1)  # psi is between 0 and 2pi
-            theta = np.pi * np.random.uniform(size=1)  # theta is between 0 and pi
-            phi = 2 * np.pi * np.random.uniform(size=1)  # phi is between 0 and 2pi
+            psi = 2 * np.pi * np.random.uniform()  # psi is between 0 and 2pi
+            theta = np.pi * np.random.uniform()  # theta is between 0 and pi
+            phi = 2 * np.pi * np.random.uniform()  # phi is between 0 and 2pi
             angles = np.array([psi, theta, phi])
         self.angles = angles
         self.rotation = cartesian_rotation(angles)
