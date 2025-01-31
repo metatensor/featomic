@@ -180,7 +180,7 @@ class EquivariantPowerSpectrumByPair(TorchModule):
         # For the moment, only spherical expansion by pair is supported for calculator_2
         if self.calculator_2.c_name not in supported_calculators_2:
             raise ValueError(
-                f"Only [{', '.join(supported_calculators)}] are supported for "
+                f"Only [{', '.join(supported_calculators_2)}] are supported for "
                 f"`calculator_2`, got '{self.calculator_2.c_name}'"
             )
 
