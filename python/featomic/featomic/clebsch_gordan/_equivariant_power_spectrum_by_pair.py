@@ -219,7 +219,6 @@ class EquivariantPowerSpectrumByPair(TorchModule):
         spherical expansion by pair.
 
         First computes a :py:class:`SphericalExpansion` density descriptor of body order
-        2. TODO: is is not body order 1?
 
         Before performing the Clebsch-Gordan tensor product, the spherical expansion
         density can be densified by moving the key dimension "neighbor_type" to the
