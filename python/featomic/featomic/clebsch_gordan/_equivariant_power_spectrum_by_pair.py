@@ -178,7 +178,6 @@ class EquivariantPowerSpectrumByPair(TorchModule):
         parameters_1 = json.loads(calculator_1.parameters)
 
         # For the moment, only spherical expansion by pair is supported for calculator_2
-        supported_calculators = ["spherical_expansion_by_pair"]
         if self.calculator_2.c_name not in supported_calculators:
             raise ValueError(
                 f"Only [{', '.join(supported_calculators)}] are supported for "
