@@ -248,7 +248,7 @@ class EquivariantPowerSpectrumByPair(TorchModule):
             spherical expansion by moving key dimension "neighbor_type" to properties
             prior to performing the Clebsch Gordan product step. Defaults to false.
 
-        :return: :py:class:`TensorMap`, the output equivariant power spectrum.
+        :return: :py:class:`TensorMap`, the output equivariant power spectrum by pair.
         """
         return self._equivariant_power_spectrum_by_pair(
             systems=systems,
