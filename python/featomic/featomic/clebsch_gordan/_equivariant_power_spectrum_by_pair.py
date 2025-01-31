@@ -171,7 +171,7 @@ class EquivariantPowerSpectrumByPair(TorchModule):
 
         if self.calculator_1.c_name not in supported_calculators_1:
             raise ValueError(
-                f"Only [{', '.join(supported_calculators)}] are supported for "
+                f"Only [{', '.join(supported_calculators_1)}] are supported for "
                 f"`calculator_1`, got '{self.calculator_1.c_name}'"
             )
 
