@@ -63,6 +63,34 @@ def concatenate(arrays: List[TorchTensor], axis: int):
         raise TypeError(UNKNOWN_ARRAY_TYPE)
 
 
+def permute(array, axes: List[int]):
+    """
+    Permute the axes of the given ``array``. For numpy and torch, ``transpose`` and
+    ``permute`` are equivalent operations.
+    """
+    if isinstance(array, TorchTensor):
+        return torch.permute(array, axes)
+    elif isinstance(array, np.ndarray):
+        return np.transpose(array, axes)
+    else:
+        raise TypeError(UNKNOWN_ARRAY_TYPE)
+
+
+def tensordot(array_1, array_2, axes: List[List[int]]):
+    """
+    Compute tensor dot product along specified axes for arrays.
+
+    This function has the same behavior as ``np.tensordot(array_1, array_2, axes)`` and
+    ``torch.tensordot(array_1, array_2, axes)``.
+    """
+    if isinstance(array_1, TorchTensor):
+        return torch.tensordot(array_1, array_2, axes)
+    elif isinstance(array_1, np.ndarray):
+        return np.tensordot(array_1, array_2, axes)
+    else:
+        raise TypeError(UNKNOWN_ARRAY_TYPE)
+
+
 def empty_like(array, shape: Optional[List[int]] = None, requires_grad: bool = False):
     """
     Create an uninitialized array, with the given ``shape``, and similar dtype, device

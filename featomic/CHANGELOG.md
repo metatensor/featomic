@@ -17,6 +17,10 @@ a changelog](https://keepachangelog.com/en/1.1.0/) format. This project follows
 ### Removed
 -->
 
+### Fixed
+- Fixed `featomic.clebsch_gordan.cartesian_to_spherical` transformation for tensors of rank greater than 2 (#371)
+- Fixed the calculation of Clebsch-Gordan coefficients, used all across the `featomic.clebsch_gordan` module (#371)
+
 ### Added
 
 - `clebsch_gordan.EquivariantPowerSpectrumByPair` calculator for two-center equivariant 
