@@ -85,7 +85,9 @@ class EquivariantPowerSpectrumByPair(TorchModule):
     Construct the calculators
 
     >>> spex_calculator = featomic.SphericalExpansion(**spex_hypers)
-    >>> spex_by_pair_calculator = featomic.LodeSphericalExpansion(**spex_by_pair_hypers)
+    >>> spex_by_pair_calculator = featomic.SphericalExpansionByPair(
+    ...     **spex_by_pair_hypers
+    ... )
 
     Construct the power spectrum by pair calculators and compute the spherical expansion
 
