@@ -29,9 +29,10 @@ def complex_to_real_matrix(sph):
 
     matrix = _complex2real(ell, sph)
 
-    real = sph @ matrix
+    real = matrix @ sph.T
+    real = real.T
 
-    assert np.linalg.norm(np.imag(real)) < 1e-15
+    assert np.allclose(np.imag(real), 0)
     return np.real(real)
 
 

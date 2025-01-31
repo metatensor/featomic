@@ -197,23 +197,53 @@ def _build_dense_cg_coeff_dict(
                     device=device,
                     dtype=complex_like.dtype,
                 )
-
-                real_cg = (r2c[l1] @ complex_cg.reshape(2 * l1 + 1, -1)).reshape(
-                    complex_cg.shape
-                )
-
-                real_cg = real_cg.swapaxes(0, 1)
-                real_cg = (r2c[l2] @ real_cg.reshape(2 * l2 + 1, -1)).reshape(
-                    real_cg.shape
-                )
-                real_cg = real_cg.swapaxes(0, 1)
-
-                real_cg = real_cg @ c2r[o3_lambda]
+                # We want to create a CG coefficient for a real representation, using
+                # the expression:
+                #
+                #  C_{l1m1l2m2}^{lm}
+                #       = \sum_{m'm1'm2'} ...
+                #             ... U_{mm'}^{l} C_{l1m1'm2m2'}^{lm'} ...
+                #             ... U^{\dagger}_{m1'm1}^{l1} U^{\dagger}_{m2'm2}^{l2}
+                #
+                # where:
+                #       U is the "c2r" transformation matrix below
+                #       U^{\dagger} is the "r2c" transformation matrix below
+                #
+                # 0) We have a CG coefficient of shape:
+                #       complex_cg.shape = (2*l1+1, 2*l2+1, 2*L+1)
+                #    and transormation matrices of shape:
+                #       c2r[L].shape = (2*L+1, 2*L+1)
+                #       r2c[L].shape = (2*L+1, 2*L+1)
+                #
+                # 1) take the matrix product:
+                #       \sum_{m1'} C_{l1m1'm2m2'}^{lm'} U^{\dagger}_{m1'm1}^{l1}
+                #    this requires some permuting of axes of the objects involved to
+                #    ensure proper matching for matmul. i.e. permute axes of the complex
+                #    CG coefficient from: (m1, m2, m) -> (m, m2, m1)
+                first_step = _dispatch.permute(complex_cg, [2, 1, 0]) @ r2c[l1]
+                # The result `first_step` has shape (2*L+1, 2*l2+1, 2*l1+1)
+                #
+                # 2) take the matrix product:
+                #       \sum_{m2'} ...
+                #          ... (first_step)_{m',m1,m2'}^{l,l1} U^{\dagger}_{m2'm2}^{l2}
+                first_step_swap = first_step.swapaxes(1, 2)
+                # The result `first_step_swap` has shape (2*L+1, 2*l1+1, 2*l2+1)
+                second_step = first_step_swap @ r2c[l2]
+                # The result `second_step` has shape (2*L+1, 2*l1+1, 2*l2+1)
+                #
+                # 3) take the matrix product:
+                #       \sum_{m'} U_{mm'}^{l} (second_step)_{m',m1,m2}^{l,l1,l2}
+                second_step_swap = _dispatch.permute(second_step, [1, 0, 2])
+                # The result `second_step_swap` has shape (2*l1+1, 2*L+1, 2*l2+1)
+                third_step = c2r[o3_lambda] @ second_step_swap
+                # The result `third_step` has shape (2*l1+1, 2*L+1, 2*l2+1)
+                third_step_swap = _dispatch.permute(third_step, [0, 2, 1])
+                # The result `third_step_swap` has shape (2*l1+1, 2*l2+1, 2*L+1)
 
                 if (l1 + l2 + o3_lambda) % 2 == 0:
-                    cg_l1l2lam_dense = _dispatch.real(real_cg)
+                    cg_l1l2lam_dense = _dispatch.real(third_step_swap)
                 else:
-                    cg_l1l2lam_dense = _dispatch.imag(real_cg)
+                    cg_l1l2lam_dense = _dispatch.imag(third_step_swap)
 
                 coeff_dict[(l1, l2, o3_lambda)] = _dispatch.to(
                     cg_l1l2lam_dense,
@@ -366,7 +396,7 @@ def _real2complex(o3_lambda: int, like: Array) -> Array:
             # Positive part
             result[o3_lambda + m, o3_lambda + m] = inv_sqrt_2 * ((-1) ** m)
 
-    return result
+    return result.T
 
 
 def _complex2real(o3_lambda: int, like) -> Array:
@@ -394,10 +424,10 @@ def cg_couple(
     Go from an uncoupled product basis that behave like a product of spherical harmonics
     to a coupled basis that behaves like a single spherical harmonic.
 
-    The ``array`` shape should be ``(n_samples, 2 * l1 + 1, 2 * l2 + 1, n_q)``.
-    ``n_samples`` is the number of samples, and ``n_q`` is the number of properties.
+    The ``array`` shape should be ``(n_s, 2 * l1 + 1, 2 * l2 + 1, n_q)``.
+    ``n_s`` is the number of samples, and ``n_q`` is the number of properties.
 
-    This function will output a list of arrays, whose shape will be ``[n_samples, (2 *
+    This function will output a list of arrays, whose shape will be ``[n_s, (2 *
     o3_lambda+1), n_q]``, with the requested ``o3_lambdas``.
 
     These arrays will contain the result of projecting from a product of spherical
@@ -411,7 +441,7 @@ def cg_couple(
     The operation is dispatched such that numpy arrays or torch tensors are
     automatically handled.
 
-    :param array: input array with shape ``[n_samples, 2 * l1 + 1, 2 * l2 + 1, n_q]``
+    :param array: input array with shape ``[n_s, 2 * l1 + 1, 2 * l2 + 1, n_q]``
     :param o3_lambdas: list of degrees of spherical harmonics to compute
     :param cg_coefficients: CG coefficients as returned by
         :py:func:`calculate_cg_coefficients` with the same ``cg_backed`` given to this
@@ -438,18 +468,24 @@ def cg_couple(
             for o3_lambda in o3_lambdas
         ]
     elif cg_backend == "python-dense":
-        results = []
-
         n_samples = array.shape[0]
         n_properties = array.shape[3]
 
-        array = array.swapaxes(1, 3)
-        array = array.reshape(n_samples * n_properties, 2 * l2 + 1, 2 * l1 + 1)
+        # Move properties next to samples
+        array = _dispatch.permute(array, [0, 3, 1, 2])
 
+        array = array.reshape(n_samples * n_properties, 2 * l1 + 1, 2 * l2 + 1)
+
+        results = []
         for o3_lambda in o3_lambdas:
             result = _cg_couple_dense(array, o3_lambda, cg_coefficients)
+
+            # Separate samples and properties
             result = result.reshape(n_samples, n_properties, -1)
+
+            # Back to TensorBlock-like axes
             result = result.swapaxes(1, 2)
+
             results.append(result)
 
         return results
@@ -499,7 +535,11 @@ def _cg_couple_sparse(
         m2 = int(m1m2mu[1])
         mu = int(m1m2mu[2])
         # Broadcast arrays, multiply together and with CG coeff
-        output[mu, :, :] += arrays[str((m1, m2))] * cg_l1l2lam.values[i, 0]
+        output[mu, :, :] += (
+            arrays[str((m1, m2))]
+            * (-1) ** (l1 + l2 + o3_lambda)
+            * cg_l1l2lam.values[i, 0]
+        )
 
     return output.swapaxes(0, 1)
 
@@ -514,26 +554,23 @@ def _cg_couple_dense(
     degree ``o3_lambda``) using CG coefficients. This is a "dense" implementation, using
     all CG coefficients at the same time.
 
-    :param array: input array, we expect a shape of ``[samples, 2*l1 + 1, 2*l2 + 1]``
+    :param array: input array, we expect a shape of ``[N, 2*l1 + 1, 2*l2 + 1]``
     :param o3_lambda: value of lambda for the output spherical harmonic
     :param cg_coefficients: CG coefficients as returned by
         :py:func:`calculate_cg_coefficients` with ``cg_backed="python-dense"``
+
+    :return: array of shape ``[N, 2 * o3_lambda + 1]``
     """
     assert len(array.shape) == 3
 
     l1 = (array.shape[1] - 1) // 2
     l2 = (array.shape[2] - 1) // 2
 
-    cg_l1l2lam = cg_coefficients.block({"l1": l1, "l2": l2, "lambda": o3_lambda}).values
+    cg_l1l2lam = (-1) ** (l1 + l2 + o3_lambda) * cg_coefficients.block(
+        {"l1": l1, "l2": l2, "lambda": o3_lambda}
+    ).values
 
-    # [samples, l1, l2] => [samples, (l1 l2)]
-    array = array.reshape(-1, (2 * l1 + 1) * (2 * l2 + 1))
-
-    # [l1, l2, lambda] -> [(l1 l2), lambda]
-    cg_l1l2lam = cg_l1l2lam.reshape(-1, 2 * o3_lambda + 1)
-
-    # [samples, (l1 l2)] @ [(l1 l2), lambda] => [samples, lambda]
-    return array @ cg_l1l2lam
+    return _dispatch.tensordot(array, cg_l1l2lam[0, ..., 0], axes=([2, 1], [1, 0]))
 
 
 # ======================================================================= #

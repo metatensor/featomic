@@ -86,13 +86,16 @@ def spherical_expansion_by_pair(frames: List[ase.Atoms]):
     return calculator.compute(frames)
 
 
-def test_keys_are_matched():
+@pytest.mark.parametrize("cg_backend", ["python-sparse", "python-dense"])
+def test_keys_are_matched(cg_backend):
     """
     Tests that key dimensions named the same in two tensors are matched.
     """
     # Set up
     frames = h2o_isolated()
-    calculator = ClebschGordanProduct(max_angular=MAX_ANGULAR * 2)
+    calculator = ClebschGordanProduct(
+        max_angular=MAX_ANGULAR * 2, cg_backend=cg_backend
+    )
 
     # Compute lambda-SOAP
     density = spherical_expansion(frames)
@@ -431,3 +434,35 @@ def test_device_dtype(dtype, device):
         o3_lambda_1_new_name="l_1",
         o3_lambda_2_new_name="l_2",
     )
+
+
+def test_dense_sparse_agree():
+    """
+    Tests that the max_angular is sufficient to correlate the two tensors when not large
+    enough to cover MAX_ANGULAR, but when an angular cutoff is applied.
+    """
+    frames = h2o_isolated()
+    density = spherical_expansion(frames)
+
+    results = []
+    for cg_backend in ["python-sparse", "python-dense"]:
+        # max_angular to be twice as big here if not using an angular cutoff
+        calculator = ClebschGordanProduct(
+            max_angular=MAX_ANGULAR,
+            cg_backend=cg_backend,
+        )
+        results.append(
+            calculator.compute(
+                metatensor.rename_dimension(density, "properties", "n", "n_1"),
+                metatensor.rename_dimension(density, "properties", "n", "n_2"),
+                o3_lambda_1_new_name="l_1",
+                o3_lambda_2_new_name="l_2",
+                selected_keys=Labels(
+                    names=["o3_lambda"],
+                    values=np.arange(MAX_ANGULAR + 1).reshape(-1, 1),
+                ),
+            )
+        )
+
+    assert metatensor.equal_metadata(results[0], results[1])
+    assert metatensor.allclose(results[0], results[1])
