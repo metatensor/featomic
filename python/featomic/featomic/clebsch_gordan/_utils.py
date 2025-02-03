@@ -333,15 +333,39 @@ def _match_samples_of_blocks(
             block_2.samples.values[:, dims_2][:, None] == block_1.samples.values,
             axis=2,
         )
-    )[1].tolist()
+    )
 
-    # Build new block and return
+    # Build new block_1
     block_1 = TensorBlock(
-        values=block_1.values[matches],
-        samples=block_2.samples,
+        values=block_1.values[matches[1].tolist()],
+        samples=Labels(
+            block_2.samples.names, block_2.samples.values[matches[0].tolist()]
+        ),
         components=block_1.components,
         properties=block_1.properties,
     )
+
+    # Check if we need to slice block_2 samples due to samples in block_2 not being
+    # matched in block_1
+    if (
+        len(matches[0]) == len(block_2.samples)
+        and not _dispatch.all(
+            matches[0]
+            == _dispatch.int_range_like(
+                0, len(block_2.samples), like=block_2.samples.values
+            )
+        )
+    ) or len(matches[0]) != len(block_2.samples):
+        # Build new block_2
+        block_2 = TensorBlock(
+            values=block_2.values[matches[0].tolist()],
+            samples=Labels(
+                block_2.samples.names, block_2.samples.values[matches[0].tolist()]
+            ),
+            components=block_2.components,
+            properties=block_2.properties,
+        )
+
     if swapped:
         return block_2, block_1
 
