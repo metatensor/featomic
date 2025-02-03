@@ -147,6 +147,41 @@ def test_sample_selection() -> None:
     assert not metatensor.equal(powspec_1, powspec_4)
 
 
+def test_equivariant_power_spectrum_neighbors_to_properties():
+    """
+    Tests that computing an EquivariantPowerSpectrumByPair is equivalent when passing
+    `neighbors_to_properties` as both True and False (after metadata manipulation).
+    """
+    # Build an EquivariantPowerSpectrum
+    powspec_calc = EquivariantPowerSpectrumByPair(
+        SphericalExpansion(**SPHEX_HYPERS_SMALL),
+        SphericalExpansionByPair(**SPHEX_HYPERS_SMALL),
+    )
+
+    # Compute the first. Move keys after CG step
+    powspec_1 = powspec_calc.compute(
+        h2o_periodic(),
+        neighbors_to_properties=False,
+    )
+    powspec_1 = powspec_1.keys_to_properties(["neighbor_1_type"])
+
+    # Compute the second.  Move keys before the CG step
+    powspec_2 = powspec_calc.compute(
+        h2o_periodic(),
+        neighbors_to_properties=True,
+    )
+
+    # Permute properties dimensions to match ``powspec_1`` and sort
+    powspec_2 = metatensor.sort(
+        metatensor.permute_dimensions(powspec_2, "properties", [2, 0, 1, 3, 4])
+    )
+
+    # Check equivalent
+    powspec_1 = metatensor.sort(powspec_1)
+    metatensor.equal_metadata_raise(powspec_1, powspec_2)
+    metatensor.allclose_raise(powspec_1, powspec_2)
+
+
 def test_fill_types_option() -> None:
     """
     Test that ``neighbor_types`` options adds arbitrary atomic neighbor types.
