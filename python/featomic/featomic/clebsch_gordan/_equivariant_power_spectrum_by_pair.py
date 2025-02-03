@@ -377,23 +377,4 @@ class EquivariantPowerSpectrumByPair(TorchModule):
         # Move the CG combination info keys to properties
         pow_spec = pow_spec.keys_to_properties(["l_1", "l_2"])
 
-        if neighbors_to_properties:
-            return operations.permute_dimensions(
-                operations.rename_dimension(
-                    operations.rename_dimension(
-                        operations.rename_dimension(
-                            pow_spec, "properties", "neighbor_1_type", "n_1_"
-                        ),
-                        "properties",
-                        "n_1",
-                        "neighbor_1_type",
-                    ),
-                    "properties",
-                    "n_1_",
-                    "n_1",
-                ),
-                "properties",
-                [0, 1, 3, 2, 4],
-            )
-
         return pow_spec

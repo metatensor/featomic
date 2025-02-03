@@ -364,9 +364,9 @@ def _compute_labels_full_cartesian_product(
     """
     # Check for no shared labels dimensions
     for name in labels_1.names:
-        assert name not in labels_2.names, (
-            "`labels_1` and `labels_2` must not have a dimension ({name}) in common"
-        )
+        assert (
+            name not in labels_2.names
+        ), "`labels_1` and `labels_2` must not have a dimension ({name}) in common"
     # Create the new labels names by concatenating the names of the two input labels
     labels_names: List[str] = labels_1.names + labels_2.names
 
@@ -374,16 +374,17 @@ def _compute_labels_full_cartesian_product(
     # [[i, j] for i in range(len(labels_1.values)) for j in
     #             range(len(labels_2.values))]
     # [0, 1, 2], [0, 1] -> [[0, 1], [0, 2], [1, 0], [1, 1], [2, 0], [2, 1]]
+
     labels_1_labels_2_product_idx = _dispatch.cartesian_prod(
-        _dispatch.int_range_like(0, len(labels_2.values), like=labels_2.values),
         _dispatch.int_range_like(0, len(labels_1.values), like=labels_1.values),
+        _dispatch.int_range_like(0, len(labels_2.values), like=labels_2.values),
     )
     return Labels(
         names=labels_names,
         values=_dispatch.int_array_like(
             [
-                _dispatch.to_int_list(labels_2.values[indices[0]])
-                + _dispatch.to_int_list(labels_1.values[indices[1]])
+                _dispatch.to_int_list(labels_1.values[indices[0]])
+                + _dispatch.to_int_list(labels_2.values[indices[1]])
                 for indices in labels_1_labels_2_product_idx
             ],
             like=labels_1.values,
