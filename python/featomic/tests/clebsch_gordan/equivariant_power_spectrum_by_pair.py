@@ -32,6 +32,21 @@ SPHEX_HYPERS_SMALL = {
     },
 }
 
+SPHEX_HYPERS_LARGE = {
+    "cutoff": {
+        "radius": 5.0,
+        "smoothing": {"type": "ShiftedCosine", "width": 0.5},
+    },
+    "density": {
+        "type": "Gaussian",
+        "width": 0.2,
+    },
+    "basis": {
+        "type": "TensorProduct",
+        "max_angular": 2,
+        "radial": {"type": "Gto", "max_radial": 1},
+    },
+}
 # ============ Helper functions ============
 
 
@@ -44,7 +59,7 @@ def h2o_periodic():
                 [1.97361700, 1.73067300, 2.47063400],
                 [1.97361700, 3.26932700, 2.47063400],
             ],
-            cell=[5, 5, 5],
+            cell=[3, 3, 3],
             pbc=[True, True, True],
         )
     ]
@@ -154,8 +169,8 @@ def test_equivariant_power_spectrum_neighbors_to_properties():
     """
     # Build an EquivariantPowerSpectrum
     powspec_calc = EquivariantPowerSpectrumByPair(
-        SphericalExpansion(**SPHEX_HYPERS_SMALL),
-        SphericalExpansionByPair(**SPHEX_HYPERS_SMALL),
+        SphericalExpansion(**SPHEX_HYPERS_LARGE),
+        SphericalExpansionByPair(**SPHEX_HYPERS_LARGE),
     )
 
     # Compute the first. Move keys after CG step
