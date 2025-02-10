@@ -7,7 +7,7 @@ Private module containing helper functions for public module
 from typing import List, Tuple
 
 from . import _coefficients, _dispatch
-from ._backend import Labels, TensorBlock, TensorMap
+from ._backend import Array, Labels, TensorBlock, TensorMap
 
 
 # ======================================== #
@@ -328,7 +328,7 @@ def _match_samples_of_blocks(
     # Broadcast the values of block_1 along the samples dimensions to match those of
     # block_2
     dims_2 = [block_2.samples.names.index(name) for name in block_1.samples.names]
-    matches: List[int] = _dispatch.where(
+    matches: List[Array] = _dispatch.where(
         _dispatch.all(
             block_2.samples.values[:, dims_2][:, None] == block_1.samples.values,
             axis=2,
@@ -337,10 +337,8 @@ def _match_samples_of_blocks(
 
     # Build new block_1
     block_1 = TensorBlock(
-        values=block_1.values[matches[1].tolist()],
-        samples=Labels(
-            block_2.samples.names, block_2.samples.values[matches[0].tolist()]
-        ),
+        values=block_1.values[matches[1]],
+        samples=Labels(block_2.samples.names, block_2.samples.values[matches[0]]),
         components=block_1.components,
         properties=block_1.properties,
     )
@@ -358,10 +356,8 @@ def _match_samples_of_blocks(
     ) or len(matches[0]) != len(block_2.samples):
         # Build new block_2
         block_2 = TensorBlock(
-            values=block_2.values[matches[0].tolist()],
-            samples=Labels(
-                block_2.samples.names, block_2.samples.values[matches[0].tolist()]
-            ),
+            values=block_2.values[matches[0]],
+            samples=Labels(block_2.samples.names, block_2.samples.values[matches[0]]),
             components=block_2.components,
             properties=block_2.properties,
         )
