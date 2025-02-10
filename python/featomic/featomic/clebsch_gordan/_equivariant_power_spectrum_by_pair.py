@@ -226,7 +226,7 @@ class EquivariantPowerSpectrumByPair(TorchModule):
         density can be densified by moving the key dimension "neighbor_type" to the
         block properties. This is controlled by the ``neighbors_to_properties``
         parameter. Depending on the specific systems descriptors are being computed for,
-        the sparsity or density of the density can affect the computational cost of the
+        the sparsity of the spherical expansion can affect the computational cost of the
         Clebsch-Gordan tensor product.
 
         If ``neighbors_to_properties=True`` and ``neighbor_types`` have been passed to
