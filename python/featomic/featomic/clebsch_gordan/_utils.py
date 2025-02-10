@@ -7,7 +7,7 @@ Private module containing helper functions for public module
 from typing import List, Tuple
 
 from . import _coefficients, _dispatch
-from ._backend import Labels, TensorBlock, TensorMap
+from ._backend import Array, Labels, TensorBlock, TensorMap
 
 
 # ======================================== #
@@ -328,20 +328,40 @@ def _match_samples_of_blocks(
     # Broadcast the values of block_1 along the samples dimensions to match those of
     # block_2
     dims_2 = [block_2.samples.names.index(name) for name in block_1.samples.names]
-    matches: List[int] = _dispatch.where(
+    matches: List[Array] = _dispatch.where(
         _dispatch.all(
             block_2.samples.values[:, dims_2][:, None] == block_1.samples.values,
             axis=2,
         )
-    )[1].tolist()
+    )
 
-    # Build new block and return
+    # Build new block_1
     block_1 = TensorBlock(
-        values=block_1.values[matches],
-        samples=block_2.samples,
+        values=block_1.values[matches[1]],
+        samples=Labels(block_2.samples.names, block_2.samples.values[matches[0]]),
         components=block_1.components,
         properties=block_1.properties,
     )
+
+    # Check if we need to slice block_2 samples due to samples in block_2 not being
+    # matched in block_1
+    if (
+        len(matches[0]) == len(block_2.samples)
+        and not _dispatch.all(
+            matches[0]
+            == _dispatch.int_range_like(
+                0, len(block_2.samples), like=block_2.samples.values
+            )
+        )
+    ) or len(matches[0]) != len(block_2.samples):
+        # Build new block_2
+        block_2 = TensorBlock(
+            values=block_2.values[matches[0]],
+            samples=Labels(block_2.samples.names, block_2.samples.values[matches[0]]),
+            components=block_2.components,
+            properties=block_2.properties,
+        )
+
     if swapped:
         return block_2, block_1
 
@@ -374,16 +394,17 @@ def _compute_labels_full_cartesian_product(
     # [[i, j] for i in range(len(labels_1.values)) for j in
     #             range(len(labels_2.values))]
     # [0, 1, 2], [0, 1] -> [[0, 1], [0, 2], [1, 0], [1, 1], [2, 0], [2, 1]]
+
     labels_1_labels_2_product_idx = _dispatch.cartesian_prod(
-        _dispatch.int_range_like(0, len(labels_2.values), like=labels_2.values),
         _dispatch.int_range_like(0, len(labels_1.values), like=labels_1.values),
+        _dispatch.int_range_like(0, len(labels_2.values), like=labels_2.values),
     )
     return Labels(
         names=labels_names,
         values=_dispatch.int_array_like(
             [
-                _dispatch.to_int_list(labels_2.values[indices[0]])
-                + _dispatch.to_int_list(labels_1.values[indices[1]])
+                _dispatch.to_int_list(labels_1.values[indices[0]])
+                + _dispatch.to_int_list(labels_2.values[indices[1]])
                 for indices in labels_1_labels_2_product_idx
             ],
             like=labels_1.values,
