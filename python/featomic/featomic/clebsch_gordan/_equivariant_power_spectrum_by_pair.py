@@ -313,7 +313,7 @@ class EquivariantPowerSpectrumByPair(TorchModule):
         compute_metadata: bool,
     ) -> TensorMap:
         """
-        Computes the equivariant power spectrum, either fully or just metadata
+        Computes the equivariant power spectrum by pair, either fully or just metadata
         """
         # Compute density
         density_1 = self.calculator_1.compute(
