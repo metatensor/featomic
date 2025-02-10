@@ -180,11 +180,16 @@ if (CARGO_VERSION_CHANGED)
         COMMAND "${CARGO_EXE}" new --lib _cargo_required_libs
         WORKING_DIRECTORY "${TMPDIR}"
         RESULT_VARIABLE cargo_new_result
-        ERROR_QUIET
+        OUTPUT_VARIABLE cargo_new_stdout
+        ERROR_VARIABLE cargo_new_stderr
     )
 
     if (cargo_new_result)
-        message(FATAL_ERROR "could not create empty project to find default static libs: ${cargo_new_result}")
+        message(FATAL_ERROR
+            "could not create empty project to find cargo's default static libs (error ${cargo_new_result})\n"
+            "stdout:\n${cargo_new_stdout}"
+            "stderr:\n${cargo_new_stderr}"
+        )
     endif()
 
     file(APPEND "${TMPDIR}/_cargo_required_libs/Cargo.toml" "[lib]\ncrate-type=[\"staticlib\"]")
@@ -192,19 +197,24 @@ if (CARGO_VERSION_CHANGED)
     execute_process(
         COMMAND ${CARGO_EXE} rustc --color never --target=${RUST_BUILD_TARGET} -- --print=native-static-libs
         WORKING_DIRECTORY "${TMPDIR}/_cargo_required_libs"
-        RESULT_VARIABLE cargo_build_result
-        ERROR_VARIABLE cargo_build_error_message
+        RESULT_VARIABLE cargo_rustc_result
+        OUTPUT_VARIABLE cargo_rustc_stdout
+        ERROR_VARIABLE  cargo_rustc_stderr
     )
 
     # clean up the files
     file(REMOVE_RECURSE "${TMPDIR}")
 
-    if(cargo_build_result)
-        message(FATAL_ERROR "could extract default static libs: ${cargo_build_result}")
+    if(cargo_rustc_result)
+        message(FATAL_ERROR
+            "could not extract cargo's default static libs (error ${cargo_rustc_result})\n"
+            "stdout:\n${cargo_rustc_stdout}"
+            "stderr:\n${cargo_rustc_stderr}"
+        )
     endif()
 
     # The pattern starts with `native-static-libs:` and goes to the end of the line.
-    if(cargo_build_error_message MATCHES "native-static-libs: ([^\r\n]+)\r?\n")
+    if(cargo_rustc_stderr MATCHES "native-static-libs: ([^\r\n]+)\r?\n")
         string(REPLACE " " ";" "libs_list" "${CMAKE_MATCH_1}")
         set(stripped_lib_list "")
         foreach(lib ${libs_list})
@@ -222,7 +232,7 @@ if (CARGO_VERSION_CHANGED)
             message(STATUS "Cargo default link libraries are: ${CARGO_DEFAULT_LIBRARIES}")
         endif()
     else()
-        message(FATAL_ERROR "could not find default static libs: `native-static-libs` not found in: `${cargo_build_error_message}`")
+        message(FATAL_ERROR "could not find cargo's default static libs: `native-static-libs` not found in: `${cargo_rustc_stderr}`")
     endif()
 endif()
 
