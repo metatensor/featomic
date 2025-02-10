@@ -299,6 +299,7 @@ class EquivariantPowerSpectrumByPair(TorchModule):
         return self._equivariant_power_spectrum_by_pair(
             systems=systems,
             selected_keys=selected_keys,
+            selected_samples=selected_samples,
             neighbors_to_properties=neighbors_to_properties,
             compute_metadata=True,
         )
