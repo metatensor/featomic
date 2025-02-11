@@ -42,6 +42,6 @@ def get_requires_for_build_wheel(config_settings=None):
     return defaults + [
         "cmake",
         TORCH_DEP,
-        "metatensor-torch >=0.6.0,<0.7.0",
+        "metatensor-torch >=0.7.0,<0.8.0",
         FEATOMIC_DEP,
     ]

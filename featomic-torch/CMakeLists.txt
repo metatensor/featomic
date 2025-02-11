@@ -120,8 +120,8 @@ find_package(Torch 1.12 REQUIRED)
 #
 # When updating METATENSOR_FETCH_VERSION, you will also have to update the
 # SHA256 sum of the file in `FetchContent_Declare`.
-set(METATENSOR_FETCH_VERSION "0.6.1")
-set(REQUIRED_METATENSOR_TORCH_VERSION "0.6")
+set(METATENSOR_FETCH_VERSION "0.7.0")
+set(REQUIRED_METATENSOR_TORCH_VERSION "0.7")
 if (FEATOMIC_TORCH_FETCH_METATENSOR_TORCH)
     message(STATUS "Fetching metatensor-torch from github")
 
@@ -130,7 +130,7 @@ if (FEATOMIC_TORCH_FETCH_METATENSOR_TORCH)
     FetchContent_Declare(
         metatensor_torch
         URL      ${URL_ROOT}/metatensor-torch-v${METATENSOR_FETCH_VERSION}/metatensor-torch-cxx-${METATENSOR_FETCH_VERSION}.tar.gz
-        URL_HASH SHA256=0941da4bc6d25ee73b597774d3c8c6edf6a44f134139bd93b33834eae52ac4dd
+        URL_HASH SHA256=8979cad91aef6ae97ec8f940a9943e73df5a40755d4b1357347bd86cf3201426
     )
 
     if (CMAKE_VERSION VERSION_GREATER 3.18)
