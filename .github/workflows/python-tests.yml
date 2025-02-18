@@ -21,11 +21,11 @@ jobs:
           - os: ubuntu-22.04
             python-version: "3.9"
           - os: ubuntu-22.04
-            python-version: "3.12"
+            python-version: "3.13"
           - os: macos-14
-            python-version: "3.12"
+            python-version: "3.13"
           - os: windows-2022
-            python-version: "3.12"
+            python-version: "3.13"
     steps:
       - uses: actions/checkout@v4
 
@@ -68,7 +68,7 @@ jobs:
     name: Python ${{ matrix.python-version }} / check build
     strategy:
       matrix:
-        python-version: ['3.9', '3.12']
+        python-version: ['3.9', '3.13']
         os: [ubuntu-22.04]
     steps:
       - uses: actions/checkout@v4
