@@ -17,6 +17,13 @@ a changelog](https://keepachangelog.com/en/1.1.0/) format. This project follows
 ### Removed
 -->
 
+## [Version 0.6.1](https://github.com/metatensor/featomic/releases/tag/featomic-torch-v0.6.1) - 2025-02-18\
+
+## Added
+
+- Add Support for Python 3.13 and PyTorch 2.6
+
+
 ## [Version 0.6.0](https://github.com/metatensor/featomic/releases/tag/featomic-torch-v0.6.0) - 2025-01-07
 
 ### Added
