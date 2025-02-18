@@ -19,33 +19,32 @@ jobs:
       matrix:
         include:
           - os: ubuntu-22.04
-            torch-version: 1.12.*
+            torch-version: "1.12"
             python-version: "3.9"
             cargo-test-flags: --release
 
           - os: ubuntu-22.04
-            torch-version: 2.3.*
-            python-version: "3.12"
+            torch-version: "2.6"
+            python-version: "3.13"
             cargo-test-flags: --release
             do-valgrind: true
 
           - os: ubuntu-20.04
             container: ubuntu:20.04
             extra-name: ", cmake 3.16"
-            torch-version: 2.5.*
-            python-version: "3.12"
+            torch-version: "2.6"
+            python-version: "3.13"
             cargo-test-flags: ""
             cxx-flags: -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer -g
 
           - os: macos-14
-            torch-version: 2.3.*
-            python-version: "3.12"
+            torch-version: "2.6"
+            python-version: "3.13"
             cargo-test-flags: --release
 
           - os: windows-2022
-            # Torch 2.3.0 is broken on Windows, and 2.2 has https://github.com/pytorch/pytorch/issues/118862
-            torch-version: 2.1.*
-            python-version: "3.11"
+            torch-version: "2.6"
+            python-version: "3.13"
             cargo-test-flags: --release
 
     steps:
