@@ -251,7 +251,7 @@ if (FEATOMIC_FETCH_METATENSOR)
     message(STATUS "Fetching metatensor-core from github")
 
     include(FetchContent)
-    set(URL_ROOT "https://github.com/lab-cosmo/metatensor/releases/download")
+    set(URL_ROOT "https://github.com/metatensor/metatensor/releases/download")
     FetchContent_Declare(
         metatensor
         URL      ${URL_ROOT}/metatensor-core-v${METATENSOR_FETCH_VERSION}/metatensor-core-cxx-${METATENSOR_FETCH_VERSION}.tar.gz

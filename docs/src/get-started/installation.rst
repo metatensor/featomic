@@ -121,7 +121,7 @@ For usage from C++
 
 .. code-block:: bash
 
-    git clone https://github.com/lab-cosmo/featomic
+    git clone https://github.com/metatensor/featomic
     cd featomic/featomic-torch
     mkdir build && cd build
     cmake ..
@@ -164,5 +164,5 @@ Other useful configuration options are:
 |                                        | install metatensor-torch?                     |                |
 +----------------------------------------+-----------------------------------------------+----------------+
 
-.. _C++ interface of metatensor: https://lab-cosmo.github.io/metatensor/latest/get-started/installation.html#installing-the-c-and-c-library
-.. _TorchScript interface of metatensor: https://lab-cosmo.github.io/metatensor/latest/get-started/installation.html#for-usage-from-c
+.. _C++ interface of metatensor: https://docs.metatensor.org/latest/get-started/installation.html#installing-the-c-and-c-library
+.. _TorchScript interface of metatensor: https://docs.metatensor.org/latest/get-started/installation.html#for-usage-from-c

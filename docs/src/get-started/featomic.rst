@@ -21,4 +21,4 @@ representation but supports several:
 
 .. _DScribe: https://singroup.github.io/dscribe/
 .. _QUIP: https://www.libatoms.org
-.. _metatensor: https://lab-cosmo.github.io/metatensor/
+.. _metatensor: https://docs.metatensor.org
