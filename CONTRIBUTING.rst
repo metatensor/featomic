@@ -191,7 +191,7 @@ browser
     coverage html
     firefox htmlcov/index.html
 
-.. _codecov: https://codecov.io/gh/lab-cosmo/metatensor
+.. _codecov: https://codecov.io/gh/metatensor/featomic
 
 Writing your own calculator
 ---------------------------

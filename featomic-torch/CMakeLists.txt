@@ -125,7 +125,7 @@ set(REQUIRED_METATENSOR_TORCH_VERSION "0.7")
 if (FEATOMIC_TORCH_FETCH_METATENSOR_TORCH)
     message(STATUS "Fetching metatensor-torch from github")
 
-    set(URL_ROOT "https://github.com/lab-cosmo/metatensor/releases/download")
+    set(URL_ROOT "https://github.com/metatensor/metatensor/releases/download")
     include(FetchContent)
     FetchContent_Declare(
         metatensor_torch
