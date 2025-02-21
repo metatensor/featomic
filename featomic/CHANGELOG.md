@@ -17,19 +17,23 @@ a changelog](https://keepachangelog.com/en/1.1.0/) format. This project follows
 ### Removed
 -->
 
+## [Version 0.6.1](https://github.com/metatensor/featomic/releases/tag/featomic-v0.6.1) - 2025-02-21
+
 ### Fixed
-- Fixed `featomic.clebsch_gordan.cartesian_to_spherical` transformation for tensors of rank greater than 2 (#371)
-- Fixed the calculation of Clebsch-Gordan coefficients, used all across the `featomic.clebsch_gordan` module (#371)
+- Fixed `featomic.clebsch_gordan.cartesian_to_spherical` transformation for tensors of
+  rank greater than 2
+- Fixed the calculation of Clebsch-Gordan coefficients, used all across the
+  `featomic.clebsch_gordan` module
 
 ### Added
 
-- `clebsch_gordan.EquivariantPowerSpectrumByPair` calculator for two-center equivariant 
-   descriptors. Similar API to `clebsch_gordan.EquivariantPowerSpectrum` (#378)
+- `clebsch_gordan.EquivariantPowerSpectrumByPair` calculator for two-center equivariant
+   descriptors. Similar API to `clebsch_gordan.EquivariantPowerSpectrum`
 
 ## [Version 0.6.0](https://github.com/metatensor/featomic/releases/tag/featomic-v0.6.0) - 2024-12-20
 
 ### Added
-
+ 
 - Multiple atomistic features calculators with a native implementation:
     - SOAP spherical expansion, radial spectrum, power spectrum and spherical
       expansion for pairs of atoms;
