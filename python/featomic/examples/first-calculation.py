@@ -123,7 +123,7 @@ print(type(descriptor0))
 # The descriptor format is a :class:`metatensor.TensorMap` object. Metatensor is
 # like numpy for storing representations of atomistic ML data. Extensive details
 # on the metatensor are covered in the `corresponding documentation
-# <https://lab-cosmo.github.io/metatensor/>`_.
+# <https://docs.metatensor.org>`_.
 #
 # We will now have a look at how the data is stored inside
 # :class:`metatensor.TensorMap` objects.
