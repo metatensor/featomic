@@ -29,7 +29,7 @@ jobs:
             cargo-test-flags: --release
             do-valgrind: true
 
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             container: ubuntu:20.04
             extra-name: ", cmake 3.16"
             torch-version: "2.6"
