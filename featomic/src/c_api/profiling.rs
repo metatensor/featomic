@@ -14,7 +14,7 @@ use super::utils::copy_str_to_c;
 ///          `FEATOMIC_SUCCESS`, you can use `featomic_last_error()` to get the full
 ///          error message.
 #[no_mangle]
-pub extern fn featomic_profiling_clear() -> featomic_status_t {
+pub extern "C" fn featomic_profiling_clear() -> featomic_status_t {
     catch_unwind(|| {
         time_graph::clear_collected_data();
         Ok(())
@@ -39,7 +39,7 @@ pub extern fn featomic_profiling_clear() -> featomic_status_t {
 ///          `FEATOMIC_SUCCESS`, you can use `featomic_last_error()` to get the full
 ///          error message.
 #[no_mangle]
-pub extern fn featomic_profiling_enable(enabled: bool) -> featomic_status_t {
+pub extern "C" fn featomic_profiling_enable(enabled: bool) -> featomic_status_t {
     catch_unwind(|| {
         time_graph::enable_data_collection(enabled);
         Ok(())
@@ -61,7 +61,7 @@ pub extern fn featomic_profiling_enable(enabled: bool) -> featomic_status_t {
 ///          `FEATOMIC_SUCCESS`, you can use `featomic_last_error()` to get the full
 ///          error message.
 #[no_mangle]
-pub unsafe extern fn featomic_profiling_get(
+pub unsafe extern "C" fn featomic_profiling_get(
     format: *const c_char,
     buffer: *mut c_char,
     bufflen: usize,

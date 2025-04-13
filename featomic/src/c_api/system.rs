@@ -35,7 +35,7 @@ pub struct featomic_pair_t {
 /// implement the rust `System` trait in C and other languages. Speaking in Rust
 /// terms, `user_data` contains a pointer (analog to `Box<Self>`) to the struct
 /// implementing the `System` trait; and then there is one function pointers
-/// (`Option<unsafe extern fn(XXX)>`) for each function in the `System` trait.
+/// (`Option<unsafe extern "C" fn(XXX)>`) for each function in the `System` trait.
 ///
 /// The `featomic_status_t` return value for the function is used to communicate
 /// error messages. It should be 0/`FEATOMIC_SUCCESS` in case of success, any
@@ -53,7 +53,7 @@ pub struct featomic_pair_t {
 /// same time. The `featomic_system_t` itself might be moved from one thread to
 /// another.
 
-// Function pointers have type `Option<unsafe extern fn(XXX)>`, where `Option`
+// Function pointers have type `Option<unsafe extern "C" fn(XXX)>`, where `Option`
 // ensure that the `impl System for featomic_system_t` is forced to deal with the
 // function pointer potentially being NULL. `unsafe` is required since these
 // function come from another language and are not checked by the Rust compiler.
@@ -66,25 +66,25 @@ pub struct featomic_system_t {
     /// first parameter to all function pointers below.
     user_data: *mut c_void,
     /// This function should set `*size` to the number of atoms in this system
-    size: Option<unsafe extern fn(user_data: *const c_void, size: *mut usize) -> featomic_status_t>,
+    size: Option<unsafe extern "C" fn(user_data: *const c_void, size: *mut usize) -> featomic_status_t>,
     /// This function should set `*types` to a pointer to the first element of
     /// a contiguous array containing the atomic types of each atom in the
     /// system. Different atomic types should be identified with a different
     /// value. These values are usually the atomic number, but don't have to be.
     /// The array should contain `featomic_system_t::size()` elements.
-    types: Option<unsafe extern fn(user_data: *const c_void, types: *mut *const i32) -> featomic_status_t>,
+    types: Option<unsafe extern "C" fn(user_data: *const c_void, types: *mut *const i32) -> featomic_status_t>,
     /// This function should set `*positions` to a pointer to the first element
     /// of a contiguous array containing the atomic cartesian coordinates.
     /// `positions[0], positions[1], positions[2]` must contain the x, y, z
     /// cartesian coordinates of the first atom, and so on.
-    positions: Option<unsafe extern fn(user_data: *const c_void, positions: *mut *const f64) -> featomic_status_t>,
+    positions: Option<unsafe extern "C" fn(user_data: *const c_void, positions: *mut *const f64) -> featomic_status_t>,
     /// This function should write the unit cell matrix in `cell`, which have
     /// space for 9 values. The cell should be written in row major order, i.e.
     /// `ax ay az bx by bz cx cy cz`, where a/b/c are the unit cell vectors.
-    cell: Option<unsafe extern fn(user_data: *const c_void, cell: *mut f64) -> featomic_status_t>,
+    cell: Option<unsafe extern "C" fn(user_data: *const c_void, cell: *mut f64) -> featomic_status_t>,
     /// This function should compute the neighbor list with the given cutoff,
     /// and store it for later access using `pairs` or `pairs_containing`.
-    compute_neighbors: Option<unsafe extern fn(user_data: *mut c_void, cutoff: f64) -> featomic_status_t>,
+    compute_neighbors: Option<unsafe extern "C" fn(user_data: *mut c_void, cutoff: f64) -> featomic_status_t>,
     /// This function should set `*pairs` to a pointer to the first element of a
     /// contiguous array containing all pairs in this system; and `*count` to
     /// the size of the array/the number of pairs.
@@ -94,7 +94,7 @@ pub struct featomic_system_t {
     /// contains pairs where the distance between atoms is actually bellow the
     /// cutoff passed in the last call to `compute_neighbors`. This function is
     /// only valid to call after a call to `compute_neighbors`.
-    pairs: Option<unsafe extern fn(user_data: *const c_void, pairs: *mut *const featomic_pair_t, count: *mut usize) -> featomic_status_t>,
+    pairs: Option<unsafe extern "C" fn(user_data: *const c_void, pairs: *mut *const featomic_pair_t, count: *mut usize) -> featomic_status_t>,
     /// This function should set `*pairs` to a pointer to the first element of a
     /// contiguous array containing all pairs in this system containing the atom
     /// with index `atom`; and `*count` to the size of the array/the number of
@@ -104,7 +104,7 @@ pub struct featomic_system_t {
     /// applies, with the additional condition that the pair `i-j` should be
     /// included both in the return of `pairs_containing(i)` and
     /// `pairs_containing(j)`.
-    pairs_containing: Option<unsafe extern fn(user_data: *const c_void, atom: usize, pairs: *mut *const featomic_pair_t, count: *mut usize) -> featomic_status_t>,
+    pairs_containing: Option<unsafe extern "C" fn(user_data: *const c_void, atom: usize, pairs: *mut *const featomic_pair_t, count: *mut usize) -> featomic_status_t>,
 }
 
 unsafe impl Send for featomic_system_t {}
@@ -320,28 +320,28 @@ impl System for &mut featomic_system_t {
 /// Convert a Simple System to a `featomic_system_t`
 impl From<SimpleSystem> for featomic_system_t {
     fn from(system: SimpleSystem) -> featomic_system_t {
-        unsafe extern fn size(this: *const c_void, size: *mut usize) -> featomic_status_t {
+        unsafe extern "C" fn size(this: *const c_void, size: *mut usize) -> featomic_status_t {
             catch_unwind(|| {
                 *size = (*this.cast::<SimpleSystem>()).size()?;
                 Ok(())
             })
         }
 
-        unsafe extern fn types(this: *const c_void, types: *mut *const i32) -> featomic_status_t {
+        unsafe extern "C" fn types(this: *const c_void, types: *mut *const i32) -> featomic_status_t {
             catch_unwind(|| {
                 *types = (*this.cast::<SimpleSystem>()).types()?.as_ptr();
                 Ok(())
             })
         }
 
-        unsafe extern fn positions(this: *const c_void, positions: *mut *const f64) -> featomic_status_t {
+        unsafe extern "C" fn positions(this: *const c_void, positions: *mut *const f64) -> featomic_status_t {
             catch_unwind(|| {
                 *positions = (*this.cast::<SimpleSystem>()).positions()?.as_ptr().cast();
                 Ok(())
             })
         }
 
-        unsafe extern fn cell(this: *const c_void, cell: *mut f64) -> featomic_status_t {
+        unsafe extern "C" fn cell(this: *const c_void, cell: *mut f64) -> featomic_status_t {
             catch_unwind(|| {
                 let matrix = (*this.cast::<SimpleSystem>()).cell()?.matrix();
                 cell.add(0).write(matrix[0][0]);
@@ -360,7 +360,7 @@ impl From<SimpleSystem> for featomic_system_t {
             })
         }
 
-        unsafe extern fn compute_neighbors(this: *mut c_void, cutoff: f64) -> featomic_status_t {
+        unsafe extern "C" fn compute_neighbors(this: *mut c_void, cutoff: f64) -> featomic_status_t {
             catch_unwind(|| {
                 (*this.cast::<SimpleSystem>()).compute_neighbors(cutoff)?;
 
@@ -368,7 +368,7 @@ impl From<SimpleSystem> for featomic_system_t {
             })
         }
 
-        unsafe extern fn pairs(
+        unsafe extern "C" fn pairs(
             this: *const c_void,
             pairs: *mut *const featomic_pair_t,
             count: *mut usize,
@@ -382,7 +382,7 @@ impl From<SimpleSystem> for featomic_system_t {
             })
         }
 
-        unsafe extern fn pairs_containing(
+        unsafe extern "C" fn pairs_containing(
             this: *const c_void,
             atom: usize,
             pairs: *mut *const featomic_pair_t,

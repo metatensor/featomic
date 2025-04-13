@@ -11,6 +11,7 @@
 #![allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
 #![allow(clippy::cast_possible_wrap, clippy::cast_lossless, clippy::cast_sign_loss)]
 #![allow(clippy::default_trait_access, clippy::empty_line_after_doc_comments)]
+#![allow(clippy::doc_overindented_list_items)]
 
 // Tests lints
 #![cfg_attr(test, allow(clippy::float_cmp))]

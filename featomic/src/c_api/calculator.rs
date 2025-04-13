@@ -51,7 +51,7 @@ impl DerefMut for featomic_calculator_t {
 ///          to get the error message.
 #[no_mangle]
 #[allow(clippy::module_name_repetitions)]
-pub unsafe extern fn featomic_calculator(name: *const c_char, parameters: *const c_char) -> *mut featomic_calculator_t {
+pub unsafe extern "C" fn featomic_calculator(name: *const c_char, parameters: *const c_char) -> *mut featomic_calculator_t {
     let mut raw = std::ptr::null_mut();
     let unwind_wrapper = std::panic::AssertUnwindSafe(&mut raw);
     let status = catch_unwind(move || {
@@ -84,7 +84,7 @@ pub unsafe extern fn featomic_calculator(name: *const c_char, parameters: *const
 ///          `FEATOMIC_SUCCESS`, you can use `featomic_last_error()` to get the
 ///          full error message.
 #[no_mangle]
-pub unsafe extern fn featomic_calculator_free(calculator: *mut featomic_calculator_t) -> featomic_status_t {
+pub unsafe extern "C" fn featomic_calculator_free(calculator: *mut featomic_calculator_t) -> featomic_status_t {
     catch_unwind(|| {
         if !calculator.is_null() {
             let boxed = Box::from_raw(calculator);
@@ -110,7 +110,7 @@ pub unsafe extern fn featomic_calculator_free(calculator: *mut featomic_calculat
 ///          `FEATOMIC_SUCCESS`, you can use `featomic_last_error()` to get the full
 ///          error message.
 #[no_mangle]
-pub unsafe extern fn featomic_calculator_name(
+pub unsafe extern "C" fn featomic_calculator_name(
     calculator: *const featomic_calculator_t,
     name: *mut c_char,
     bufflen: usize
@@ -138,7 +138,7 @@ pub unsafe extern fn featomic_calculator_name(
 ///          `FEATOMIC_SUCCESS`, you can use `featomic_last_error()` to get the full
 ///          error message.
 #[no_mangle]
-pub unsafe extern fn featomic_calculator_parameters(
+pub unsafe extern "C" fn featomic_calculator_parameters(
     calculator: *const featomic_calculator_t,
     parameters: *mut c_char,
     bufflen: usize
@@ -167,7 +167,7 @@ pub unsafe extern fn featomic_calculator_parameters(
 ///          `FEATOMIC_SUCCESS`, you can use `featomic_last_error()` to get the full
 ///          error message.
 #[no_mangle]
-pub unsafe extern fn featomic_calculator_cutoffs(
+pub unsafe extern "C" fn featomic_calculator_cutoffs(
     calculator: *const featomic_calculator_t,
     cutoffs: *mut *const f64,
     cutoffs_count: *mut usize
@@ -389,7 +389,7 @@ pub struct featomic_calculation_options_t {
 ///          `FEATOMIC_SUCCESS`, you can use `featomic_last_error()` to get the full
 ///          error message.
 #[no_mangle]
-pub unsafe extern fn featomic_calculator_compute(
+pub unsafe extern "C" fn featomic_calculator_compute(
     calculator: *mut featomic_calculator_t,
     descriptor: *mut *mut mts_tensormap_t,
     systems: *mut featomic_system_t,
