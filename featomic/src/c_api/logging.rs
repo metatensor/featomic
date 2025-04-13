@@ -36,7 +36,7 @@ pub const FEATOMIC_LOG_LEVEL_TRACE: i32 = 5;
 /// or `FEATOMIC_LOG_LEVEL_TRACE`. The second argument is a NULL-terminated string
 /// containing the message associated with the log event.
 #[allow(non_camel_case_types)]
-pub type featomic_logging_callback_t = Option<unsafe extern fn(level: i32, message: *const std::os::raw::c_char)>;
+pub type featomic_logging_callback_t = Option<unsafe extern "C" fn(level: i32, message: *const std::os::raw::c_char)>;
 
 static GLOBAL_CALLBACK: Lazy<Mutex<featomic_logging_callback_t>> = Lazy::new(|| Mutex::new(None));
 
@@ -48,7 +48,7 @@ struct FeatomicLogger;
 /// function will be called on all log events. If a logging callback was already
 /// set, it is replaced by the new one.
 #[no_mangle]
-pub unsafe extern fn featomic_set_logging_callback(callback: featomic_logging_callback_t) -> featomic_status_t {
+pub unsafe extern "C" fn featomic_set_logging_callback(callback: featomic_logging_callback_t) -> featomic_status_t {
     catch_unwind(|| {
         *GLOBAL_CALLBACK.lock().expect("mutex was poisoned") = callback;
         // we allow multiple sets of logger, therefore the result will be ignored

@@ -109,7 +109,7 @@ macro_rules! check_pointers {
 ///
 /// @returns the last error message, as a NULL-terminated string
 #[no_mangle]
-pub unsafe extern fn featomic_last_error() -> *const c_char {
+pub unsafe extern "C" fn featomic_last_error() -> *const c_char {
     let mut result = std::ptr::null();
     let unwind_wrapper = std::panic::AssertUnwindSafe(&mut result);
     let status = catch_unwind(move || {

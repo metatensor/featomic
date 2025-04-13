@@ -238,7 +238,7 @@ pub fn hyp2f1(a: f64, b: f64, c: f64, mut x: f64) -> f64 {
                 previous = result;
             }
             result += c0 + c1;
-        };
+        }
     } else {
         let (a0, a, b, ) = if c > a && c < a * 2.0 && c > b && c < b * 2.0 {
             let a0 = (1.0 - x).powf(c - a - b);

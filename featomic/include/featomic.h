@@ -146,7 +146,7 @@ typedef struct featomic_pair_t {
  * implement the rust `System` trait in C and other languages. Speaking in Rust
  * terms, `user_data` contains a pointer (analog to `Box<Self>`) to the struct
  * implementing the `System` trait; and then there is one function pointers
- * (`Option<unsafe extern fn(XXX)>`) for each function in the `System` trait.
+ * (`Option<unsafe extern "C" fn(XXX)>`) for each function in the `System` trait.
  *
  * The `featomic_status_t` return value for the function is used to communicate
  * error messages. It should be 0/`FEATOMIC_SUCCESS` in case of success, any
