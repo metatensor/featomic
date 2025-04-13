@@ -2,19 +2,30 @@ Installation
 ============
 
 You can install featomic in different ways depending on which language you plan
-to use it from. In all cases you will need a Rust compiler, which you can
-install using `rustup <https://rustup.rs/>`_ or your OS package manager.
+to use it from.
 
 .. _install-python-lib:
 
 Installing the Python module
 ----------------------------
 
-For building and using the Python package, clone the repository using `git
-<https://git-scm.com>`_ and install featomic using `pip
-<https://pip.pypa.io>`_.
+Pre-compiled wheels
+^^^^^^^^^^^^^^^^^^^
 
-From source:
+The easiest way to install featomic is to use `pip <https://pip.pypa.io>`_.
+
+.. code-block:: bash
+
+    pip install --upgrade pip
+    pip install featomic
+
+
+Building from source
+^^^^^^^^^^^^^^^^^^^^
+
+If you want to build the code from source, you'll need a Rust compiler, which
+you can install using `rustup <https://rustup.rs/>`_ or your OS package manager;
+and `git <https://git-scm.com>`_.
 
 .. code-block:: bash
 
@@ -27,15 +38,6 @@ From source:
 
     # alternatively, the same thing in a single command
     pip install git+https://github.com/metatensor/featomic
-
-
-Featomic is also provided as prebuilt wheel which avoids the intermediate step
-of building the package with a Rust compiler from the source code.
-
-.. code-block:: bash
-
-    pip install --upgrade pip
-    pip install --extra-index-url https://luthaf.fr/nightly-wheels/ featomic
 
 
 .. _install-c-lib:
@@ -101,16 +103,23 @@ Installing the TorchScript bindings
 For usage from Python
 ^^^^^^^^^^^^^^^^^^^^^
 
-Building from source:
+You can install the code with ``pip``:
 
 .. code-block:: bash
+
+    pip install --upgrade pip
+    pip install featomic[torch]
+
+
+You can also build the code from source
+
+.. code-block:: bash
+
+    pip install --upgrade pip
 
     git clone https://github.com/metatensor/featomic
     cd featomic/python/featomic_torch
     pip install .
-
-    # Make sure you are using the latest version of pip
-    pip install --upgrade pip
 
     # alternatively, the same thing in a single command
     pip install git+https://github.com/metatensor/featomic#subdirectory=python/featomic_torch
