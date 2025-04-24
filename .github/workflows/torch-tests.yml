@@ -13,7 +13,7 @@ concurrency:
 jobs:
   tests:
     runs-on: ${{ matrix.os }}
-    name: ${{ matrix.os }} / Torch ${{ matrix.torch-version }}
+    name: ${{ matrix.os }} / Torch ${{ matrix.torch-version }}${{ matrix.extra-name }}
     container: ${{ matrix.container }}
     strategy:
       matrix:
@@ -53,7 +53,9 @@ jobs:
         run: |
           apt update
           apt install -y software-properties-common
-          apt install -y cmake make gcc g++ git curl
+          add-apt-repository ppa:deadsnakes/ppa
+          apt install -y cmake make gcc g++ git curl python3.10 python3.10-venv
+          update-alternatives --install /usr/local/bin/python python /usr/bin/python3.10 1
 
       - uses: actions/checkout@v4
         with:
@@ -70,6 +72,7 @@ jobs:
 
       # we get torch from pip to run the C++ test
       - name: setup Python
+        if: matrix.container != 'ubuntu:20.04'
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
