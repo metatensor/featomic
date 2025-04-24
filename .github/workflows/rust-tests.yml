@@ -105,9 +105,9 @@ jobs:
           sudo apt-get install -y valgrind
 
       - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.3
+        uses: mozilla-actions/sccache-action@v0.0.9
         with:
-          version: "v0.5.4"
+          version: "v0.10.0"
 
       - name: Setup sccache environnement variables
         run: |
@@ -143,9 +143,9 @@ jobs:
           toolchain: stable
 
       - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.6
+        uses: mozilla-actions/sccache-action@v0.0.9
         with:
-          version: "v0.8.2"
+          version: "v0.10.0"
 
       - name: Setup sccache environnement variables
         run: |
