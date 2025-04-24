@@ -10,7 +10,7 @@ test = false
 doctest = false
 
 [dev-dependencies]
-which = "5"
+which = "7"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin)'] }
