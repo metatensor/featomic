@@ -17,4 +17,4 @@ Using `ClebschGordanProduct`
 # - Density Correlations with learnable contractions
 # - Contracted BiSpectrumByPair
 #      - (rho_i x g_ij, i.e. EquiPowSpecByPair w/ contract) x rho_j
-# 
+#

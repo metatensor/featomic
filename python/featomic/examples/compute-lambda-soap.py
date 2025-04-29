@@ -7,10 +7,10 @@ Computing  λ-SOAP features
 
 import chemfiles
 import numpy as np
-
-from featomic import SphericalExpansion, LodeSphericalExpansion
-from featomic.clebsch_gordan import EquivariantPowerSpectrum
 from metatensor import Labels
+
+from featomic import LodeSphericalExpansion, SphericalExpansion
+from featomic.clebsch_gordan import EquivariantPowerSpectrum
 
 
 # %%
@@ -49,7 +49,7 @@ HYPERPARAMETERS = {
 
 # %%
 # Create the spherical expansion calculator. The :class:`~featomic.SphericalExpansion`
-# class the hyperparameters above. Then, wrap it with
+# class uses the hyperparameters above. Then, wrap it with
 # :class:`~featomic.clebsch_gordan.EquivariantPowerSpectrum` to compute the
 # Clebsch-Gordan contraction for :math:`\lambda`-SOAP.
 
