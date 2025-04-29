@@ -3,7 +3,7 @@
 Clebsch-Gordan Products
 =======================
 
-In a previous examples, namely `computing SOAP
+In previous examples, namely `computing SOAP
 <https://metatensor.github.io/featomic/latest/how-to/computing-soap.html>`_, `computing
 lambda-SOAP
 <https://metatensor.github.io/featomic/latest/how-to/computing-lambda-soap.html>`_, and
