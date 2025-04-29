@@ -11,6 +11,7 @@ are a total beginner, you can go to :ref:`userdoc-get-started` section.
     :maxdepth: 1
 
     computing-soap
+    computing-lambda-soap
     sample-selection
     property-selection
     keys-selection

@@ -1,44 +1,37 @@
 """
-Computing lambda SOAP features
-=======================
+Computing  λ-SOAP features
+==========================
 
 .. start-body
 """
 
+import chemfiles
+import numpy as np
 
-# Intro: 
-# - SOAP in previous tutorial
-# - Equation for CG contraction that gives lambda-SOAP
-# - 
-
-# Basic usage
-
-# Choosing keys based on symmetry of target property
-# (see also atomistic cookbook example on polariz)
-
-# Show usage with two SphericalExpansions, comment 
-# on using one SphEx and one LodeSphEx
-
+from featomic import SphericalExpansion, LodeSphericalExpansion
+from featomic.clebsch_gordan import EquivariantPowerSpectrum
+from metatensor import Labels
 
 
 # %%
 #
-# Read systems using chemfiles. You can obtain the dataset used in this
-# example from our :download:`website <../../static/dataset.xyz>`.
+# Let's see how to compute the :math:`\lambda`-SOAP descriptor using Featomic.
+#
+# Read systems using Chemfiles. You can download the dataset for this example from our
+# :download:`website <../../static/dataset.xyz>`.
 
 with chemfiles.Trajectory("dataset.xyz") as trajectory:
     systems = [s for s in trajectory]
 
 # %%
 #
-# Featomic can also handles systems read by `ASE
-# <https://wiki.fysik.dtu.dk/ase/>`_ using
+# Featomic also handles systems read by `ASE <https://wiki.fysik.dtu.dk/ase/>`_:
 #
 # ``systems = ase.io.read("dataset.xyz", ":")``.
 #
-# We can now define hyper parameters for the calculation
+# Next, define the hyperparameters for the spherical expansion:
 
-HYPER_PARAMETERS = {
+HYPERPARAMETERS = {
     "cutoff": {
         "radius": 5.0,
         "smoothing": {"type": "ShiftedCosine", "width": 0.5},
@@ -49,9 +42,68 @@ HYPER_PARAMETERS = {
     },
     "basis": {
         "type": "TensorProduct",
-        "max_angular": 4,
-        "radial": {"type": "Gto", "max_radial": 6},
+        "max_angular": 2,
+        "radial": {"type": "Gto", "max_radial": 2},
     },
 }
 
-calculator = SoapPowerSpectrum(**HYPER_PARAMETERS)
+# %%
+# Create the spherical expansion calculator. The :class:`~featomic.SphericalExpansion`
+# class the hyperparameters above. Then, wrap it with
+# :class:`~featomic.clebsch_gordan.EquivariantPowerSpectrum` to compute the
+# Clebsch-Gordan contraction for :math:`\lambda`-SOAP.
+
+spex_calculator = SphericalExpansion(**HYPERPARAMETERS)
+calculator = EquivariantPowerSpectrum(spex_calculator)
+
+# %%
+# Run the actual calculation
+
+power_spectrum = calculator.compute(systems, neighbors_to_properties=True)
+
+# %%
+# The result is a :class:`~metatensor.TensorMap` whose keys encode symmetry:
+
+power_spectrum.keys
+
+# %%
+# Often, you only need specific :math:`\lambda` values. For example, if the
+# `target property is the polarizability tensor
+# <https://atomistic-cookbook.org/examples/polarizability/polarizability.html>`_,
+# (a rank-2 symmetric Cartesian tensor), you can restrict the output to
+# :math:`\lambda=0` and :math:`\lambda=2` (with :math:`\sigma=1` to discard
+# `pseudotensors <https://en.wikipedia.org/wiki/Pseudotensor>`_) using the
+# ``selected_keys`` parameter:
+
+power_spectrum_0_2 = calculator.compute(
+    systems,
+    neighbors_to_properties=True,
+    selected_keys=Labels(["o3_lambda", "o3_sigma"], np.array([[0, 1], [2, 1]])),
+)
+power_spectrum_0_2.keys
+
+# %%
+# You can also compute a :math:`\lambda`-SOAP-like descriptor using two different
+# expansions. For instance, combine a standarad spherical expansion with a long-range
+# :class:`~featomic.LodeSphericalExpansion`:
+
+LODE_HYPERPARAMETERS = {
+    "density": {
+        "type": "SmearedPowerLaw",
+        "smearing": 0.3,
+        "exponent": 1,
+    },
+    "basis": {
+        "type": "TensorProduct",
+        "max_angular": 2,
+        "radial": {"type": "Gto", "max_radial": 3, "radius": 1.0},
+    },
+}
+lode_calculator = LodeSphericalExpansion(**LODE_HYPERPARAMETERS)
+calculator = EquivariantPowerSpectrum(spex_calculator, lode_calculator)
+power_spectrum = calculator.compute(systems, neighbors_to_properties=True)
+power_spectrum.keys
+
+# %%
+#
+# .. end-body
