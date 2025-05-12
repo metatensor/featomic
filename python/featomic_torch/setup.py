@@ -340,11 +340,11 @@ if __name__ == "__main__":
         torch_version = f"== {torch_v_major}.{torch_v_minor}.*"
     except ImportError:
         # otherwise we are building a sdist
-        torch_version = ">= 1.12"
+        torch_version = ">= 2.1"
 
     install_requires = [
         f"torch {torch_version}",
-        "metatensor-torch >=0.7.0,<0.8.0",
+        "metatensor-torch >=0.7.6,<0.8",
     ]
 
     # when packaging a sdist for release, we should never use local dependencies
