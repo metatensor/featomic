@@ -1,6 +1,5 @@
 import torch
 from metatensor.torch.atomistic import System
-from packaging import version
 
 from featomic.torch.calculators import SphericalExpansion
 from featomic.torch.clebsch_gordan import PowerSpectrum
@@ -40,8 +39,7 @@ def check_operation(calculator):
     descriptor = calculator.compute(system(), gradients=["positions"])
 
     assert isinstance(descriptor, torch.ScriptObject)
-    if version.parse(torch.__version__) >= version.parse("2.1"):
-        assert descriptor._type().name() == "TensorMap"
+    assert descriptor._type().name() == "TensorMap"
 
 
 def test_operation_as_python():

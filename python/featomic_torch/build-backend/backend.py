@@ -22,13 +22,13 @@ elif not FEATOMIC_NO_LOCAL_DEPS and os.path.exists(FEATOMIC_SRC):
     FEATOMIC_DEP = f"featomic @ file://{FEATOMIC_SRC}"
 else:
     # we are building from a sdist
-    FEATOMIC_DEP = "featomic >=0.6.0,<0.7.0"
+    FEATOMIC_DEP = "featomic >=0.6.0,<0.7"
 
 FORCED_TORCH_VERSION = os.environ.get("FEATOMIC_TORCH_BUILD_WITH_TORCH_VERSION")
 if FORCED_TORCH_VERSION is not None:
     TORCH_DEP = f"torch =={FORCED_TORCH_VERSION}"
 else:
-    TORCH_DEP = "torch >=1.12"
+    TORCH_DEP = "torch >=2.1"
 
 
 get_requires_for_build_sdist = build_meta.get_requires_for_build_sdist

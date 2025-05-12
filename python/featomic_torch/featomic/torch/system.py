@@ -85,22 +85,4 @@ def _is_torch_system(system):
     if not isinstance(system, torch.ScriptObject):
         return False
 
-    torch_version_tuple = tuple(map(int, torch.__version__.split(".")[:2]))
-    if torch_version_tuple >= (2, 1):
-        return system._type().name() == "System"
-
-    # For older torch version, we check that we have the right properties
-    properties = system._properties()
-    if len(properties) != 3:
-        return False
-
-    if properties[0].name != "species":
-        return False
-
-    if properties[1].name != "positions":
-        return False
-
-    if properties[2].name != "cell":
-        return False
-
-    return True
+    return system._type().name() == "System"

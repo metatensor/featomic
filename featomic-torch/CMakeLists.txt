@@ -34,7 +34,7 @@ set(PROJECT_VERSION ${FEATOMIC_TORCH_FULL_VERSION})
 
 
 option(FEATOMIC_TORCH_TESTS "Build featomic-torch C++ tests" OFF)
-option(FEATOMIC_TORCH_FETCH_METATENSOR_TORCH "Download and build the metatensor_torch library before building featomic_torch" OFF)
+option(FEATOMIC_FETCH_METATENSOR_TORCH "Download and build the metatensor_torch library before building featomic_torch" OFF)
 
 set(BIN_INSTALL_DIR "bin" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install binaries/DLL")
 set(LIB_INSTALL_DIR "lib" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install libraries")
@@ -109,18 +109,18 @@ endif()
 # fixed version in `cmake/FindCUDNN.cmake`
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 
-find_package(Torch 1.12 REQUIRED)
+find_package(Torch 2.1 REQUIRED)
 
 # ============================================================================ #
 # Setup metatensor_torch
 
-# METATENSOR_FETCH_VERSION is the exact version we will fetch from github if
+# METATENSOR_TORCH_FETCH_VERSION is the exact version we will fetch from github if
 # FEATOMIC_TORCH_FETCH_METATENSOR_TORCH=ON, and REQUIRED_METATENSOR_TORCH_VERSION
 # is the minimal version we require when using `find_package` to find the library.
 #
 # When updating METATENSOR_FETCH_VERSION, you will also have to update the
 # SHA256 sum of the file in `FetchContent_Declare`.
-set(METATENSOR_FETCH_VERSION "0.7.2")
+set(METATENSOR_TORCH_FETCH_VERSION "0.7.6")
 set(REQUIRED_METATENSOR_TORCH_VERSION "0.7")
 if (FEATOMIC_TORCH_FETCH_METATENSOR_TORCH)
     message(STATUS "Fetching metatensor-torch from github")
@@ -129,8 +129,8 @@ if (FEATOMIC_TORCH_FETCH_METATENSOR_TORCH)
     include(FetchContent)
     FetchContent_Declare(
         metatensor_torch
-        URL      ${URL_ROOT}/metatensor-torch-v${METATENSOR_FETCH_VERSION}/metatensor-torch-cxx-${METATENSOR_FETCH_VERSION}.tar.gz
-        URL_HASH SHA256=f5474438ff298c643d6265cc3141ff95b1d26498f48a9410b611efb619187cd0
+        URL      ${URL_ROOT}/metatensor-torch-v${METATENSOR_TORCH_FETCH_VERSION}/metatensor-torch-cxx-${METATENSOR_TORCH_FETCH_VERSION}.tar.gz
+        URL_HASH SHA256=8dcc07c86094034facba09ebcc6b52f41847c2413737c8f9c88ae0a2990f8d41
     )
 
     if (CMAKE_VERSION VERSION_GREATER 3.18)
