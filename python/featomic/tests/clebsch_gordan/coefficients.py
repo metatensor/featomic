@@ -36,6 +36,13 @@ def complex_to_real_matrix(sph):
     return np.real(real)
 
 
+def sph_harm(ell, m, theta, phi):
+    if tuple(map(int, scipy.__version__.split("."))) > (1, 15, 0):
+        return scipy.special.sph_harm_y(ell, m, theta, phi)
+    else:
+        return scipy.special.sph_harm(m, ell, theta, phi)
+
+
 def test_complex_to_real():
     theta = 2 * np.pi * np.random.rand(10)
     phi = np.pi * np.random.rand(10)
@@ -43,7 +50,7 @@ def test_complex_to_real():
     for ell in range(4):
         values = np.zeros((10, 2 * ell + 1), dtype=np.complex128)
         for m in range(-ell, ell + 1):
-            values[:, ell + m] = scipy.special.sph_harm(m, ell, theta, phi)
+            values[:, ell + m] = sph_harm(ell, m, theta, phi)
 
         real_manual = complex_to_real_manual(values)
         real_matrix = complex_to_real_matrix(values)

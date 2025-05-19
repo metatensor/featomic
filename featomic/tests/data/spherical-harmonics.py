@@ -1,20 +1,27 @@
 import math
 
 import numpy as np
-from scipy.special import sph_harm
+import scipy.special
 
 from save_data import save_json, save_numpy_array
+
+
+def sph_harm(ell, m, theta, phi):
+    if tuple(map(int, scipy.__version__.split("."))) > (1, 15, 0):
+        return scipy.special.sph_harm_y(ell, m, theta, phi)
+    else:
+        return scipy.special.sph_harm(m, ell, theta, phi)
 
 
 def real_sph(l, m, theta, phi):  # noqa: E741
     """Compute real spherical harmonics from the complex version in scipy"""
     m_1_pow_m = (-1) ** m
     if m > 0:
-        return np.sqrt(2) * m_1_pow_m * np.real(sph_harm(m, l, theta, phi))
+        return np.sqrt(2) * m_1_pow_m * np.real(sph_harm(l, m, theta, phi))
     elif m == 0:
-        return m_1_pow_m * np.real(sph_harm(0, l, theta, phi))
+        return m_1_pow_m * np.real(sph_harm(l, 0, theta, phi))
     else:
-        return np.sqrt(2) * m_1_pow_m * np.imag(sph_harm(abs(m), l, theta, phi))
+        return np.sqrt(2) * m_1_pow_m * np.imag(sph_harm(l, abs(m), theta, phi))
 
 
 def spherical_harmonics(max_angular, directions):
@@ -29,7 +36,7 @@ def spherical_harmonics(max_angular, directions):
         phi = math.acos(direction[2])
         theta = math.atan2(direction[1], direction[0])
         for l in range(max_angular + 1):  # noqa: E741
-            for (i_m, m) in enumerate(range(-l, l + 1)):
+            for i_m, m in enumerate(range(-l, l + 1)):
                 values[i_direction, l, i_m] = real_sph(l, m, theta, phi)
 
     return values
