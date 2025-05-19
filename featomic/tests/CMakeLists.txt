@@ -61,8 +61,8 @@ set(BUILD_SHARED_LIBS OFF)
 include(FetchContent)
 FetchContent_Declare(
     chemfiles
-    URL      https://github.com/chemfiles/chemfiles/releases/download/0.10.4/chemfiles-0.10.4.tar.gz
-    URL_HASH SHA256=b8232ddaae2953538274982838aa6c2df87d300f7e2f80e92c171581e06325ba
+    GIT_REPOSITORY  https://github.com/chemfiles/chemfiles
+    GIT_TAG         ecb6d608e6d42b7adce370b0e478c38ab5c3f152
 )
 
 message(STATUS "Fetching chemfiles from github")
