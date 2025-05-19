@@ -10,8 +10,8 @@ create_development_version("${REQUIRED_FEATOMIC_VERSION}" FEATOMIC_FULL_VERSION 
 string(REGEX REPLACE "([0-9]*)\\.([0-9]*).*" "\\1.\\2" REQUIRED_FEATOMIC_VERSION ${FEATOMIC_FULL_VERSION})
 find_package(featomic ${REQUIRED_FEATOMIC_VERSION} REQUIRED)
 
-add_executable(c-main src/main.c)
+add_executable(c-main main.c)
 target_link_libraries(c-main featomic)
 
-add_executable(cxx-main src/main.cpp)
+add_executable(cxx-main main.cpp)
 target_link_libraries(cxx-main featomic)

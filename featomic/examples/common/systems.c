@@ -77,7 +77,7 @@ int read_systems_example(const char* path, featomic_system_t** systems, uintptr_
     chemfiles_system_t* system = NULL;
     chfl_status status;
     uint64_t step = 0;
-    uint64_t n_steps = 0;
+    uint64_t size = 0;
 
     trajectory = chfl_trajectory_open(path, 'r');
     if (trajectory == NULL) {
@@ -85,20 +85,20 @@ int read_systems_example(const char* path, featomic_system_t** systems, uintptr_
         goto error;
     }
 
-    status = chfl_trajectory_nsteps(trajectory, &n_steps);
+    status = chfl_trajectory_size(trajectory, &size);
     if (status != CHFL_SUCCESS) {
         printf("Error: %s", chfl_last_error());
         goto error;
     }
 
-    *systems = calloc(n_steps, sizeof(featomic_system_t));
+    *systems = calloc(size, sizeof(featomic_system_t));
     if (*systems == NULL) {
         printf("Error: Failed to allocate systems");
         goto error;
     }
-    *n_systems = (uintptr_t)n_steps;
+    *n_systems = (uintptr_t)size;
 
-    for (step=0; step<n_steps; step++) {
+    for (step=0; step<size; step++) {
         system = calloc(1, sizeof(chemfiles_system_t));
         if (system == NULL) {
             printf("Error: failed to allocate single system");
@@ -111,7 +111,7 @@ int read_systems_example(const char* path, featomic_system_t** systems, uintptr_
             goto error;
         }
 
-        status = chfl_trajectory_read_step(trajectory, step, system->frame);
+        status = chfl_trajectory_read_at(trajectory, step, system->frame);
         if (status != CHFL_SUCCESS) {
             printf("Error: %s", chfl_last_error());
             goto error;

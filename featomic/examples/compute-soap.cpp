@@ -58,8 +58,8 @@ int main(int argc, char* argv[]) {
 std::vector<featomic::SimpleSystem> read_systems(const std::string& path) {
     auto trajectory = chemfiles::Trajectory(path);
     auto systems = std::vector<featomic::SimpleSystem>();
-    for (size_t step=0; step<trajectory.nsteps(); step++) {
-        auto frame = trajectory.read_step(step);
+    for (size_t step=0; step<trajectory.size(); step++) {
+        auto frame = trajectory.read_at(step);
 
         auto matrix = frame.cell().matrix();
         auto system = featomic::SimpleSystem(featomic::System::CellMatrix{{

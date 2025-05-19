@@ -11,7 +11,7 @@ create_development_version("${REQUIRED_FEATOMIC_TORCH_VERSION}" FEATOMIC_TORCH_F
 string(REGEX REPLACE "([0-9]*)\\.([0-9]*).*" "\\1.\\2" REQUIRED_FEATOMIC_TORCH_VERSION ${FEATOMIC_TORCH_FULL_VERSION})
 find_package(featomic_torch ${REQUIRED_FEATOMIC_TORCH_VERSION} REQUIRED)
 
-add_executable(torch-main src/main.cpp)
+add_executable(torch-main main.cpp)
 target_link_libraries(torch-main featomic_torch)
 
 enable_testing()
