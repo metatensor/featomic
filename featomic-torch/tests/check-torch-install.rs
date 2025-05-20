@@ -39,7 +39,8 @@ fn check_torch_install() {
     ));
 
     cmake_config.arg(format!("-DCMAKE_INSTALL_PREFIX={}", install_prefix.display()));
-    cmake_config.arg("-DFEATOMIC_TORCH_FETCH_METATENSOR_TORCH=ON");
+    cmake_config.arg("-DFEATOMIC_FETCH_METATENSOR_TORCH=ON");
+    cmake_config.arg("-DFEATOMIC_FETCH_METATOMIC_TORCH=ON");
 
     // The two properties below handle the RPATH for featomic_torch, setting it
     // in such a way that we can always load libfeatomic.so and libtorch.so

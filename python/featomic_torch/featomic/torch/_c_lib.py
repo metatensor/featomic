@@ -5,6 +5,7 @@ import sys
 from collections import namedtuple
 
 import metatensor.torch
+import metatomic.torch
 import torch
 
 import featomic
@@ -128,9 +129,10 @@ def _check_dll(path):
 
 
 def _load_library():
-    # Load featomic & metatensor-torch shared library in the process first, to ensure
-    # the featomic_torch shared library can find them
+    # Load shared library for dependencies in the process first, to ensure the
+    # featomic_torch shared library can find them
     metatensor.torch._c_lib._load_library()
+    metatomic.torch._c_lib._load_library()
 
     featomic._c_lib._get_library()
 

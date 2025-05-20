@@ -2,7 +2,7 @@ from typing import List, Optional, Sequence, overload
 
 import numpy as np
 import torch
-from metatensor.torch.atomistic import System
+from metatomic.torch import System
 
 import featomic
 
@@ -31,9 +31,9 @@ def systems_to_torch(
     cell_requires_grad=None,
 ) -> List[System]:
     """
-    Convert a arbitrary system to metatensor's atomistic
-    :py:class:`metatensor.torch.atomistic.System`, putting all the data in
-    :py:class:`torch.Tensor` and making the overall object compatible with TorchScript.
+    Convert a arbitrary system to :py:class:`metatomic.torch.System`, putting all the
+    data in :py:class:`torch.Tensor` and making the overall object compatible with
+    TorchScript.
 
     :param system: any system supported by featomic. If this is an iterable of system,
         this function converts them all and returns a list of converted systems.

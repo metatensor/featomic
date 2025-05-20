@@ -4,7 +4,7 @@ import warnings
 import ase
 import pytest
 import torch
-from metatensor.torch.atomistic import System
+from metatomic.torch import System
 
 import featomic.torch
 from featomic.torch import SoapPowerSpectrum, SphericalExpansion

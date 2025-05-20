@@ -4,7 +4,7 @@ from typing import List, Optional, Union
 import pytest
 import torch
 from metatensor.torch import Labels, TensorMap
-from metatensor.torch.atomistic import System
+from metatomic.torch import System
 
 from featomic.torch import CalculatorModule
 from featomic.torch.calculators import DummyCalculator

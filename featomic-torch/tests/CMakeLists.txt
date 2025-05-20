@@ -47,7 +47,7 @@ foreach(_file_ ${ALL_TESTS})
         # (and any other DLL)
         STRING(REPLACE ";" "\\;" PATH_STRING "$ENV{PATH}")
         set_tests_properties(torch-${_name_} PROPERTIES
-            ENVIRONMENT "PATH=${PATH_STRING}\;$<TARGET_FILE_DIR:torch>\;$<TARGET_FILE_DIR:metatensor_torch>\;$<TARGET_FILE_DIR:metatensor::shared>\;$<TARGET_FILE_DIR:featomic_torch>\;$<TARGET_FILE_DIR:featomic::shared>"
+            ENVIRONMENT "PATH=${PATH_STRING}\;$<TARGET_FILE_DIR:torch>\;$<TARGET_FILE_DIR:metatomic_torch>\;$<TARGET_FILE_DIR:metatensor_torch>\;$<TARGET_FILE_DIR:metatensor::shared>\;$<TARGET_FILE_DIR:featomic_torch>\;$<TARGET_FILE_DIR:featomic::shared>"
         )
     endif()
 endforeach()

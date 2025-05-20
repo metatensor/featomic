@@ -206,6 +206,7 @@ jobs:
             auditwheel repair --exclude libfeatomic.so \
                               --exclude libmetatensor.so \
                               --exclude libmetatensor_torch.so \
+                              --exclude libmetatomic_torch.so \
                               --exclude libtorch.so \
                               --exclude libtorch_cpu.so \
                               --exclude libc10.so \

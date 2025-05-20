@@ -8,6 +8,10 @@ find_package(featomic ${REQUIRED_FEATOMIC_VERSION} CONFIG REQUIRED)
 set(REQUIRED_METATENSOR_TORCH_VERSION @REQUIRED_METATENSOR_TORCH_VERSION@)
 find_package(metatensor_torch ${REQUIRED_METATENSOR_TORCH_VERSION} CONFIG REQUIRED)
 
+# use the same version for metatomic_torch as the main CMakeLists.txt
+set(REQUIRED_METATOMIC_TORCH_VERSION @REQUIRED_METATOMIC_TORCH_VERSION@)
+find_package(metatomic_torch ${REQUIRED_METATOMIC_TORCH_VERSION} CONFIG REQUIRED)
+
 # We can only load metatensorfeatomic_torch with the same minor version of Torch
 # that was used to compile it (and is stored in BUILD_TORCH_VERSION)
 set(BUILD_TORCH_VERSION @Torch_VERSION@)

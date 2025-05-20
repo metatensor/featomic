@@ -52,7 +52,7 @@ TORCH_LIBRARY(featomic, module) {
 
     module.def(
         "register_autograd("
-            "__torch__.torch.classes.metatensor.System[] systems,"
+            "__torch__.torch.classes.metatomic.System[] systems,"
             "__torch__.torch.classes.metatensor.TensorMap precomputed,"
             "str[] forward_gradients"
         ") -> __torch__.torch.classes.metatensor.TensorMap",

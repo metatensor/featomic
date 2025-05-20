@@ -4,15 +4,15 @@ from typing import Dict, List, Optional
 import ase
 import torch
 from metatensor.torch import Labels, TensorBlock, TensorMap
-from metatensor.torch.atomistic import (
-    MetatensorAtomisticModel,
+from metatomic.torch import (
+    AtomisticModel,
     ModelCapabilities,
     ModelEvaluationOptions,
     ModelMetadata,
     ModelOutput,
     System,
 )
-from metatensor.torch.atomistic.ase_calculator import _compute_ase_neighbors
+from metatomic.torch.ase_calculator import _compute_ase_neighbors
 
 from featomic.torch import SoapPowerSpectrum, systems_to_torch
 
@@ -105,7 +105,7 @@ def test_export_as_metatensor_model(tmpdir):
         dtype="float64",
         outputs={"energy": energy_output},
     )
-    export = MetatensorAtomisticModel(model, ModelMetadata(), capabilities)
+    export = AtomisticModel(model, ModelMetadata(), capabilities)
 
     # Check we are requesting the right set of neighbors
     requests = export.requested_neighbor_lists()

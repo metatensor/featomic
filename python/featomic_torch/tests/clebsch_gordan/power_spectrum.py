@@ -1,5 +1,5 @@
 import torch
-from metatensor.torch.atomistic import System
+from metatomic.torch import System
 
 from featomic.torch.calculators import SphericalExpansion
 from featomic.torch.clebsch_gordan import PowerSpectrum
