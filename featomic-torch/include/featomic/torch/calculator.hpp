@@ -5,7 +5,7 @@
 
 #include <featomic.hpp>
 #include <metatensor/torch.hpp>
-#include <metatensor/torch/atomistic.hpp>
+#include <metatomic/torch.hpp>
 
 #include "featomic/torch/exports.h"
 
@@ -61,12 +61,12 @@ public:
     void set_selected_keys(torch::IValue selection);
 
     /// which gradients to keep in the output of a calculation
-    std::vector<std::string> gradients = {};
+    std::vector<std::string> gradients;
 
 private:
-    torch::IValue selected_samples_ = torch::IValue();
-    torch::IValue selected_properties_ = torch::IValue();
-    torch::IValue selected_keys_ = torch::IValue();
+    torch::IValue selected_samples_;
+    torch::IValue selected_properties_;
+    torch::IValue selected_keys_;
 };
 
 /// Custom class holder to store, serialize and load featomic calculators
@@ -99,9 +99,9 @@ public:
         return calculator_.cutoffs();
     }
 
-    /// Run a calculation for the given `systems` using the given options
+    /// Run a calculation for the given `systems` using the given options.
     metatensor_torch::TorchTensorMap compute(
-        std::vector<metatensor_torch::System> systems,
+        std::vector<metatomic_torch::System> systems,
         TorchCalculatorOptions options = {}
     );
 
@@ -124,7 +124,7 @@ private:
 ///
 /// `forward_gradients` controls which gradients are left inside the TensorMap.
 metatensor_torch::TorchTensorMap FEATOMIC_TORCH_EXPORT register_autograd(
-    std::vector<metatensor_torch::System> systems,
+    std::vector<metatomic_torch::System> systems,
     metatensor_torch::TorchTensorMap precomputed,
     std::vector<std::string> forward_gradients
 );

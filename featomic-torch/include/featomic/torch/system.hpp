@@ -7,21 +7,21 @@
 #include <torch/script.h>
 
 #include <featomic.hpp>
-#include <metatensor/torch/atomistic.hpp>
+#include <metatomic/torch.hpp>
 
 #include "featomic/torch/exports.h"
 
 namespace featomic_torch {
 
-/// Implementation of `featomic::System` using `metatensor_torch::System` as
+/// Implementation of `featomic::System` using `metatomic_torch::System` as
 /// backing memory for all the data.
 ///
 /// This can either be used with the Rust neighbor list implementation; or a set
 /// of pre-computed neighbor lists can be added to the system.
 class FEATOMIC_TORCH_EXPORT SystemAdapter final: public featomic::System {
 public:
-    /// Create a `SystemAdapter` wrapping an existing `metatensor_torch::System`
-    SystemAdapter(metatensor_torch::System system);
+    /// Create a `SystemAdapter` wrapping an existing `metatomic_torch::System`
+    SystemAdapter(metatomic_torch::System system);
 
     ~SystemAdapter() override = default;
 
@@ -84,7 +84,7 @@ public:
 
 private:
     // the origin of all the data
-    metatensor_torch::System system_;
+    metatomic_torch::System system_;
 
     /// atomic types tensor, contiguous and on CPU
     torch::Tensor types_;

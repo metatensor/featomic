@@ -5,7 +5,7 @@
 
 using namespace featomic_torch;
 
-SystemAdapter::SystemAdapter(metatensor_torch::System system): system_(std::move(system)) {
+SystemAdapter::SystemAdapter(metatomic_torch::System system): system_(std::move(system)) {
     this->types_ = system_->types().to(torch::kCPU).contiguous();
     this->positions_ = system_->positions().to(torch::kCPU).to(torch::kDouble).contiguous();
     this->cell_ = system_->cell().to(torch::kCPU).to(torch::kDouble).contiguous();

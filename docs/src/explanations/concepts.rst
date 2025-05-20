@@ -64,8 +64,9 @@ Descriptors: data storage for atomistic machine learning
 --------------------------------------------------------
 
 After using a calculator on one or multiple systems, users will get the
-numerical representation of their atomic systems in a ``descriptor`` object.
-Featomic uses `metatensor`_ ``TensorMap`` type when returning descriptors.
+numerical representation of their atomic systems in a
+:py:class:`metatensor.TensorMap`. This type is defined in the `metatensor`_
+package.
 
 .. _metatensor: https://docs.metatensor.org
 

@@ -5,7 +5,7 @@ import metatensor.torch
 import pytest
 import torch
 from metatensor.torch import Labels
-from metatensor.torch.atomistic import System
+from metatomic.torch import System
 
 import featomic.torch
 from featomic.torch.clebsch_gordan import DensityCorrelations

@@ -85,7 +85,8 @@ static TorchTensorBlock block_to_torch(
     return new_block;
 }
 
-static torch::Tensor stack_all_positions(const std::vector<metatensor_torch::System>& systems) {
+template <typename System>
+static torch::Tensor stack_all_positions(const std::vector<System>& systems) {
     auto all_positions = std::vector<torch::Tensor>();
     all_positions.reserve(systems.size());
 
@@ -96,7 +97,8 @@ static torch::Tensor stack_all_positions(const std::vector<metatensor_torch::Sys
     return torch::vstack(all_positions);
 }
 
-static torch::Tensor stack_all_cells(const std::vector<metatensor_torch::System>& systems) {
+template <typename System>
+static torch::Tensor stack_all_cells(const std::vector<System>& systems) {
     auto all_cells = std::vector<torch::Tensor>();
     all_cells.reserve(systems.size());
 
@@ -151,7 +153,8 @@ static bool contains(const std::vector<std::string>& haystack, const std::string
     return std::find(std::begin(haystack), std::end(haystack), needle) != std::end(haystack);
 }
 
-static torch::ScalarType systems_dtype(const std::vector<metatensor_torch::System>& systems) {
+template<typename System>
+static torch::ScalarType systems_dtype(const std::vector<System>& systems) {
     if (systems.empty()) {
         return torch::kFloat64;
     } else {
@@ -169,7 +172,8 @@ static torch::ScalarType systems_dtype(const std::vector<metatensor_torch::Syste
     }
 }
 
-static torch::Device systems_device(const std::vector<metatensor_torch::System>& systems) {
+template<typename System>
+static torch::Device systems_device(const std::vector<System>& systems) {
     if (systems.empty()) {
         return torch::kCPU;
     } else {
@@ -186,9 +190,8 @@ static torch::Device systems_device(const std::vector<metatensor_torch::System>&
     }
 }
 
-
 metatensor_torch::TorchTensorMap CalculatorHolder::compute(
-    std::vector<metatensor_torch::System> systems,
+    std::vector<metatomic_torch::System> systems,
     TorchCalculatorOptions torch_options
 ) {
     auto dtype = systems_dtype(systems);
@@ -232,7 +235,7 @@ metatensor_torch::TorchTensorMap CalculatorHolder::compute(
         int64_t current_start = 0;
         for (auto& system: systems) {
             systems_start.push_back(current_start);
-            current_start += static_cast<int64_t>(system->size());
+            current_start += system->size();
         }
         systems_start_ivalue = torch::IValue(std::move(systems_start));
     }
@@ -270,7 +273,7 @@ metatensor_torch::TorchTensorMap CalculatorHolder::compute(
         auto guard = DisableFeatomicCellGradientWarning();
 
         raw_descriptor= std::make_shared<metatensor::TensorMap>(
-            calculator_.compute(featomic_systems, options)
+            this->calculator_.compute(featomic_systems, options)
         );
     }
 
@@ -312,7 +315,7 @@ metatensor_torch::TorchTensorMap CalculatorHolder::compute(
 
 
 metatensor_torch::TorchTensorMap featomic_torch::register_autograd(
-    std::vector<metatensor_torch::System> systems,
+    std::vector<metatomic_torch::System> systems,
     metatensor_torch::TorchTensorMap precomputed,
     std::vector<std::string> forward_gradients
 ) {
@@ -339,7 +342,7 @@ metatensor_torch::TorchTensorMap featomic_torch::register_autograd(
         int64_t current_start = 0;
         for (auto& system: systems) {
             systems_start.push_back(current_start);
-            current_start += static_cast<int64_t>(system->size());
+            current_start += system->size();
         }
         systems_start_ivalue = torch::IValue(std::move(systems_start));
     }

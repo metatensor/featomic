@@ -2,9 +2,7 @@ from typing import List, Optional, Union
 
 import torch
 from metatensor.torch import Labels, TensorMap
-from metatensor.torch.atomistic import NeighborListOptions
-
-from .system import System
+from metatomic.torch import NeighborListOptions, System
 
 
 CalculatorHolder = torch.classes.featomic.CalculatorHolder

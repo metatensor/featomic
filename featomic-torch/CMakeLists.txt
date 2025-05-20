@@ -35,6 +35,7 @@ set(PROJECT_VERSION ${FEATOMIC_TORCH_FULL_VERSION})
 
 option(FEATOMIC_TORCH_TESTS "Build featomic-torch C++ tests" OFF)
 option(FEATOMIC_FETCH_METATENSOR_TORCH "Download and build the metatensor_torch library before building featomic_torch" OFF)
+option(FEATOMIC_FETCH_METATOMIC_TORCH "Download and build the metatomic_torch library before building featomic_torch" OFF)
 
 set(BIN_INSTALL_DIR "bin" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install binaries/DLL")
 set(LIB_INSTALL_DIR "lib" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install libraries")
@@ -114,15 +115,16 @@ find_package(Torch 2.1 REQUIRED)
 # ============================================================================ #
 # Setup metatensor_torch
 
-# METATENSOR_TORCH_FETCH_VERSION is the exact version we will fetch from github if
-# FEATOMIC_TORCH_FETCH_METATENSOR_TORCH=ON, and REQUIRED_METATENSOR_TORCH_VERSION
-# is the minimal version we require when using `find_package` to find the library.
+# METATENSOR_TORCH_FETCH_VERSION is the exact version we will fetch from github
+# if FEATOMIC_FETCH_METATENSOR_TORCH=ON, and REQUIRED_METATENSOR_TORCH_VERSION
+# is the minimal version we require when using `find_package` to find the
+# library.
 #
-# When updating METATENSOR_FETCH_VERSION, you will also have to update the
+# When updating METATENSOR_TORCH_FETCH_VERSION, you will also have to update the
 # SHA256 sum of the file in `FetchContent_Declare`.
 set(METATENSOR_TORCH_FETCH_VERSION "0.7.6")
 set(REQUIRED_METATENSOR_TORCH_VERSION "0.7")
-if (FEATOMIC_TORCH_FETCH_METATENSOR_TORCH)
+if (FEATOMIC_FETCH_METATENSOR_TORCH)
     message(STATUS "Fetching metatensor-torch from github")
 
     set(URL_ROOT "https://github.com/metatensor/metatensor/releases/download")
@@ -133,21 +135,45 @@ if (FEATOMIC_TORCH_FETCH_METATENSOR_TORCH)
         URL_HASH SHA256=8dcc07c86094034facba09ebcc6b52f41847c2413737c8f9c88ae0a2990f8d41
     )
 
-    if (CMAKE_VERSION VERSION_GREATER 3.18)
-        FetchContent_MakeAvailable(metatensor_torch)
-    else()
-        if (NOT metatensor_POPULATED)
-            FetchContent_Populate(metatensor_torch)
-        endif()
-
-        add_subdirectory(${metatensor_torch_SOURCE_DIR} ${metatensor_torch_BINARY_DIR})
-    endif()
+    FetchContent_MakeAvailable(metatensor_torch)
 else()
     find_package(metatensor_torch ${REQUIRED_METATENSOR_TORCH_VERSION} REQUIRED CONFIG)
     get_target_property(METATENSOR_TORCH_LOCATION metatensor_torch IMPORTED_LOCATION)
     get_filename_component(METATENSOR_TORCH_LOCATION ${METATENSOR_TORCH_LOCATION} DIRECTORY)
     message(STATUS "Using local metatensor-torch from ${METATENSOR_TORCH_LOCATION}")
 endif()
+
+# ============================================================================ #
+# Setup metatomic_torch
+
+# Same as above for metatensor_torch
+#
+# When updating METATOMIC_TORCH_FETCH_VERSION, you will also have to update the
+# SHA256 sum of the file in `FetchContent_Declare`.
+set(METATOMIC_TORCH_FETCH_VERSION "0.1.1")
+set(REQUIRED_METATOMIC_TORCH_VERSION "0.1")
+if (FEATOMIC_FETCH_METATENSOR_TORCH)
+    message(STATUS "Fetching metatomic-torch from github")
+    find_package(Patch REQUIRED)
+
+    set(URL_ROOT "https://github.com/metatensor/metatomic/releases/download")
+    include(FetchContent)
+    FetchContent_Declare(
+        metatomic_torch
+        URL      ${URL_ROOT}/metatomic-torch-v${METATOMIC_TORCH_FETCH_VERSION}/metatomic-torch-cxx-${METATOMIC_TORCH_FETCH_VERSION}.tar.gz
+        URL_HASH SHA256=2dc0a0213b7f5df3ac519516f1b17801baa6973d96b339f0b39cadea310fefe1
+        PATCH_COMMAND ${Patch_EXECUTABLE} -p2 < ${CMAKE_CURRENT_SOURCE_DIR}/cmake/metatomic-cmake.patch
+    )
+
+    FetchContent_MakeAvailable(metatomic_torch)
+else()
+    find_package(metatomic_torch ${REQUIRED_METATOMIC_TORCH_VERSION} REQUIRED CONFIG)
+    get_target_property(METATOMIC_TORCH_LOCATION metatomic_torch IMPORTED_LOCATION)
+    get_filename_component(METATOMIC_TORCH_LOCATION ${METATOMIC_TORCH_LOCATION} DIRECTORY)
+    message(STATUS "Using local metatomic-torch from ${METATOMIC_TORCH_LOCATION}")
+endif()
+
+# ============================================================================ #
 
 
 set(FEATOMIC_TORCH_HEADERS
@@ -170,7 +196,7 @@ add_library(featomic_torch SHARED
     ${FEATOMIC_TORCH_SOURCE}
 )
 
-target_link_libraries(featomic_torch PUBLIC torch metatensor_torch featomic)
+target_link_libraries(featomic_torch PUBLIC torch metatomic_torch metatensor_torch featomic)
 target_compile_features(featomic_torch PUBLIC cxx_std_17)
 target_include_directories(featomic_torch PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -185,7 +211,7 @@ set_target_properties(featomic_torch PROPERTIES
     CXX_VISIBILITY_PRESET hidden
 )
 
-if (FEATOMIC_TORCH_FETCH_METATENSOR_TORCH)
+if (FEATOMIC_FETCH_METATENSOR_TORCH)
     # If we install metatensor_torch together with featomic_torch, we need to
     # set the RPATH to $ORIGIN to make sure featomic_torch can find
     # metatensor_torch.

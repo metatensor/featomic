@@ -2,8 +2,8 @@
 
 #include <featomic.hpp>
 #include <metatensor/torch.hpp>
+#include <metatomic/torch.hpp>
 
-#include "metatensor/torch/labels.hpp"
 #include "featomic/torch.hpp"
 
 #include <catch.hpp>
@@ -11,7 +11,7 @@
 using namespace featomic_torch;
 using namespace metatensor_torch;
 
-static metatensor_torch::System test_system(bool positions_grad, bool cell_grad);
+static metatomic_torch::System test_system(bool positions_grad, bool cell_grad);
 
 
 TEST_CASE("Calculator") {
@@ -286,7 +286,7 @@ TEST_CASE("Calculator") {
     }
 }
 
-metatensor_torch::System test_system(bool positions_grad, bool cell_grad) {
+metatomic_torch::System test_system(bool positions_grad, bool cell_grad) {
     auto types = torch::tensor({6, 1, 1, 1});
     auto positions = torch::tensor({
         0.0, 0.0, 0.0,
@@ -301,5 +301,5 @@ metatensor_torch::System test_system(bool positions_grad, bool cell_grad) {
 
     auto pbc = torch::ones(3, torch::TensorOptions().dtype(torch::kBool));
 
-    return torch::make_intrusive<metatensor_torch::SystemHolder>(types, positions, cell, pbc);
+    return torch::make_intrusive<metatomic_torch::SystemHolder>(types, positions, cell, pbc);
 }

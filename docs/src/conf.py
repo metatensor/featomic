@@ -13,6 +13,7 @@ sys.path.append(os.path.join(ROOT, "docs", "extensions"))
 
 os.environ["FEATOMIC_IMPORT_FOR_SPHINX"] = "1"
 os.environ["METATENSOR_IMPORT_FOR_SPHINX"] = "1"
+os.environ["METATOMIC_IMPORT_FOR_SPHINX"] = "1"
 
 # -- Project information -----------------------------------------------------
 

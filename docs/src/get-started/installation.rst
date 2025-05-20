@@ -153,25 +153,32 @@ dependencies:
   the `C++ interface of metatensor`_;
 - the `TorchScript interface of metatensor`_. We can download and build an
   appropriate version of it automatically by setting the cmake option
-  ``-DFEATOMIC_TORCH_FETCH_METATENSOR_TORCH=ON``
+  ``-DFEATOMIC_FETCH_METATENSOR_TORCH=ON``
+- the `TorchScript interface of metatomic`_. We can download and build an
+  appropriate version of it automatically by setting the cmake option
+  ``-DFEATOMIC_FETCH_METATOMIC_TORCH=ON``
 
 If any of these dependencies is not in a standard location, you should specify
 the installation directory when configuring cmake with ``CMAKE_PREFIX_PATH``.
 Other useful configuration options are:
 
-+----------------------------------------+-----------------------------------------------+----------------+
-| Option                                 | Description                                   | Default        |
-+========================================+===============================================+================+
-| CMAKE_BUILD_TYPE                       | Type of build: debug or release               | release        |
-+----------------------------------------+-----------------------------------------------+----------------+
-| CMAKE_INSTALL_PREFIX                   | Prefix in which the library will be installed | ``/usr/local`` |
-+----------------------------------------+-----------------------------------------------+----------------+
-| CMAKE_PREFIX_PATH                      | ``;``-separated list of path where CMake will |                |
-|                                        | search for dependencies.                      |                |
-+----------------------------------------+-----------------------------------------------+----------------+
-| FEATOMIC_TORCH_FETCH_METATENSOR_TORCH  | Should CMake automatically download and       | OFF            |
-|                                        | install metatensor-torch?                     |                |
-+----------------------------------------+-----------------------------------------------+----------------+
++----------------------------------+-----------------------------------------------+----------------+
+| Option                           | Description                                   | Default        |
++==================================+===============================================+================+
+| CMAKE_BUILD_TYPE                 | Type of build: debug or release               | release        |
++----------------------------------+-----------------------------------------------+----------------+
+| CMAKE_INSTALL_PREFIX             | Prefix in which the library will be installed | ``/usr/local`` |
++----------------------------------+-----------------------------------------------+----------------+
+| CMAKE_PREFIX_PATH                | ``;``-separated list of path where CMake will |                |
+|                                  | search for dependencies.                      |                |
++----------------------------------+-----------------------------------------------+----------------+
+| FEATOMIC_FETCH_METATENSOR_TORCH  | Should CMake automatically download and       | OFF            |
+|                                  | install metatensor-torch?                     |                |
++----------------------------------+-----------------------------------------------+----------------+
+| FEATOMIC_FETCH_METATOMIC_TORCH   | Should CMake automatically download and       | OFF            |
+|                                  | install metatomic-torch?                      |                |
++----------------------------------+-----------------------------------------------+----------------+
 
-.. _C++ interface of metatensor: https://docs.metatensor.org/latest/get-started/installation.html#installing-the-c-and-c-library
-.. _TorchScript interface of metatensor: https://docs.metatensor.org/latest/get-started/installation.html#for-usage-from-c
+.. _C++ interface of metatensor: https://docs.metatensor.org/latest/installation.html#install-c
+.. _TorchScript interface of metatensor: https://docs.metatensor.org/latest/installation.html#install-torch-cxx
+.. _TorchScript interface of metatomic: https://docs.metatensor.org/metatomic/latest/installation.html#install-torch-cxx

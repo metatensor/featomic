@@ -36,6 +36,7 @@ class cmake_ext(build_ext):
     def run(self):
         import metatensor
         import metatensor.torch
+        import metatomic.torch
         import torch
 
         import featomic
@@ -51,6 +52,7 @@ class cmake_ext(build_ext):
             featomic.utils.cmake_prefix_path,
             metatensor.utils.cmake_prefix_path,
             metatensor.torch.utils.cmake_prefix_path,
+            metatomic.torch.utils.cmake_prefix_path,
             torch.utils.cmake_prefix_path,
         ]
 
@@ -345,6 +347,7 @@ if __name__ == "__main__":
     install_requires = [
         f"torch {torch_version}",
         "metatensor-torch >=0.7.6,<0.8",
+        "metatomic-torch >=0.1.1,<0.2",
     ]
 
     # when packaging a sdist for release, we should never use local dependencies
