@@ -17,6 +17,11 @@ a changelog](https://keepachangelog.com/en/1.1.0/) format. This project follows
 ### Removed
 -->
 
+## [Version 0.7.0](https://github.com/metatensor/featomic/releases/tag/featomic-torch-v0.7.0) - 2025-05-22
+
+- featomic-torch now integrates with [metatomic-torch](https://github.com/metatensor/metatomic)
+  instead of metatensor-torch atomistic models.
+
 ## [Version 0.6.2](https://github.com/metatensor/featomic/releases/tag/featomic-torch-v0.6.2) - 2025-05-21
 
 - Add Support for PyTorch 2.7, removed support for PyTorch 2.0 and older.
