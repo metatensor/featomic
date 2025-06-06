@@ -65,7 +65,7 @@ For details, tutorials, and examples, please have a look at our `documentation`_
     :alt: Tests status
     :target: https://github.com/metatensor/featomic/actions?query=branch%3Amain
 
-.. |docs| image:: https://img.shields.io/badge/documentation-latest-sucess
+.. |docs| image:: https://img.shields.io/badge/📚_documentation-latest-sucess
     :alt: Documentation
     :target: `documentation`_
 
