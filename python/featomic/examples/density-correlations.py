@@ -5,7 +5,7 @@ Computing density correlations
 .. start-body
 """
 
-import chemfiles
+import ase.io
 import metatensor as mts
 import numpy as np
 
@@ -15,23 +15,10 @@ from featomic.clebsch_gordan import DensityCorrelations, EquivariantPowerSpectru
 
 # %%
 #
-# Compute the spherical expansion
-# -------------------------------
+# Computing the spherical expansion
+# ---------------------------------
 #
-# Read systems using chemfiles. You can obtain the dataset used in this
-# example from our :download:`website <../../static/dataset.xyz>`.
-
-with chemfiles.Trajectory("dataset.xyz") as trajectory:
-    systems = [s for s in trajectory]
-
-# %%
-#
-# Featomic can also handles systems read by `ASE
-# <https://wiki.fysik.dtu.dk/ase/>`_ using
-#
-# ``systems = ase.io.read("dataset.xyz", ":")``.
-#
-# We can now define the spherical expansion hyper parameters and compute the density.
+# We can define the spherical expansion hyper parameters and compute the density.
 # This will be used throughout the remainder of the tutorial.
 
 HYPER_PARAMETERS = {
@@ -50,9 +37,11 @@ HYPER_PARAMETERS = {
     },
 }
 
+systems = ase.io.read("dataset.xyz", ":")
+
 # Initialize the SphericalExpansion calculator and compute the density
-spex_calc = SphericalExpansion(**HYPER_PARAMETERS)
-density = spex_calc.compute(systems)
+spherical_expansion = SphericalExpansion(**HYPER_PARAMETERS)
+density = spherical_expansion.compute(systems)
 
 # %%
 #
@@ -61,8 +50,8 @@ density = spex_calc.compute(systems)
 # Note: this method should be called with care when computing on a subset of systems
 # from a larger dataset. If the ``systems`` being computed contain a subset of the
 # global atom types, an inconsistent feature dimension will be created. In this case,
-# the argument "keys_to_move" should be specified as a ``Labels`` object with all global
-# atom types.
+# the argument to ``keys_to_properties`` should be specified as a ``Labels`` object with
+# all global atom types.
 
 density = density.keys_to_properties("neighbor_type")
 
@@ -71,18 +60,18 @@ print("total number of features:", np.sum([len(block.properties) for block in de
 
 # %%
 #
-# Density correlations to build a lambda-SOAP
-# -------------------------------------------
+# Density correlations to build a :math:`\lambda`-SOAP
+# ----------------------------------------------------
 #
-# Now we can use the DensityCorrelations calculator and specify that we want to take a
-# single CG tensor product, i.e. ``n_correlations=1``.
+# We can now use the ``DensityCorrelations`` calculator and specify that we want to take
+# a single Clebsch-Gordan (CG) tensor product, i.e. ``n_correlations=1``.
 #
-# Initializing the calculator computes and stores the CG coefficients. As the density
-# expansion is up to ``o3_lambda=3`` and we are doing a single contraction, we need CG
-# coefficients computed up to ``o3_lambda=6`` in order to do a full contraction. Hence,
-# we set ``max_angular=6``.
+# During initialization, the calculator computes and stores the CG coefficients. As the
+# density expansion is up to ``o3_lambda=3`` and we are doing a single contraction, we
+# need CG coefficients computed up to ``o3_lambda=6`` in order to do a full contraction.
+# Hence, we set ``max_angular=6``.
 
-dens_corr_calc = DensityCorrelations(
+density_correlations = DensityCorrelations(
     n_correlations=1,
     max_angular=6,
 )
@@ -90,42 +79,45 @@ dens_corr_calc = DensityCorrelations(
 # %%
 #
 # This outputs an equivariant power spectrum descriptor of body-order 3, i.e.
-# "lambda-SOAP" features.
+# :math:`\lambda`-SOAP features.
 
-lambda_soap = dens_corr_calc.compute(density)
+lambda_soap = density_correlations.compute(density)
 
 # %%
 #
 # This is not quite equivalent to the result seen in the previous tutorial on
-# :ref:`computing lambda-SOAP <compute-lambda-soap.py>`. The keys contain dimensions
-# ``"l_1"`` and ``"l_2"`` which for a given block track the angular order of the blocks
-# combined to create it.
+# :ref:`computing λ-SOAP <compute-lambda-soap>`. The keys contain
+# dimensions ``"l_1"`` and ``"l_2"`` which for a given block track the angular order of
+# the blocks from the input combined to create the block in the output
+# :class:`~metatensor.TensorMap`.
 #
 # Keeping these dimensions in the keys is useful to allow for further CG products to be
-# taken, building more complex descriptors. This is covered in a later tutorial on the
-# :ref:`use of ClebschGordanProduct <clebsch-gordan-product>`.
-#
-# For now, we can move these key dimensions to properties. Inspect the metadata before
-# and after moving these dimensions.
+# taken, building more complex descriptors. For now, we can move these key dimensions to
+# properties. Inspect the metadata before and after moving these dimensions.
 
-print("lambda-SOAP before keys_to_properties:", lambda_soap)
-print("lambda-SOAP before keys_to_properties, first block:", lambda_soap[0])
-
-lambda_soap = lambda_soap.keys_to_properties(["l_1", "l_2"])
-
-print("lambda-SOAP after keys_to_properties:", lambda_soap)
-print("lambda-SOAP after keys_to_properties, first block:", lambda_soap[0])
+print("λ-SOAP before keys_to_properties:", lambda_soap.keys)
+print("first block:", lambda_soap[0])
 
 # %%
 #
-# This obtains a result that is equivalent to the lambda-SOAP seen in the previous
-# tutorial. We can confirm this by computing an ``EquivariantPowerSpectrum`` and
-# checking for consistency.
 
-pow_spec_calc = EquivariantPowerSpectrum(spex_calc)
-equi_pow_spec = pow_spec_calc.compute(systems, neighbors_to_properties=True)
+lambda_soap = lambda_soap.keys_to_properties(["l_1", "l_2"])
 
-assert mts.equal(lambda_soap, equi_pow_spec)
+print("λ-SOAP after keys_to_properties:", lambda_soap.keys)
+print("first block:", lambda_soap[0])
+
+# %%
+#
+# This obtains a result that is equivalent to the :math:`\lambda`-SOAP seen in the
+# previous tutorial. We can confirm this by computing an ``EquivariantPowerSpectrum``
+# and checking for consistency.
+
+equivariant_ps_calculator = EquivariantPowerSpectrum(spherical_expansion)
+equivariant_ps = equivariant_ps_calculator.compute(
+    systems, neighbors_to_properties=True
+)
+
+assert mts.equal(lambda_soap, equivariant_ps)
 
 # %%
 #
@@ -163,33 +155,39 @@ HYPER_PARAMETERS_SMALL = {
 # max_angular_density``.
 
 # Initialize the SphericalExpansion calculator and compute the density
-spex_calc = SphericalExpansion(**HYPER_PARAMETERS_SMALL)
-density = spex_calc.compute(systems)
+spherical_expansion = SphericalExpansion(**HYPER_PARAMETERS_SMALL)
+density = spherical_expansion.compute(systems)
 density = density.keys_to_properties("neighbor_type")
 
 # Initialize DensityCorrelations calculator
-dens_corr_calc = DensityCorrelations(
+density_correlations = DensityCorrelations(
     n_correlations=2,
     max_angular=6,
 )
 
 # Compute the bispectrum
-bispectrum = dens_corr_calc.compute(density)
+bispectrum = density_correlations.compute(density)
 
 # %%
 #
-# Inspect the features of the bispectrum. There are now ``"neighbor_x_type"`` and
-# ``"n_x"`` (which track the radial channel indices) dimensions created by the product
-# of feature spaces of the 3 density blocks combined to make each bispectrum block.
+# There are now ``"neighbor_x_type"`` and ``"n_x"`` (which track the radial channel
+# indices) dimensions created by the product of feature spaces of the 3 density blocks
+# combined to make each bispectrum block.
 #
 # For each block, its key contains dimensions tracking the angular order of blocks
 # combined to create it, namely ``["l_1", "l_2", "k_2", "l_3"]``. The ``"l_"``
 # dimensions track the angular order of the blocks from the original density, while
 # ``"k_"`` dimensions track the angular order of intermediate blocks.
+
+print("bispectrum first block:", bispectrum[0])
+
+# %%
 #
-# Let's look at an example. Take the block indexed by key:
-#
-# ``LabelsEntry(o3_lambda=3, o3_sigma=1, center_type=7, l_1=1, l_2=2, k_2=1, l_3=2)``
+# Let's look at an example. Take the block at index 156:
+
+print(bispectrum.keys[156])
+
+# %%
 #
 # This was created in the following way.
 #
@@ -204,20 +202,21 @@ bispectrum = dens_corr_calc.compute(density)
 # 3]``, and in this case has been combined to create the output angular order
 # ``o3_lambda=3``.
 
-print("bispectrum:", bispectrum)
-print("bispectrum first block:", bispectrum[0])
 
 # %%
 #
-# As before, move these symmetry keys to properties and inspect the metadata and the
-# mean size of the features.
+# As before, we can move these symmetry keys to properties and inspect the metadata and
+# the total size of the features.
 
 bispectrum = bispectrum.keys_to_properties(["l_1", "l_2", "k_2", "l_3"])
 
-print("bispectrum:", bispectrum)
-print("bispectrum first block:", bispectrum[0])
+print("first block:", bispectrum[0])
+
+# %%
+#
 print(
-    "total number of features:", np.sum([len(block.properties) for block in bispectrum])
+    "total number of features:",
+    np.sum([len(block.properties) for block in bispectrum]),
 )
 
 # %%
@@ -235,19 +234,26 @@ print(
 # Let's truncate to an angular cutoff of 3:
 
 angular_cutoff = 3
-dens_corr_calc = DensityCorrelations(
+density_correlations = DensityCorrelations(
     n_correlations=2,
     max_angular=angular_cutoff,
 )
-bispectrum_truncated = dens_corr_calc.compute(density, angular_cutoff=angular_cutoff)
+bispectrum_truncated = density_correlations.compute(
+    density, angular_cutoff=angular_cutoff
+)
 
 # Move the "l_" and "k_" keys to properties
 bispectrum_truncated = bispectrum_truncated.keys_to_properties(
     ["l_1", "l_2", "k_2", "l_3"]
 )
 
-print("truncated bispectrum:", bispectrum_truncated)
-print("truncated bispectrum first block:", bispectrum_truncated[0])
+print("truncated bispectrum:", bispectrum_truncated.keys)
+
+# %%
+
+print("first block:", bispectrum_truncated[0])
+
+# %%
 print(
     "total number of features:",
     np.sum([len(block.properties) for block in bispectrum_truncated]),
@@ -257,11 +263,11 @@ print(
 #
 # To compute a descriptor that matches the symmetry of a given target property, the
 # ``selected_keys`` argument can be passed to the ``compute`` method. This was also seen
-# in the previous tutorial on :ref:`computing lambda-SOAP <compute-lambda-soap.py>`.
+# in the previous tutorial on :ref:`computing lambda-SOAP <compute-lambda-soap>`.
 #
 # Following this example, to compute the truncated bispectrum for a polarizability
 # tensor:
-bispectrum_truncated_key_select = dens_corr_calc.compute(
+bispectrum_truncated_key_select = density_correlations.compute(
     density,
     angular_cutoff=angular_cutoff,
     selected_keys=mts.Labels(
@@ -275,7 +281,9 @@ bispectrum_truncated_key_select = bispectrum_truncated_key_select.keys_to_proper
     ["l_1", "l_2", "k_2", "l_3"]
 )
 
-print("truncated bispectrum with selected keys:", bispectrum_truncated_key_select)
+print("truncated bispectrum with selected keys:", bispectrum_truncated_key_select.keys)
+
+# %%
 print(
     "total number of features:",
     np.sum([len(block.properties) for block in bispectrum_truncated_key_select]),
@@ -291,10 +299,7 @@ print(
 # a spherical expansion of decorated atomic point cloud data.
 #
 # A key limitation of this approach is an exploding feature size. To reduce the number
-# of output blocks, the ``angular_cutoff`` parameter can be used. This can be controlled
-# by introducing contractions after each CG combination in the iteration. This will be
-# covered in the next tutorial, :ref:`Clebsch-Gordan products
-# <clebsch-gordan-products.py>`.
+# of output blocks, the ``angular_cutoff`` parameter can be used.
 
 # %%
 # .. end-body

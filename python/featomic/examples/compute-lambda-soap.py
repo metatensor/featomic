@@ -1,4 +1,6 @@
 """
+.. _compute-lambda-soap:
+
 Computing  λ-SOAP features
 ==========================
 
@@ -15,10 +17,10 @@ from featomic.clebsch_gordan import EquivariantPowerSpectrum
 
 # %%
 #
-# Let's see how to compute the :math:`\lambda`-SOAP descriptor using Featomic.
+# Let's see how to compute the :math:`\lambda`-SOAP descriptor using featomic.
 #
-# Read systems using Chemfiles. You can download the dataset for this example from our
-# :download:`website <../../static/dataset.xyz>`.
+# First we can read the input systems using chemfiles. You can download the dataset for
+# this example from our :download:`website <../../static/dataset.xyz>`.
 
 with chemfiles.Trajectory("dataset.xyz") as trajectory:
     systems = [s for s in trajectory]
