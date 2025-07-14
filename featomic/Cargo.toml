@@ -58,8 +58,9 @@ ndarray-npy = "0.9"
 flate2 = "1.0.20"
 time-graph = {version = "0.3.0", features = ["table", "json"]}
 
-# Pin half to the last version supporting rustc 1.74
+# Pins to the last versions supporting rustc 1.74
 half = "=2.4.1"
+pest = "=2.8.0"
 
 
 [[bench]]
