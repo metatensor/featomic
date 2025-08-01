@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
+include(FindPackageHandleStandardArgs OPTIONAL)
+
 if (POLICY CMP0135)
     cmake_policy(SET CMP0135 NEW) # Timestamp for FetchContent
 endif()
