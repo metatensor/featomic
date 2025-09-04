@@ -26,7 +26,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "metatensor-core >=0.1.0,<0.2.0",
+    "metatensor-core ==0.1.16",
     "metatensor-operations ==0.3.0",
     "wigners",
 ]
