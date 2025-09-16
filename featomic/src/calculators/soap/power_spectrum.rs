@@ -148,13 +148,13 @@ impl SoapPowerSpectrum {
             for entry in samples {
                 samples_builder.add(&entry);
             }
-            let samples = samples_builder.finish();
+            let samples = samples_builder.finish_assume_unique();
 
             let mut properties_builder = LabelsBuilder::new(vec!["n"]);
             for entry in properties {
                 properties_builder.add(&entry);
             }
-            let properties = properties_builder.finish();
+            let properties = properties_builder.finish_assume_unique();
 
             blocks.push(TensorBlock::new(
                 EmptyArray::new(vec![samples.count(), properties.count()]),
@@ -507,7 +507,7 @@ impl CalculatorBase for SoapPowerSpectrum {
                     }
                 }
 
-                return vec![properties.finish(); keys.count()];
+                return vec![properties.finish_assume_unique(); keys.count()];
             }
             SphericalExpansionBasis::Explicit(ref basis) => {
                 let mut properties = LabelsBuilder::new(self.property_names());

@@ -578,7 +578,7 @@ impl CalculatorBase for SphericalExpansionByPair {
             }
         }
 
-        return Ok(keys.finish());
+        return Ok(keys.finish_assume_unique());
     }
 
     fn sample_names(&self) -> Vec<&str> {
@@ -595,7 +595,7 @@ impl CalculatorBase for SphericalExpansionByPair {
         for (first_type, second_type) in types_keys {
             builder.add(&[first_type, second_type]);
         }
-        let types_keys = builder.finish();
+        let types_keys = builder.finish_assume_unique();
 
         // for l=0, we want to include self pairs in the samples
         let mut samples_by_types_l0: BTreeMap<_, Labels> = BTreeMap::new();
@@ -661,7 +661,7 @@ impl CalculatorBase for SphericalExpansionByPair {
                 }
             }
 
-            results.push(builder.finish());
+            results.push(builder.finish_assume_unique());
         }
 
         return Ok(results);
@@ -684,7 +684,7 @@ impl CalculatorBase for SphericalExpansionByPair {
                         component.add(&[LabelValue::new(m)]);
                     }
 
-                    let components = vec![component.finish()];
+                    let components = vec![component.finish_assume_unique()];
                     entry.insert(components).clone()
                 }
             };
@@ -709,7 +709,7 @@ impl CalculatorBase for SphericalExpansionByPair {
                     properties.add(&[n]);
                 }
 
-                return vec![properties.finish(); keys.count()];
+                return vec![properties.finish_assume_unique(); keys.count()];
             }
             SphericalExpansionBasis::Explicit(ref basis) => {
                 let mut result = Vec::new();
@@ -721,7 +721,7 @@ impl CalculatorBase for SphericalExpansionByPair {
                         properties.add(&[n]);
                     }
 
-                    result.push(properties.finish());
+                    result.push(properties.finish_assume_unique());
                 }
                 return result;
             }

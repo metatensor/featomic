@@ -67,7 +67,7 @@ impl CalculatorBase for AtomicComposition {
                     }
                 }
             }
-            samples.push(builder.finish());
+            samples.push(builder.finish_assume_unique());
         }
 
         return Ok(samples);
