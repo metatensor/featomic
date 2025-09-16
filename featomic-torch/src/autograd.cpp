@@ -5,7 +5,6 @@
 
 #include "./openmp.hpp"
 
-using namespace metatensor_torch;
 using namespace featomic_torch;
 
 // # NOTATION
@@ -29,7 +28,7 @@ struct PositionsGrad: torch::autograd::Function<PositionsGrad<scalar_t>> {
         torch::autograd::AutogradContext *ctx,
         torch::Tensor all_positions,
         torch::Tensor dA_dX,
-        TorchTensorBlock dX_dr,
+        metatensor_torch::TensorBlock dX_dr,
         torch::IValue systems_start
     );
 
@@ -46,7 +45,7 @@ struct CellGrad: torch::autograd::Function<CellGrad<scalar_t>> {
         torch::autograd::AutogradContext *ctx,
         torch::Tensor all_cells,
         torch::Tensor dA_dX,
-        TorchTensorBlock dX_dH,
+        metatensor_torch::TensorBlock dX_dH,
         torch::Tensor systems
     );
 
@@ -72,16 +71,16 @@ struct CellGrad: torch::autograd::Function<CellGrad<scalar_t>> {
         }                                                                      \
     } while (false)
 
-static std::vector<TorchTensorBlock> extract_gradient_blocks(
-    const TorchTensorMap& tensor,
+static std::vector<metatensor_torch::TensorBlock> extract_gradient_blocks(
+    const metatensor_torch::TensorMap& tensor,
     const std::string& parameter
 ) {
-    auto gradients = std::vector<TorchTensorBlock>();
+    auto gradients = std::vector<metatensor_torch::TensorBlock>();
     for (int64_t i=0; i<tensor->keys()->count(); i++) {
-        auto block = TensorMapHolder::block_by_id(tensor, i);
-        auto gradient = TensorBlockHolder::gradient(block, parameter);
+        auto block = metatensor_torch::TensorMapHolder::block_by_id(tensor, i);
+        auto gradient = metatensor_torch::TensorBlockHolder::gradient(block, parameter);
 
-        gradients.push_back(torch::make_intrusive<TensorBlockHolder>(
+        gradients.push_back(torch::make_intrusive<metatensor_torch::TensorBlockHolder>(
             gradient->values(),
             gradient->samples(),
             gradient->components(),
@@ -101,15 +100,15 @@ std::vector<torch::Tensor> FeatomicAutograd::forward(
     torch::Tensor all_positions,
     torch::Tensor all_cells,
     torch::IValue systems_start,
-    metatensor_torch::TorchTensorBlock block
+    metatensor_torch::TensorBlock block
 ) {
     ctx->save_for_backward({all_positions, all_cells});
 
     if (all_positions.requires_grad()) {
         ctx->saved_data.emplace("systems_start", systems_start);
 
-        auto gradient = TensorBlockHolder::gradient(block, "positions");
-        ctx->saved_data["positions_gradients"] = torch::make_intrusive<TensorBlockHolder>(
+        auto gradient = metatensor_torch::TensorBlockHolder::gradient(block, "positions");
+        ctx->saved_data["positions_gradients"] = torch::make_intrusive<metatensor_torch::TensorBlockHolder>(
             gradient->values(),
             gradient->samples(),
             gradient->components(),
@@ -120,8 +119,8 @@ std::vector<torch::Tensor> FeatomicAutograd::forward(
     if (all_cells.requires_grad()) {
         ctx->saved_data["samples"] = block->samples();
 
-        auto gradient = TensorBlockHolder::gradient(block, "cell");
-        ctx->saved_data["cell_gradients"] = torch::make_intrusive<TensorBlockHolder>(
+        auto gradient = metatensor_torch::TensorBlockHolder::gradient(block, "cell");
+        ctx->saved_data["cell_gradients"] = torch::make_intrusive<metatensor_torch::TensorBlockHolder>(
             gradient->values(),
             gradient->samples(),
             gradient->components(),
@@ -151,7 +150,7 @@ std::vector<torch::Tensor> FeatomicAutograd::backward(
 
     // ===================== gradient w.r.t. positions ====================== //
     if (all_positions.requires_grad()) {
-        auto forward_gradient = ctx->saved_data["positions_gradients"].toCustomClass<TensorBlockHolder>();
+        auto forward_gradient = ctx->saved_data["positions_gradients"].toCustomClass<metatensor_torch::TensorBlockHolder>();
         auto systems_start = ctx->saved_data["systems_start"];
 
         if (all_positions.scalar_type() == torch::kFloat32) {
@@ -179,8 +178,8 @@ std::vector<torch::Tensor> FeatomicAutograd::backward(
 
     // ======================= gradient w.r.t. cell ========================= //
     if (all_cells.requires_grad()) {
-        auto forward_gradient = ctx->saved_data["cell_gradients"].toCustomClass<TensorBlockHolder>();
-        auto block_samples = ctx->saved_data["samples"].toCustomClass<LabelsHolder>();
+        auto forward_gradient = ctx->saved_data["cell_gradients"].toCustomClass<metatensor_torch::TensorBlockHolder>();
+        auto block_samples = ctx->saved_data["samples"].toCustomClass<metatensor_torch::LabelsHolder>();
 
         // find the index of the "system" dimension in the samples
         const auto& sample_names = block_samples->names();
@@ -238,7 +237,7 @@ std::vector<torch::Tensor> PositionsGrad<scalar_t>::forward(
     torch::autograd::AutogradContext *ctx,
     torch::Tensor all_positions,
     torch::Tensor dA_dX,
-    TorchTensorBlock dX_dr,
+    metatensor_torch::TensorBlock dX_dr,
     torch::IValue systems_start_ivalue
 ) {
     // ====================== input parameters checks ======================= //
@@ -323,10 +322,10 @@ std::vector<torch::Tensor> PositionsGrad<scalar_t>::backward(
 ) {
     // ====================== input parameters checks ======================= //
     auto saved_variables = ctx->get_saved_variables();
-    auto all_positions = saved_variables[0];
-    auto dA_dX = saved_variables[1];
+    const auto& all_positions = saved_variables[0];
+    const auto& dA_dX = saved_variables[1];
 
-    auto dX_dr = ctx->saved_data["positions_gradients"].toCustomClass<TensorBlockHolder>();
+    auto dX_dr = ctx->saved_data["positions_gradients"].toCustomClass<metatensor_torch::TensorBlockHolder>();
     auto systems_start = ctx->saved_data["systems_start"].toIntList();
 
     auto dB_d_dA_dr = grad_outputs[0]; // gradient of B w.r.t. dA/dr (output of forward)
@@ -430,7 +429,7 @@ std::vector<torch::Tensor> CellGrad<scalar_t>::forward(
     torch::autograd::AutogradContext *ctx,
     torch::Tensor all_cells,
     torch::Tensor dA_dX,
-    TorchTensorBlock dX_dH,
+    metatensor_torch::TensorBlock dX_dH,
     torch::Tensor systems
 ) {
     // ====================== input parameters checks ======================= //
@@ -509,11 +508,11 @@ std::vector<torch::Tensor> CellGrad<scalar_t>::backward(
 ) {
     // ====================== input parameters checks ======================= //
     auto saved_variables = ctx->get_saved_variables();
-    auto all_cells = saved_variables[0];
-    auto dA_dX = saved_variables[1];
-    auto systems = saved_variables[2];
+    const auto& all_cells = saved_variables[0];
+    const auto& dA_dX = saved_variables[1];
+    const auto& systems = saved_variables[2];
 
-    auto dX_dH = ctx->saved_data["cell_gradients"].toCustomClass<TensorBlockHolder>();
+    auto dX_dH = ctx->saved_data["cell_gradients"].toCustomClass<metatensor_torch::TensorBlockHolder>();
 
     auto dB_d_dA_dH = grad_outputs[0]; // gradient of B w.r.t. dA/dH (output of forward)
 

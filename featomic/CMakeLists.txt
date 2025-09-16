@@ -245,7 +245,7 @@ endif()
 #
 # When updating METATENSOR_FETCH_VERSION, you will also have to update the
 # SHA256 sum of the file in `FetchContent_Declare`.
-set(METATENSOR_FETCH_VERSION "0.1.14")
+set(METATENSOR_FETCH_VERSION "0.1.17")
 set(METATENSOR_REQUIRED_VERSION "0.1")
 if (FEATOMIC_FETCH_METATENSOR)
     message(STATUS "Fetching metatensor-core from github")
@@ -255,7 +255,7 @@ if (FEATOMIC_FETCH_METATENSOR)
     FetchContent_Declare(
         metatensor
         URL      ${URL_ROOT}/metatensor-core-v${METATENSOR_FETCH_VERSION}/metatensor-core-cxx-${METATENSOR_FETCH_VERSION}.tar.gz
-        URL_HASH SHA256=dc6cdd9cf0113e2f012ecf68b81cc7cfc71bef3d2020b41574de8fa403dba646
+        URL_HASH SHA256=42119e11908239915ccc187d7ca65449b461f1d4b5af4d6df1fb613d687da76a
     )
 
     if (CMAKE_VERSION VERSION_GREATER 3.18)

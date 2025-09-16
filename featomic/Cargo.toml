@@ -25,7 +25,7 @@ metatensor-static = ["metatensor/static"]
 all-features = true
 
 [dependencies]
-metatensor = {version = "0.2", features = ["rayon"]}
+metatensor = {version = "0.2.2", features = ["rayon"]}
 
 ndarray = {version = "0.16", features = ["rayon", "serde", "approx"]}
 num-traits = "0.2"

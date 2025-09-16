@@ -41,7 +41,7 @@ public:
         torch::Tensor all_positions,
         torch::Tensor all_cells,
         torch::IValue systems_start,
-        metatensor_torch::TorchTensorBlock block
+        metatensor_torch::TensorBlock block
     );
 
     /// Backward step: get the gradients of some quantity `A` w.r.t. the outputs

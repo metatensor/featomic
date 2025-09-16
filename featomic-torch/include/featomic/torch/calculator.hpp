@@ -100,7 +100,7 @@ public:
     }
 
     /// Run a calculation for the given `systems` using the given options.
-    metatensor_torch::TorchTensorMap compute(
+    metatensor_torch::TensorMap compute(
         std::vector<metatomic_torch::System> systems,
         TorchCalculatorOptions options = {}
     );
@@ -123,9 +123,9 @@ private:
 /// contain `"cell"` gradients.
 ///
 /// `forward_gradients` controls which gradients are left inside the TensorMap.
-metatensor_torch::TorchTensorMap FEATOMIC_TORCH_EXPORT register_autograd(
+metatensor_torch::TensorMap FEATOMIC_TORCH_EXPORT register_autograd(
     std::vector<metatomic_torch::System> systems,
-    metatensor_torch::TorchTensorMap precomputed,
+    metatensor_torch::TensorMap precomputed,
     std::vector<std::string> forward_gradients
 );
 

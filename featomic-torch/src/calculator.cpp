@@ -7,7 +7,6 @@
 #include "featomic/torch/autograd.hpp"
 #include "featomic/torch/system.hpp"
 
-using namespace metatensor_torch;
 using namespace featomic_torch;
 
 class DisableFeatomicCellGradientWarning {
@@ -40,7 +39,7 @@ public:
 };
 
 // move a block created by featomic to torch
-static TorchTensorBlock block_to_torch(
+static metatensor_torch::TensorBlock block_to_torch(
     std::shared_ptr<metatensor::TensorMap> tensor,
     metatensor::TensorBlock block
 ) {
@@ -64,17 +63,17 @@ static TorchTensorBlock block_to_torch(
         torch::TensorOptions().dtype(torch::kF64).device(torch::kCPU)
     );
 
-    auto components = std::vector<TorchLabels>();
+    auto components = std::vector<metatensor_torch::Labels>();
     components.reserve(block.components().size());
     for (auto component: block.components()) {
-        components.emplace_back(torch::make_intrusive<LabelsHolder>(std::move(component)));
+        components.emplace_back(torch::make_intrusive<metatensor_torch::LabelsHolder>(std::move(component)));
     }
 
-    auto new_block = torch::make_intrusive<TensorBlockHolder>(
+    auto new_block = torch::make_intrusive<metatensor_torch::TensorBlockHolder>(
         torch_values,
-        torch::make_intrusive<LabelsHolder>(block.samples()),
+        torch::make_intrusive<metatensor_torch::LabelsHolder>(block.samples()),
         std::move(components),
-        torch::make_intrusive<LabelsHolder>(block.properties())
+        torch::make_intrusive<metatensor_torch::LabelsHolder>(block.properties())
     );
 
     for (const auto& parameter: block.gradients_list()) {
@@ -121,14 +120,14 @@ static bool all_systems_use_native(const std::vector<SystemAdapter>& systems) {
     return result;
 }
 
-static TorchTensorMap remove_other_gradients(
-    TorchTensorMap tensor,
+static metatensor_torch::TensorMap remove_other_gradients(
+    metatensor_torch::TensorMap tensor,
     const std::vector<std::string>& gradients_to_keep
 ) {
-    auto new_blocks = std::vector<TorchTensorBlock>();
+    auto new_blocks = std::vector<metatensor_torch::TensorBlock>();
     for (int64_t i=0; i<tensor->keys()->count(); i++) {
-        auto block = TensorMapHolder::block_by_id(tensor, i);
-        auto new_block = torch::make_intrusive<TensorBlockHolder>(
+        auto block = metatensor_torch::TensorMapHolder::block_by_id(tensor, i);
+        auto new_block = torch::make_intrusive<metatensor_torch::TensorBlockHolder>(
             block->values(),
             block->samples(),
             block->components(),
@@ -136,14 +135,14 @@ static TorchTensorMap remove_other_gradients(
         );
 
         for (const auto& parameter: gradients_to_keep) {
-            auto gradient = TensorBlockHolder::gradient(block, parameter);
+            auto gradient = metatensor_torch::TensorBlockHolder::gradient(block, parameter);
             new_block->add_gradient(parameter, gradient);
         }
 
         new_blocks.push_back(std::move(new_block));
     }
 
-    return torch::make_intrusive<TensorMapHolder>(
+    return torch::make_intrusive<metatensor_torch::TensorMapHolder>(
         tensor->keys(),
         std::move(new_blocks)
     );
@@ -190,7 +189,7 @@ static torch::Device systems_device(const std::vector<System>& systems) {
     }
 }
 
-metatensor_torch::TorchTensorMap CalculatorHolder::compute(
+metatensor_torch::TensorMap CalculatorHolder::compute(
     std::vector<metatomic_torch::System> systems,
     TorchCalculatorOptions torch_options
 ) {
@@ -261,7 +260,9 @@ metatensor_torch::TorchTensorMap CalculatorHolder::compute(
 
     options.use_native_system = all_systems_use_native(featomic_systems);
     if (torch_options->selected_keys().isCustomClass()) {
-        options.selected_keys = torch_options->selected_keys().toCustomClass<LabelsHolder>()->as_metatensor();
+        options.selected_keys = torch_options->selected_keys()
+                                             .toCustomClass<metatensor_torch::LabelsHolder>()
+                                             ->as_metatensor();
     }
     options.selected_samples = torch_options->selected_samples_featomic();
     options.selected_properties = torch_options->selected_properties_featomic();
@@ -278,14 +279,14 @@ metatensor_torch::TorchTensorMap CalculatorHolder::compute(
     }
 
     // move all data to torch
-    auto blocks = std::vector<TorchTensorBlock>();
+    auto blocks = std::vector<metatensor_torch::TensorBlock>();
     blocks.reserve(raw_descriptor->keys().count());
     for (size_t block_i=0; block_i<raw_descriptor->keys().count(); block_i++) {
         blocks.emplace_back(block_to_torch(raw_descriptor, raw_descriptor->block_by_id(block_i)));
     }
 
     auto torch_descriptor = torch::make_intrusive<metatensor_torch::TensorMapHolder>(
-        torch::make_intrusive<LabelsHolder>(raw_descriptor->keys()),
+        torch::make_intrusive<metatensor_torch::LabelsHolder>(raw_descriptor->keys()),
         std::move(blocks)
     );
 
@@ -295,7 +296,7 @@ metatensor_torch::TorchTensorMap CalculatorHolder::compute(
 
     // ============ register the autograd nodes for each block ============== //
     for (int64_t block_i=0; block_i<torch_descriptor->keys()->count(); block_i++) {
-        auto block = TensorMapHolder::block_by_id(torch_descriptor, block_i);
+        auto block = metatensor_torch::TensorMapHolder::block_by_id(torch_descriptor, block_i);
         // see `FeatomicAutograd::forward` for an explanation of what's happening
         auto _ = FeatomicAutograd::apply(
             all_positions,
@@ -314,9 +315,9 @@ metatensor_torch::TorchTensorMap CalculatorHolder::compute(
 }
 
 
-metatensor_torch::TorchTensorMap featomic_torch::register_autograd(
+metatensor_torch::TensorMap featomic_torch::register_autograd(
     std::vector<metatomic_torch::System> systems,
-    metatensor_torch::TorchTensorMap precomputed,
+    metatensor_torch::TensorMap precomputed,
     std::vector<std::string> forward_gradients
 ) {
     if (precomputed->keys()->count() == 0) {
@@ -327,7 +328,7 @@ metatensor_torch::TorchTensorMap featomic_torch::register_autograd(
     auto all_cells = stack_all_cells(systems);
     auto systems_start_ivalue = torch::IValue();
 
-    auto precomputed_gradients = TensorMapHolder::block_by_id(precomputed, 0)->gradients_list();
+    auto precomputed_gradients = metatensor_torch::TensorMapHolder::block_by_id(precomputed, 0)->gradients_list();
 
     if (all_positions.requires_grad()) {
         if (!contains(precomputed_gradients, "positions")) {
@@ -370,7 +371,7 @@ metatensor_torch::TorchTensorMap featomic_torch::register_autograd(
     }
 
     for (int64_t block_i=0; block_i<precomputed->keys()->count(); block_i++) {
-        auto block = TensorMapHolder::block_by_id(precomputed, block_i);
+        auto block = metatensor_torch::TensorMapHolder::block_by_id(precomputed, block_i);
         auto _ = FeatomicAutograd::apply(
             all_positions,
             all_cells,
