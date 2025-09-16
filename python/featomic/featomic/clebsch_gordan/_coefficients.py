@@ -274,7 +274,10 @@ def _cg_coeff_dict_to_tensormap_dense(
         blocks.append(
             TensorBlock(
                 values=_dispatch.contiguous(l1l2lam_values.reshape(block_value_shape)),
-                samples=Labels.range("_", 1),
+                samples=Labels(
+                    ["_"],
+                    _dispatch.int_array_like([0], labels_values_like).reshape(-1, 1),
+                ),
                 components=[
                     Labels(
                         ["m1"],
@@ -295,7 +298,10 @@ def _cg_coeff_dict_to_tensormap_dense(
                         ).reshape(-1, 1),
                     ),
                 ],
-                properties=Labels.range("cg_coefficient", 1),
+                properties=Labels(
+                    ["cg_coefficient"],
+                    _dispatch.int_array_like([0], labels_values_like).reshape(-1, 1),
+                ),
             )
         )
 
@@ -351,7 +357,10 @@ def _cg_coeff_dict_to_tensormap_sparse(
                 values=_dispatch.contiguous(values),
                 samples=Labels(["m1", "m2", "mu"], l1l2lam_sample_values),
                 components=[],
-                properties=Labels.range("cg_coefficient", 1),
+                properties=Labels(
+                    ["cg_coefficient"],
+                    _dispatch.int_array_like([0], labels_values_like).reshape(-1, 1),
+                ),
             )
         )
 
