@@ -27,7 +27,7 @@ impl KeysBuilder for CenterTypesKeys {
         for atomic_type in all_types {
             keys.add(&[atomic_type]);
         }
-        return Ok(keys.finish());
+        return Ok(keys.finish_assume_unique());
     }
 }
 
@@ -52,7 +52,7 @@ impl KeysBuilder for AllTypesPairsKeys {
             keys.add(&[center, neighbor]);
         }
 
-        return Ok(keys.finish());
+        return Ok(keys.finish_assume_unique());
     }
 }
 
@@ -91,7 +91,7 @@ impl KeysBuilder for CenterSingleNeighborsTypesKeys {
             keys.add(&[center, neighbor]);
         }
 
-        return Ok(keys.finish());
+        return Ok(keys.finish_assume_unique());
     }
 }
 
@@ -154,6 +154,6 @@ impl KeysBuilder for CenterTwoNeighborsTypesKeys {
             keys_builder.add(&[center_type, neighbor_1_type, neighbor_2_type]);
         }
 
-        return Ok(keys_builder.finish());
+        return Ok(keys_builder.finish_assume_unique());
     }
 }

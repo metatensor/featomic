@@ -129,7 +129,7 @@ impl SoapRadialSpectrum {
             );
         }
 
-        return TensorMap::new(keys_builder.finish(), blocks).expect("invalid TensorMap");
+        return TensorMap::new(keys_builder.finish_assume_unique(), blocks).expect("invalid TensorMap");
     }
 }
 
@@ -218,7 +218,7 @@ impl CalculatorBase for SoapRadialSpectrum {
         for n in 0..self.parameters.basis.radial.size() {
             properties.add(&[n]);
         }
-        let properties = properties.finish();
+        let properties = properties.finish_assume_unique();
 
         return vec![properties; keys.count()];
     }

@@ -473,7 +473,7 @@ impl CalculatorBase for LodeSphericalExpansion {
             }
         }
 
-        return Ok(builder.finish());
+        return Ok(builder.finish_assume_unique());
     }
 
     fn sample_names(&self) -> Vec<&str> {
@@ -553,7 +553,7 @@ impl CalculatorBase for LodeSphericalExpansion {
                 component.add(&[LabelValue::new(m)]);
             }
 
-            let components = vec![component.finish()];
+            let components = vec![component.finish_assume_unique()];
             component_by_l.insert(*o3_lambda, components);
         }
 
@@ -579,7 +579,7 @@ impl CalculatorBase for LodeSphericalExpansion {
                     properties.add(&[n]);
                 }
 
-                return vec![properties.finish(); keys.count()];
+                return vec![properties.finish_assume_unique(); keys.count()];
             }
             SphericalExpansionBasis::Explicit(ref basis) => {
                 let mut result = Vec::new();
@@ -591,7 +591,7 @@ impl CalculatorBase for LodeSphericalExpansion {
                         properties.add(&[n]);
                     }
 
-                    result.push(properties.finish());
+                    result.push(properties.finish_assume_unique());
                 }
                 return result;
             }

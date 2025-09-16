@@ -49,7 +49,7 @@ impl SamplesBuilder for LongRangeSamplesPerAtom {
             }
         }
 
-        return Ok(builder.finish());
+        return Ok(builder.finish_assume_unique());
     }
 
     fn gradients_for(&self, systems: &mut [Box<dyn System>], samples: &Labels) -> Result<Labels, Error> {
@@ -67,7 +67,7 @@ impl SamplesBuilder for LongRangeSamplesPerAtom {
             }
         }
 
-        return Ok(builder.finish());
+        return Ok(builder.finish_assume_unique());
     }
 }
 

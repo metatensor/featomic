@@ -153,7 +153,7 @@ pub fn split_tensor_map_by_system(descriptor: &mut TensorMap, n_systems: usize) 
 
                 let mut shape = Vec::new();
 
-                let samples = samples.finish();
+                let samples = samples.finish_assume_unique();
                 shape.push(samples.count());
 
                 for component in &*block_data.components {
@@ -217,7 +217,7 @@ pub fn split_tensor_map_by_system(descriptor: &mut TensorMap, n_systems: usize) 
 
                     let mut shape = Vec::new();
 
-                    let samples = samples.finish();
+                    let samples = samples.finish_assume_unique();
                     shape.push(samples.count());
 
                     for component in &*gradient.components {

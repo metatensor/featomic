@@ -103,7 +103,10 @@ impl LabelsSelection<'_> {
                     for entry in matches {
                         builder.add(&labels[entry as usize]);
                     }
-                    results.push(builder.finish());
+
+                    // the labels entries are unique because they are a
+                    // sub-selection of existing labels
+                    results.push(builder.finish_assume_unique());
                 }
 
                 return Ok(results);
@@ -301,7 +304,7 @@ impl Calculator {
                     for entry in matches {
                         builder.add(&default_keys[entry as usize]);
                     }
-                    builder.finish()
+                    builder.finish_assume_unique()
                 }
             }
             None => default_keys,
@@ -363,7 +366,7 @@ impl Calculator {
                 for sample_i in 0..samples.count() {
                     builder.add(&[sample_i]);
                 }
-                cell_gradient_samples.push(builder.finish());
+                cell_gradient_samples.push(builder.finish_assume_unique());
             }
             Some(cell_gradient_samples)
         } else {
@@ -384,7 +387,7 @@ impl Calculator {
                 for sample_i in 0..samples.count() {
                     builder.add(&[sample_i]);
                 }
-                strain_gradient_samples.push(builder.finish());
+                strain_gradient_samples.push(builder.finish_assume_unique());
             }
             Some(strain_gradient_samples)
         } else {
