@@ -279,46 +279,48 @@ def int_range_like(min_val: int, max_val: int, like):
     array dtype and device.
     """
     if isinstance(like, TorchTensor):
-        return torch.arange(min_val, max_val, dtype=torch.int64, device=like.device)
+        return torch.arange(min_val, max_val, dtype=like.dtype, device=like.device)
     elif isinstance(like, np.ndarray):
-        return np.arange(min_val, max_val).astype(np.int64)
+        return np.arange(min_val, max_val).astype(like.dtype)
     else:
         raise TypeError(UNKNOWN_ARRAY_TYPE)
 
 
 def int_array_like(int_list: Union[List[int], List[List[int]]], like):
     """
-    Converts the input list of int to a numpy array or torch tensor
-    based on the type of `like`.
+    Converts the input list of int to a numpy array or torch tensor based on the type of
+    ``like``. The resulting array/tensor will have the same dtype and device as
+    ``like``.
     """
     if isinstance(like, TorchTensor):
         if torch.jit.isinstance(int_list, List[int]):
-            return torch.tensor(int_list, dtype=torch.int64, device=like.device)
+            return torch.tensor(int_list, dtype=like.dtype, device=like.device)
         else:
-            return torch.tensor(int_list, dtype=torch.int64, device=like.device)
+            return torch.tensor(int_list, dtype=like.dtype, device=like.device)
     elif isinstance(like, np.ndarray):
-        return np.array(int_list).astype(np.int64)
+        return np.array(int_list).astype(like.dtype)
     else:
         raise TypeError(UNKNOWN_ARRAY_TYPE)
 
 
 def real_array_like(float_list: List[float], like):
     """
-    Converts the input list of float to a numpy array or torch tensor
-    based on the array type of `like`.
+    Converts the input list of float to a numpy array or torch tensor based on the array
+    type of ``like``. The resulting array/tensor will have the same dtype and device as
+    ``like``.
     """
     if isinstance(like, TorchTensor):
-        return torch.tensor(float_list, dtype=torch.float64, device=like.device)
+        return torch.tensor(float_list, dtype=like.dtype, device=like.device)
     elif isinstance(like, np.ndarray):
-        return np.array(float_list).astype(np.float64)
+        return np.array(float_list).astype(like.dtype)
     else:
         raise TypeError(UNKNOWN_ARRAY_TYPE)
 
 
 def bool_array_like(bool_list: List[bool], like):
     """
-    Converts the input list of bool to a numpy array or torch tensor
-    based on the type of `like`.
+    Converts the input list of bool to a numpy array or torch tensor based on the type
+    of ``like``. The resulting array/tensor will have the same device as ``like``.
     """
     if isinstance(like, TorchTensor):
         return torch.tensor(bool_list, dtype=torch.bool, device=like.device)

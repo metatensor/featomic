@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import io
+import os
 
 import metatensor.torch
 import pytest
@@ -90,3 +91,43 @@ def test_jit_save_load(cg_backend: str):
         torch.jit.save(calculator, buffer)
         buffer.seek(0)
         torch.jit.load(buffer)
+
+
+def can_use_mps_backend():
+    import torch
+
+    return (
+        # Github Actions M1 runners don't have a GPU accessible
+        os.environ.get("GITHUB_ACTIONS") is None
+        and hasattr(torch.backends, "mps")
+        and torch.backends.mps.is_built()
+        and torch.backends.mps.is_available()
+    )
+
+
+@pytest.mark.parametrize("cg_backend", ["python-dense", "python-sparse"])
+def test_dtype_device(cg_backend):
+    dtype_device = [
+        (torch.float32, "cpu"),
+        (torch.float64, "cpu"),
+    ]
+
+    if can_use_mps_backend():
+        dtype_device.append((torch.float32, "mps"))
+
+    if torch.cuda.is_available():
+        dtype_device.append((torch.float32, "cuda"))
+        dtype_device.append((torch.float64, "cuda"))
+
+    for dtype, device in dtype_device:
+        nu_1 = spherical_expansion().to(dtype).to(device)
+
+        density_correlations = DensityCorrelations(
+            n_correlations=1,
+            max_angular=3,
+            cg_backend=cg_backend,
+            dtype=dtype,
+            device=device,
+        )
+
+        density_correlations.compute(nu_1, angular_cutoff=2)
