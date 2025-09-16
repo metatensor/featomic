@@ -122,8 +122,8 @@ find_package(Torch 2.1 REQUIRED)
 #
 # When updating METATENSOR_TORCH_FETCH_VERSION, you will also have to update the
 # SHA256 sum of the file in `FetchContent_Declare`.
-set(METATENSOR_TORCH_FETCH_VERSION "0.7.6")
-set(REQUIRED_METATENSOR_TORCH_VERSION "0.7")
+set(METATENSOR_TORCH_FETCH_VERSION "0.8.0")
+set(REQUIRED_METATENSOR_TORCH_VERSION "0.8")
 if (FEATOMIC_FETCH_METATENSOR_TORCH)
     message(STATUS "Fetching metatensor-torch from github")
 
@@ -132,7 +132,7 @@ if (FEATOMIC_FETCH_METATENSOR_TORCH)
     FetchContent_Declare(
         metatensor_torch
         URL      ${URL_ROOT}/metatensor-torch-v${METATENSOR_TORCH_FETCH_VERSION}/metatensor-torch-cxx-${METATENSOR_TORCH_FETCH_VERSION}.tar.gz
-        URL_HASH SHA256=8dcc07c86094034facba09ebcc6b52f41847c2413737c8f9c88ae0a2990f8d41
+        URL_HASH SHA256=61d383ce958deafe0e3916088185527680c9118588722b17ec5c39cfbaa6da55
     )
 
     FetchContent_MakeAvailable(metatensor_torch)
@@ -150,19 +150,17 @@ endif()
 #
 # When updating METATOMIC_TORCH_FETCH_VERSION, you will also have to update the
 # SHA256 sum of the file in `FetchContent_Declare`.
-set(METATOMIC_TORCH_FETCH_VERSION "0.1.1")
+set(METATOMIC_TORCH_FETCH_VERSION "0.1.4")
 set(REQUIRED_METATOMIC_TORCH_VERSION "0.1")
 if (FEATOMIC_FETCH_METATENSOR_TORCH)
     message(STATUS "Fetching metatomic-torch from github")
-    find_package(Patch REQUIRED)
 
     set(URL_ROOT "https://github.com/metatensor/metatomic/releases/download")
     include(FetchContent)
     FetchContent_Declare(
         metatomic_torch
         URL      ${URL_ROOT}/metatomic-torch-v${METATOMIC_TORCH_FETCH_VERSION}/metatomic-torch-cxx-${METATOMIC_TORCH_FETCH_VERSION}.tar.gz
-        URL_HASH SHA256=2dc0a0213b7f5df3ac519516f1b17801baa6973d96b339f0b39cadea310fefe1
-        PATCH_COMMAND ${Patch_EXECUTABLE} -p2 < ${CMAKE_CURRENT_SOURCE_DIR}/cmake/metatomic-cmake.patch
+        URL_HASH SHA256=385ec8b8515d674b6a9f093f724792b2469e7ea2365ca596f574b64e38494f94
     )
 
     FetchContent_MakeAvailable(metatomic_torch)
