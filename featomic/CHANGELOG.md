@@ -17,6 +17,12 @@ a changelog](https://keepachangelog.com/en/1.1.0/) format. This project follows
 ### Removed
 -->
 
+## [Version 0.6.2](https://github.com/metatensor/featomic/releases/tag/featomic-v0.6.2) - 2025-09-17
+
+### Changed
+
+- Updated to metatensor v0.1.17, which should bring faster `Labels` creation
+
 ## [Version 0.6.1](https://github.com/metatensor/featomic/releases/tag/featomic-v0.6.1) - 2025-02-21
 
 ### Fixed
@@ -33,7 +39,7 @@ a changelog](https://keepachangelog.com/en/1.1.0/) format. This project follows
 ## [Version 0.6.0](https://github.com/metatensor/featomic/releases/tag/featomic-v0.6.0) - 2024-12-20
 
 ### Added
- 
+
 - Multiple atomistic features calculators with a native implementation:
     - SOAP spherical expansion, radial spectrum, power spectrum and spherical
       expansion for pairs of atoms;
