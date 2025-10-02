@@ -21,7 +21,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             rust-version: stable
             rust-target: x86_64-unknown-linux-gnu
             build-type: debug
@@ -29,7 +29,7 @@ jobs:
             extra-name: / static C library
             working-directory: /home/runner/work/featomic/featomic/
 
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             rust-version: stable
             rust-target: x86_64-unknown-linux-gnu
             build-type: release
@@ -38,13 +38,13 @@ jobs:
             extra-name: / release valgrind
             working-directory: /home/runner/work/featomic/featomic/
 
-          # check the build on a stock Ubuntu 20.04, including cmake 3.16
-          - os: ubuntu-22.04
+          # check the build on a stock Ubuntu 22.04, including cmake 3.22
+          - os: ubuntu-24.04
             rust-version: "1.74"
-            container: ubuntu:20.04
+            container: ubuntu:22.04
             rust-target: x86_64-unknown-linux-gnu
             build-type: debug
-            extra-name: / cmake 3.16
+            extra-name: / cmake 3.22
             working-directory: /__w/featomic/featomic
 
           - os: macos-14
@@ -61,7 +61,7 @@ jobs:
 
     steps:
       - name: install dependencies in container
-        if: matrix.container == 'ubuntu:20.04'
+        if: matrix.container == 'ubuntu:22.04'
         run: |
           apt update
           apt install -y software-properties-common
@@ -70,7 +70,7 @@ jobs:
         working-directory: /
 
       - name: free disk space
-        if: matrix.os == 'ubuntu-22.04'
+        if: matrix.os == 'ubuntu-24.04'
         run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android || true
 
       - uses: actions/checkout@v4
@@ -78,7 +78,7 @@ jobs:
           fetch-depth: 0
 
       - name: Configure git safe directory
-        if: matrix.container == 'ubuntu:20.04'
+        if: matrix.container == 'ubuntu:22.04'
         run: git config --global --add safe.directory /__w/featomic/featomic
 
       - name: "copy the code to C: drive"
@@ -132,7 +132,7 @@ jobs:
 
   # second set of jobs checking that (non-test) code still compiles/run as expected
   prevent-bitrot:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     name: check examples / benchmarks
     steps:
       - uses: actions/checkout@v4
@@ -164,7 +164,7 @@ jobs:
 
   # third set of jobs checking containing basic rust linting
   lint-rust:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     name: Lint Rust code
     strategy:
       matrix:

@@ -18,20 +18,21 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             torch-version: "2.1"
             python-version: "3.9"
             cargo-test-flags: --release
 
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             torch-version: "2.8"
             python-version: "3.13"
             cargo-test-flags: --release
             do-valgrind: true
 
-          - os: ubuntu-22.04
-            container: ubuntu:20.04
-            extra-name: ", cmake 3.16"
+          # check the build on a stock Ubuntu 22.04, including cmake 3.22
+          - os: ubuntu-24.04
+            container: ubuntu:22.04
+            extra-name: ", cmake 3.22"
             torch-version: "2.8"
             python-version: "3.13"
             cargo-test-flags: ""
@@ -49,7 +50,7 @@ jobs:
 
     steps:
       - name: install dependencies in container
-        if: matrix.container == 'ubuntu:20.04'
+        if: matrix.container == 'ubuntu:22.04'
         run: |
           apt update
           apt install -y software-properties-common
@@ -62,7 +63,7 @@ jobs:
           fetch-depth: 0
 
       - name: Configure git safe directory
-        if: matrix.container == 'ubuntu:20.04'
+        if: matrix.container == 'ubuntu:22.04'
         run: git config --global --add safe.directory /__w/featomic/featomic
 
       - name: setup rust
@@ -72,7 +73,7 @@ jobs:
 
       # we get torch from pip to run the C++ test
       - name: setup Python
-        if: matrix.container != 'ubuntu:20.04'
+        if: matrix.container != 'ubuntu:22.04'
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
