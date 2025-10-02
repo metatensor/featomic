@@ -47,7 +47,7 @@ jobs:
             extra-name: / cmake 3.22
             working-directory: /__w/featomic/featomic
 
-          - os: macos-14
+          - os: macos-15
             rust-version: stable
             rust-target: aarch64-apple-darwin
             build-type: debug
