@@ -8,13 +8,8 @@ machine learning also called "descriptors" or "fingerprints". These representati
 can be used for atomistic machine learning (ml) models including ml potentials,
 visualization or similarity analysis.
 
-The core of the library is written in Rust and we provide
-APIs for C/C++ and Python as well.
-
-.. warning::
-
-    **Featomic is still as the proof of concept stage. You should not use it for
-    anything important.**
+The core of the library is written in Rust and we provide APIs for C/C++ and
+Python as well.
 
 List of implemented representations
 ###################################
