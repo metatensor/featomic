@@ -1,5 +1,5 @@
 # Basic CMake integration for featomic.
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.22)
 
 # Is featomic the main project configured by the user? Or is this being used
 # as a submodule/subdirectory?
@@ -258,15 +258,7 @@ if (FEATOMIC_FETCH_METATENSOR)
         URL_HASH SHA256=42119e11908239915ccc187d7ca65449b461f1d4b5af4d6df1fb613d687da76a
     )
 
-    if (CMAKE_VERSION VERSION_GREATER 3.18)
-        FetchContent_MakeAvailable(metatensor)
-    else()
-        if (NOT metatensor_POPULATED)
-            FetchContent_Populate(metatensor)
-        endif()
-
-        add_subdirectory(${metatensor_SOURCE_DIR} ${metatensor_BINARY_DIR})
-    endif()
+    FetchContent_MakeAvailable(metatensor)
 
     # metatensor will be installed in the same place as featomic, so set
     # the RPATH to ${ORIGIN} to load the file from there

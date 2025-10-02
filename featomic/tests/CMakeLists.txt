@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.22)
 
 message(STATUS "Running CMake version ${CMAKE_VERSION}")
 
@@ -66,16 +66,7 @@ FetchContent_Declare(
 )
 
 message(STATUS "Fetching chemfiles from github")
-if (CMAKE_VERSION VERSION_GREATER 3.18)
-    FetchContent_MakeAvailable(chemfiles)
-else()
-    if (NOT metatensor_POPULATED)
-        FetchContent_Populate(chemfiles)
-    endif()
-
-    add_subdirectory(${chemfiles_SOURCE_DIR} ${chemfiles_BINARY_DIR})
-endif()
-
+FetchContent_MakeAvailable(chemfiles)
 
 # Add featomic and metatensor to the rpath of tests, so we can load the shared
 # library directly from `target/{debug,release}/`
