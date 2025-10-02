@@ -11,5 +11,5 @@ def get_requires_for_build_wheel(config_settings=None):
     defaults = build_meta.get_requires_for_build_wheel(config_settings)
     return defaults + [
         "cmake",
-        "metatensor-core >=0.1.11,<0.2.0",
+        "metatensor-core >=0.1.15,<0.2.0",
     ]
