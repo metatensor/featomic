@@ -43,7 +43,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 schemars = "1"
 
-chemfiles = { version = "0.10", optional = true }
+chemfiles = { version = "0.10", optional = true, features = ["build-from-sources"]}
 
 approx = "0.5"
 
