@@ -1,5 +1,5 @@
-Available system implementation
-===============================
+Available system implementations
+================================
 
 .. autoclass:: featomic.IntoSystem
 
