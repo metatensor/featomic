@@ -17,6 +17,10 @@ a changelog](https://keepachangelog.com/en/1.1.0/) format. This project follows
 ### Removed
 -->
 
+### Changed
+
+- We now require Python >= 3.10
+
 ## [Version 0.6.3](https://github.com/metatensor/featomic/releases/tag/featomic-v0.6.2) - 2025-10-06
 
 ### Fixed
