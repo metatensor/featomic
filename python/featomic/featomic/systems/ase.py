@@ -90,7 +90,7 @@ class AseSystem(SystemBase):
         self._pairs = []
 
         nl_result = neighborlist.neighbor_list("ijdDS", self._atoms, cutoff)
-        for i, j, d, D, S in zip(*nl_result):
+        for i, j, d, D, S in zip(*nl_result, strict=True):
             # we want a half neighbor list, so drop all duplicated neighbors
             if j < i:
                 continue

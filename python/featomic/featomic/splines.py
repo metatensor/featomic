@@ -241,6 +241,7 @@ class SplinedRadialBasis(RadialBasis):
                     self.spline.positions,
                     self.spline.values,
                     self.spline.derivatives,
+                    strict=True,
                 )
             ],
         }
