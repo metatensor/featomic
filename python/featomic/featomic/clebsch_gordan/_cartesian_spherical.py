@@ -413,7 +413,7 @@ def _do_coupling(
         )
 
         # create one block for each output of `cg_couple`
-        for o3_lambda, values in zip(o3_lambdas, outputs):
+        for o3_lambda, values in zip(o3_lambdas, outputs, strict=True):
             o3_sigma = int(old_sigma * (-1) ** (l1 + l2 + o3_lambda))
             new_keys_values.append(
                 [o3_lambda, o3_sigma] + _dispatch.to_int_list(key.values)

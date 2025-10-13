@@ -195,7 +195,7 @@ def _group_combinations_of_same_blocks(
 
     keys_values: List[List[int]] = []
     combinations: List[Combination] = []
-    for (block_1, block_2), keys_idx in zip(groups, groups_keys):
+    for (block_1, block_2), keys_idx in zip(groups, groups_keys, strict=True):
         o3_lambdas: List[int] = []
         for key_i in keys_idx:
             keys_values.append(_dispatch.to_int_list(output_keys.values[key_i]))
@@ -248,7 +248,7 @@ def cg_tensor_product_blocks(
 
     # Create the TensorBlocks
     results: List[TensorBlock] = []
-    for values, o3_lambda in zip(combined_values, o3_lambdas):
+    for values, o3_lambda in zip(combined_values, o3_lambdas, strict=True):
         block = TensorBlock(
             values=values,
             samples=block_1.samples,
