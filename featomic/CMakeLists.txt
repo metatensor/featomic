@@ -57,6 +57,7 @@ set(PROJECT_VERSION ${FEATOMIC_FULL_VERSION})
 # an installed library (see cmake/featomic-config.cmake)
 option(BUILD_SHARED_LIBS "Use a shared library by default instead of a static one" ON)
 option(FEATOMIC_INSTALL_BOTH_STATIC_SHARED "Install both shared and static libraries" ON)
+option(FEATOMIC_USE_STATIC_METATENSOR "Link featomic with the static metatensor library instead of the shared one" OFF)
 
 set(BIN_INSTALL_DIR "bin" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install binaries/DLL")
 set(LIB_INSTALL_DIR "lib" CACHE PATH "Path relative to CMAKE_INSTALL_PREFIX where to install libraries")
@@ -384,8 +385,14 @@ else()
 endif()
 
 add_dependencies(cargo-build-featomic metatensor)
-target_link_libraries(featomic::shared INTERFACE metatensor::shared)
-target_link_libraries(featomic::static INTERFACE metatensor::shared)
+
+if (FEATOMIC_USE_STATIC_METATENSOR)
+    target_link_libraries(featomic::shared INTERFACE metatensor::static)
+    target_link_libraries(featomic::static INTERFACE metatensor::static)
+else()
+    target_link_libraries(featomic::shared INTERFACE metatensor::shared)
+    target_link_libraries(featomic::static INTERFACE metatensor::shared)
+endif()
 
 #------------------------------------------------------------------------------#
 # Installation configuration
