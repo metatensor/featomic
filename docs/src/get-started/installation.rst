@@ -83,6 +83,13 @@ The build and installation can be configures with a few cmake options, using
 | FEATOMIC_FETCH_METATENSOR            | Automatically fetch, build and install        | OFF            |
 |                                      | metatensor (a dependency of featomic)         |                |
 +--------------------------------------+-----------------------------------------------+----------------+
+| FEATOMIC_USE_STATIC_METATENSOR       | Link against the static version of            | OFF            |
+|                                      | metatensor. You should only use this if you   |                |
+|                                      | know your code will never be loaded with      |                |
+|                                      | together with another library using           |                |
+|                                      | metatensor, for example if you are building   |                |
+|                                      | a fully static executable.                    |                |
++--------------------------------------+-----------------------------------------------+----------------+
 
 Using the Rust library
 ----------------------

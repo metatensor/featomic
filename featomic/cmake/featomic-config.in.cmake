@@ -8,6 +8,10 @@ endif()
 
 enable_language(CXX)
 
+if(NOT DEFINED FEATOMIC_USE_STATIC_METATENSOR)
+    set(FEATOMIC_USE_STATIC_METATENSOR OFF CACHE BOOL "Link featomic with static metatensor by default")
+endif()
+
 get_filename_component(FEATOMIC_PREFIX_DIR "${CMAKE_CURRENT_LIST_DIR}/@PACKAGE_RELATIVE_PATH@" ABSOLUTE)
 
 if (WIN32)
@@ -38,7 +42,12 @@ if (@FEATOMIC_INSTALL_BOTH_STATIC_SHARED@ OR @BUILD_SHARED_LIBS@)
         INTERFACE_INCLUDE_DIRECTORIES ${FEATOMIC_INCLUDE}
         BUILD_VERSION "@FEATOMIC_FULL_VERSION@"
     )
-    target_link_libraries(featomic::shared INTERFACE metatensor::shared)
+
+    if (FEATOMIC_USE_STATIC_METATENSOR)
+        target_link_libraries(featomic::shared INTERFACE metatensor::static)
+    else()
+        target_link_libraries(featomic::shared INTERFACE metatensor::shared)
+    endif()
 
     target_compile_features(featomic::shared INTERFACE cxx_std_17)
 
@@ -67,7 +76,12 @@ if (@FEATOMIC_INSTALL_BOTH_STATIC_SHARED@ OR NOT @BUILD_SHARED_LIBS@)
         INTERFACE_LINK_LIBRARIES "@CARGO_DEFAULT_LIBRARIES@"
         BUILD_VERSION "@FEATOMIC_FULL_VERSION@"
     )
-    target_link_libraries(featomic::static INTERFACE metatensor::shared)
+
+    if (FEATOMIC_USE_STATIC_METATENSOR)
+        target_link_libraries(featomic::static INTERFACE metatensor::static)
+    else()
+        target_link_libraries(featomic::static INTERFACE metatensor::shared)
+    endif()
 
     target_compile_features(featomic::static INTERFACE cxx_std_17)
 endif()

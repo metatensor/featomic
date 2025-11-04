@@ -11,7 +11,13 @@ string(REGEX REPLACE "([0-9]*)\\.([0-9]*).*" "\\1.\\2" REQUIRED_FEATOMIC_VERSION
 find_package(featomic ${REQUIRED_FEATOMIC_VERSION} REQUIRED)
 
 add_executable(c-main main.c)
-target_link_libraries(c-main featomic)
+target_link_libraries(c-main featomic::shared)
+
+add_executable(c-main-static main.c)
+target_link_libraries(c-main-static featomic::static)
 
 add_executable(cxx-main main.cpp)
-target_link_libraries(cxx-main featomic)
+target_link_libraries(cxx-main featomic::shared)
+
+add_executable(cxx-main-static main.cpp)
+target_link_libraries(cxx-main-static featomic::static)
