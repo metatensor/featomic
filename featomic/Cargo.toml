@@ -35,7 +35,8 @@ rayon-core = "=1.12"
 
 log = "0.4"
 once_cell = "1"
-indexmap = "2"
+# the last version that supports Rust 1.74
+indexmap = "=2.11.4"
 thread_local = "1.1"
 time-graph = "0.3.0"
 
@@ -46,6 +47,11 @@ schemars = "1"
 chemfiles = { version = "0.10", optional = true, features = ["build-from-sources"]}
 
 approx = "0.5"
+
+# the last versions that supports Rust 1.74
+serde_spanned = "=1.0.1"
+toml_datetime = "=0.7.1"
+toml_parser = "=1.0.2"
 
 [build-dependencies]
 cbindgen = { version = "0.29", default-features = false }
