@@ -2,7 +2,7 @@ import os
 import warnings
 from typing import List
 
-import metatensor
+import metatensor as mts
 import numpy as np
 import pytest
 from metatensor import Labels, TensorBlock, TensorMap
@@ -23,12 +23,6 @@ try:
 except ImportError:
     HAS_TORCH = False
 
-try:
-    import metatensor.operations
-
-    HAS_METATENSOR_OPERATIONS = True
-except ImportError:
-    HAS_METATENSOR_OPERATIONS = False
 try:
     import sympy  # noqa: F401
 
@@ -103,8 +97,8 @@ def test_keys_are_matched(cg_backend):
         name for name in density.keys.names if name not in ["o3_lambda", "o3_sigma"]
     ]
     lambda_soap = calculator.compute(
-        metatensor.rename_dimension(density, "properties", "n", "n_1"),
-        metatensor.rename_dimension(density, "properties", "n", "n_2"),
+        mts.rename_dimension(density, "properties", "n", "n_1"),
+        mts.rename_dimension(density, "properties", "n", "n_2"),
         o3_lambda_1_new_name="l_1",
         o3_lambda_2_new_name="l_2",
     )
@@ -139,8 +133,8 @@ def test_key_matching_versus_manual_property_matching():
     # Compute the first lambda-SOAP with both "center_type" and "neighbor_type" in the
     # keys, so that they are matched. Then move "neighbor_type" to properties.
     lambda_soap_1 = calculator.compute(
-        metatensor.rename_dimension(density, "properties", "n", "n_1"),
-        metatensor.rename_dimension(density, "properties", "n", "n_2"),
+        mts.rename_dimension(density, "properties", "n", "n_1"),
+        mts.rename_dimension(density, "properties", "n", "n_2"),
         o3_lambda_1_new_name="l_1",
         o3_lambda_2_new_name="l_2",
         selected_keys=selected_keys,
@@ -151,16 +145,16 @@ def test_key_matching_versus_manual_property_matching():
     # "center_type" is matched.
     density = density.keys_to_properties("neighbor_type")
     lambda_soap_2 = calculator.compute(
-        metatensor.rename_dimension(
-            metatensor.rename_dimension(
+        mts.rename_dimension(
+            mts.rename_dimension(
                 density, "properties", "neighbor_type", "neighbor_1_type"
             ),
             "properties",
             "n",
             "n_1",
         ),
-        metatensor.rename_dimension(
-            metatensor.rename_dimension(
+        mts.rename_dimension(
+            mts.rename_dimension(
                 density, "properties", "neighbor_type", "neighbor_2_type"
             ),
             "properties",
@@ -174,13 +168,11 @@ def test_key_matching_versus_manual_property_matching():
 
     # Now do manual matching by slicing the properties dimension of lsoap_2,
     # i.e. identifying where "neighbor_1_type_1" == "neighbor_2_type"
-    lambda_soap_2 = metatensor.rename_dimension(
+    lambda_soap_2 = mts.rename_dimension(
         lambda_soap_2, "properties", "neighbor_1_type", "neighbor_type"
     )
 
-    lambda_soap_2 = metatensor.permute_dimensions(
-        lambda_soap_2, "properties", [0, 2, 1, 3]
-    )
+    lambda_soap_2 = mts.permute_dimensions(lambda_soap_2, "properties", [0, 2, 1, 3])
     new_blocks = []
     for block in lambda_soap_2:
         properties_filter = block.properties.column(
@@ -202,9 +194,7 @@ def test_key_matching_versus_manual_property_matching():
     lambda_soap_2 = TensorMap(lambda_soap_2.keys, new_blocks)
 
     # Check for equivalence. Sorting of metadata required here.
-    assert metatensor.allclose(
-        metatensor.sort(lambda_soap_1), metatensor.sort(lambda_soap_2)
-    )
+    assert mts.allclose(mts.sort(lambda_soap_1), mts.sort(lambda_soap_2))
 
 
 def test_error_same_name_properties():
@@ -243,8 +233,8 @@ def test_sufficient_max_angular_with_angular_cutoff():
     density = spherical_expansion(frames)
 
     calculator.compute(  # no error
-        metatensor.rename_dimension(density, "properties", "n", "n_1"),
-        metatensor.rename_dimension(density, "properties", "n", "n_2"),
+        mts.rename_dimension(density, "properties", "n", "n_1"),
+        mts.rename_dimension(density, "properties", "n", "n_2"),
         o3_lambda_1_new_name="l_1",
         o3_lambda_2_new_name="l_2",
         selected_keys=Labels(
@@ -271,8 +261,8 @@ def test_error_insufficient_max_angular():
     )
     with pytest.raises(ValueError, match=error_msg):
         calculator.compute(
-            metatensor.rename_dimension(density, "properties", "n", "n_1"),
-            metatensor.rename_dimension(density, "properties", "n", "n_2"),
+            mts.rename_dimension(density, "properties", "n", "n_1"),
+            mts.rename_dimension(density, "properties", "n", "n_2"),
             o3_lambda_1_new_name="l_1",
             o3_lambda_2_new_name="l_2",
             selected_keys=Labels(
@@ -295,12 +285,12 @@ def test_same_samples():
     # Compute the density
     density = spherical_expansion(frames)
     density = density.keys_to_properties("neighbor_type")
-    density_1 = metatensor.rename_dimension(density, "properties", "n", "n_1")
-    density_1 = metatensor.rename_dimension(
+    density_1 = mts.rename_dimension(density, "properties", "n", "n_1")
+    density_1 = mts.rename_dimension(
         density_1, "properties", "neighbor_type", "neighbor_1_type"
     )
-    density_2 = metatensor.rename_dimension(density, "properties", "n", "n_2")
-    density_2 = metatensor.rename_dimension(
+    density_2 = mts.rename_dimension(density, "properties", "n", "n_2")
+    density_2 = mts.rename_dimension(
         density_2, "properties", "neighbor_type", "neighbor_2_type"
     )
 
@@ -336,24 +326,20 @@ def test_different_samples():
 
     # Compute the density
     density = spherical_expansion(frames)
-    density = metatensor.rename_dimension(
-        density, "keys", "center_type", "first_atom_type"
-    )
-    density = metatensor.rename_dimension(
-        density, "keys", "neighbor_type", "second_atom_type"
-    )
-    density = metatensor.rename_dimension(density, "samples", "atom", "first_atom")
+    density = mts.rename_dimension(density, "keys", "center_type", "first_atom_type")
+    density = mts.rename_dimension(density, "keys", "neighbor_type", "second_atom_type")
+    density = mts.rename_dimension(density, "samples", "atom", "first_atom")
     density = density.keys_to_properties("second_atom_type")
-    density_2 = metatensor.rename_dimension(density, "properties", "n", "n_2")
-    density_2 = metatensor.rename_dimension(
+    density_2 = mts.rename_dimension(density, "properties", "n", "n_2")
+    density_2 = mts.rename_dimension(
         density_2, "properties", "second_atom_type", "second_atom_2_type"
     )
 
     # Compute pair density
     pair_density = spherical_expansion_by_pair(frames)
     pair_density = pair_density.keys_to_properties("second_atom_type")
-    density_1 = metatensor.rename_dimension(pair_density, "properties", "n", "n_1")
-    density_1 = metatensor.rename_dimension(
+    density_1 = mts.rename_dimension(pair_density, "properties", "n", "n_1")
+    density_1 = mts.rename_dimension(
         pair_density, "properties", "second_atom_type", "second_atom_1_type"
     )
 
@@ -367,9 +353,9 @@ def test_different_samples():
     )
 
     # Move everything but "o3_lambda" and "center_type" to properties
-    density_1 = metatensor.sort(density_1)
-    lsoap = metatensor.sort(lsoap.keys_to_properties(new_o3_lambda_names))
-    lsoap = metatensor.sum_over_samples(
+    density_1 = mts.sort(density_1)
+    lsoap = mts.sort(lsoap.keys_to_properties(new_o3_lambda_names))
+    lsoap = mts.sum_over_samples(
         lsoap, ["second_atom", "cell_shift_a", "cell_shift_b", "cell_shift_c"]
     )
 
@@ -429,8 +415,8 @@ def test_device_dtype(dtype, device):
 
     # just checking that the code runs without error
     calculator.compute(
-        metatensor.rename_dimension(density, "properties", "n", "n_1"),
-        metatensor.rename_dimension(density, "properties", "n", "n_2"),
+        mts.rename_dimension(density, "properties", "n", "n_1"),
+        mts.rename_dimension(density, "properties", "n", "n_2"),
         o3_lambda_1_new_name="l_1",
         o3_lambda_2_new_name="l_2",
     )
@@ -453,8 +439,8 @@ def test_dense_sparse_agree():
         )
         results.append(
             calculator.compute(
-                metatensor.rename_dimension(density, "properties", "n", "n_1"),
-                metatensor.rename_dimension(density, "properties", "n", "n_2"),
+                mts.rename_dimension(density, "properties", "n", "n_1"),
+                mts.rename_dimension(density, "properties", "n", "n_2"),
                 o3_lambda_1_new_name="l_1",
                 o3_lambda_2_new_name="l_2",
                 selected_keys=Labels(
@@ -464,5 +450,5 @@ def test_dense_sparse_agree():
             )
         )
 
-    assert metatensor.equal_metadata(results[0], results[1])
-    assert metatensor.allclose(results[0], results[1])
+    assert mts.equal_metadata(results[0], results[1])
+    assert mts.allclose(results[0], results[1])

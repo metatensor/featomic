@@ -2,7 +2,7 @@
 import io
 import os
 
-import metatensor.torch
+import metatensor.torch as mts
 import pytest
 import torch
 from metatensor.torch import Labels
@@ -71,8 +71,8 @@ def test_torch_script_correlate_density_angular_selection(
     # Compute the reference and scripted results
     ref_nu_2 = calculator.compute(nu_1, selected_keys=selected_keys)
     scripted_nu_2 = scripted_calculator.compute(nu_1, selected_keys=selected_keys)
-    metatensor.torch.equal_metadata_raise(scripted_nu_2, ref_nu_2)
-    assert metatensor.torch.allclose(scripted_nu_2, ref_nu_2)
+    mts.equal_metadata_raise(scripted_nu_2, ref_nu_2)
+    assert mts.allclose(scripted_nu_2, ref_nu_2)
 
 
 @pytest.mark.parametrize("cg_backend", ["python-dense", "python-sparse"])

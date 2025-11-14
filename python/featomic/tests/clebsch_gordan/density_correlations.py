@@ -1,6 +1,6 @@
 from typing import List
 
-import metatensor
+import metatensor as mts
 import numpy as np
 import pytest
 from metatensor import Labels, TensorBlock, TensorMap
@@ -20,12 +20,6 @@ ase = pytest.importorskip("ase")
 from ase import io  # noqa: E402, F401
 
 
-try:
-    import metatensor.operations
-
-    HAS_METATENSOR_OPERATIONS = True
-except ImportError:
-    HAS_METATENSOR_OPERATIONS = False
 try:
     import sympy  # noqa: F401
 
@@ -143,9 +137,7 @@ def get_norm(tensor: TensorMap):
     as a sum over lambda, sigma, and m.
     """
     # Check that there is only one sample
-    samples = metatensor.unique_metadata(
-        tensor, "samples", ["system", "atom", "center_type"]
-    )
+    samples = mts.unique_metadata(tensor, "samples", ["system", "atom", "center_type"])
     assert len(samples) == 1
 
     norm = 0.0
@@ -164,10 +156,7 @@ def get_norm(tensor: TensorMap):
 # ============ Test equivariance ============
 
 
-@pytest.mark.skipif(
-    not HAS_SYMPY or not HAS_METATENSOR_OPERATIONS,
-    reason="SymPy or metatensor-operations are not installed",
-)
+@pytest.mark.skipif(not HAS_SYMPY, reason="SymPy is not installed")
 def test_so3_equivariance():
     """
     Tests that the output of :py:func:`correlate_density` is equivariant under
@@ -195,13 +184,10 @@ def test_so3_equivariance():
     nu_3_so3 = calculator.compute(density_so3)
 
     nu_3_transf = wig.transform_tensormap_so3(nu_3)
-    assert metatensor.allclose(nu_3_transf, nu_3_so3)
+    assert mts.allclose(nu_3_transf, nu_3_so3)
 
 
-@pytest.mark.skipif(
-    not HAS_SYMPY or not HAS_METATENSOR_OPERATIONS,
-    reason="SymPy or metatensor-operations are not installed",
-)
+@pytest.mark.skipif(not HAS_SYMPY, reason="SymPy is not installed")
 def test_o3_equivariance():
     """
     Tests that the output of :py:func:`correlate_density` is equivariant under
@@ -229,15 +215,12 @@ def test_o3_equivariance():
     nu_3_o3 = calculator.compute(density_o3, selected_keys=selected_keys)
 
     nu_3_transf = wig.transform_tensormap_o3(nu_3)
-    assert metatensor.allclose(nu_3_transf, nu_3_o3)
+    assert mts.allclose(nu_3_transf, nu_3_o3)
 
 
 # ============ Test lambda-SOAP vs PowerSpectrum ============
 
 
-@pytest.mark.skipif(
-    not HAS_METATENSOR_OPERATIONS, reason="metatensor-operations is not installed"
-)
 def test_lambda_soap_vs_powerspectrum():
     """
     Tests for exact equivalence between the invariant block of a generated
@@ -285,15 +268,12 @@ def test_lambda_soap_vs_powerspectrum():
         )
     lambda_soap = TensorMap(keys=keys, blocks=blocks)
 
-    assert metatensor.allclose(lambda_soap, ps)
+    assert mts.allclose(lambda_soap, ps)
 
 
 # ============ Test norm preservation  ============
 
 
-@pytest.mark.skipif(
-    not HAS_METATENSOR_OPERATIONS, reason="metatensor-operations is not installed"
-)
 def test_correlate_density_norm():
     """
     Checks \\|\\rho^\\nu\\| = \\|\\rho\\|^\\nu in the case where l lists are not
@@ -330,7 +310,7 @@ def test_correlate_density_norm():
 
     # The norm should be calculated for each sample. First find the unique
     # samples
-    unique_samples = metatensor.unique_metadata(
+    unique_samples = mts.unique_metadata(
         ps, "samples", names=["system", "atom", "center_type"]
     )
     selections = [
@@ -344,9 +324,9 @@ def test_correlate_density_norm():
     norm_ps_sorted = 0.0
     for selection in selections:
         # Slice the TensorMaps
-        nu1_sliced = metatensor.slice(density, "samples", selection=selection)
-        ps_sliced = metatensor.slice(ps, "samples", selection=selection)
-        ps_sorted_sliced = metatensor.slice(ps_sorted, "samples", selection=selection)
+        nu1_sliced = mts.slice(density, "samples", selection=selection)
+        ps_sliced = mts.slice(ps, "samples", selection=selection)
+        ps_sorted_sliced = mts.slice(ps_sorted, "samples", selection=selection)
 
         # Calculate norms
         norm_nu1 += get_norm(nu1_sliced) ** (n_correlations + 1)
@@ -452,9 +432,6 @@ def test_clebsch_gordan_orthogonality(l1, l2, arrays_backend):
     )
 
 
-@pytest.mark.skipif(
-    not HAS_METATENSOR_OPERATIONS, reason="metatensor-operations is not installed"
-)
 def test_correlate_density_dense_sparse_agree():
     """
     Tests for agreement between nu=2 tensors built using both sparse and dense
@@ -479,15 +456,12 @@ def test_correlate_density_dense_sparse_agree():
     n_body_sparse = calculator_sparse.compute(density)
     n_body_dense = calculator_dense.compute(density)
 
-    assert metatensor.allclose(n_body_sparse, n_body_dense, atol=1e-8, rtol=1e-8)
+    assert mts.allclose(n_body_sparse, n_body_dense, atol=1e-8, rtol=1e-8)
 
 
 # ============ Test metadata  ============
 
 
-@pytest.mark.skipif(
-    not HAS_METATENSOR_OPERATIONS, reason="metatensor-operations is not installed"
-)
 def test_correlate_density_metadata_agree():
     """
     Tests that the metadata of outputs from :py:func:`correlate_density` and
@@ -511,7 +485,7 @@ def test_correlate_density_metadata_agree():
         # Build higher body order tensor without CG computation - i.e. metadata
         # only
         nu_x_metadata_only = calculator.compute_metadata(nu_1)
-        assert metatensor.equal_metadata(nu_x, nu_x_metadata_only)
+        assert mts.equal_metadata(nu_x, nu_x_metadata_only)
 
 
 @pytest.mark.parametrize(
@@ -583,29 +557,25 @@ def test_summed_powerspectrum_by_pair_equals_powerspectrum():
 
     # Generate density and rename dimensions ready for correlation
     density = spherical_expansion(frames)
-    density = metatensor.rename_dimension(
-        density, "keys", "center_type", "first_atom_type"
-    )
-    density = metatensor.rename_dimension(
-        density, "keys", "neighbor_type", "second_atom_type"
-    )
-    density = metatensor.rename_dimension(density, "samples", "atom", "first_atom")
+    density = mts.rename_dimension(density, "keys", "center_type", "first_atom_type")
+    density = mts.rename_dimension(density, "keys", "neighbor_type", "second_atom_type")
+    density = mts.rename_dimension(density, "samples", "atom", "first_atom")
     density = density.keys_to_properties("second_atom_type")
 
     # Calculate power spectrum with DensityCorrelations
     power_spectrum = density_correlations(density)
 
     # Rename dimensions ready for manual CG tensor product by ClebschGordanProduct
-    density = metatensor.rename_dimension(density, "properties", "n", "n_1")
-    density = metatensor.rename_dimension(
+    density = mts.rename_dimension(density, "properties", "n", "n_1")
+    density = mts.rename_dimension(
         density, "properties", "second_atom_type", "second_atom_1_type"
     )
 
     # Generate pair density
     pair_density = spherical_expansion_by_pair(frames)
     pair_density = pair_density.keys_to_properties("second_atom_type")
-    pair_density = metatensor.rename_dimension(pair_density, "properties", "n", "n_2")
-    pair_density = metatensor.rename_dimension(
+    pair_density = mts.rename_dimension(pair_density, "properties", "n", "n_2")
+    pair_density = mts.rename_dimension(
         pair_density, "properties", "second_atom_type", "second_atom_2_type"
     )
 
@@ -618,15 +588,15 @@ def test_summed_powerspectrum_by_pair_equals_powerspectrum():
     )
 
     # Sum, sort, check equivalence
-    power_spec_by_pair_reduced = metatensor.sum_over_samples(
+    power_spec_by_pair_reduced = mts.sum_over_samples(
         power_spectrum_by_pair,
         ["second_atom", "cell_shift_a", "cell_shift_b", "cell_shift_c"],
     )
 
     # Compare
-    metatensor.allclose_raise(
-        metatensor.sort(power_spectrum),
-        metatensor.sort(power_spec_by_pair_reduced),
+    mts.allclose_raise(
+        mts.sort(power_spectrum),
+        mts.sort(power_spec_by_pair_reduced),
     )
 
 
