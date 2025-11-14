@@ -44,10 +44,7 @@ def test_selection_existing():
     assert descriptor.keys.values.tolist() == [[1], [8]]
 
     # Manually select the keys
-    selected_keys = Labels(
-        names=["center_type"],
-        values=np.array([[1]], dtype=np.int32),
-    )
+    selected_keys = Labels(names=["center_type"], values=np.array([[1]]))
     descriptor = calculator.compute(system, selected_keys=selected_keys)
 
     assert len(descriptor.keys) == 1
@@ -73,10 +70,7 @@ def test_selection_partial():
     )
 
     # Manually select the keys
-    selected_keys = Labels(
-        names=["center_type"],
-        values=np.array([[1]], dtype=np.int32),
-    )
+    selected_keys = Labels(names=["center_type"], values=np.array([[1]]))
     descriptor = calculator.compute(system, selected_keys=selected_keys)
 
     assert len(descriptor.keys) == 4
@@ -99,10 +93,7 @@ def test_select_key_not_in_systems():
     calculator = DummyCalculator(cutoff=3.2, delta=2, name="")
 
     # Manually select the keys
-    selected_keys = Labels(
-        names=["center_type"],
-        values=np.array([[4]], dtype=np.int32),
-    )
+    selected_keys = Labels(names=["center_type"], values=np.array([[4]]))
     descriptor = calculator.compute(system, selected_keys=selected_keys)
 
     C_block = descriptor.block(center_type=4)
@@ -113,26 +104,14 @@ def test_predefined_selection():
     system = SystemForTests()
     calculator = DummyCalculator(cutoff=3.2, delta=2, name="")
 
-    selected_keys = Labels(
-        names=["center_type"],
-        values=np.array([[1]], dtype=np.int32),
-    )
+    selected_keys = Labels(names=["center_type"], values=np.array([[1]]))
 
-    keys = Labels(
-        names=["center_type"],
-        values=np.array([[1], [8]], dtype=np.int32),
-    )
+    keys = Labels(names=["center_type"], values=np.array([[1], [8]]))
 
     # selection from TensorMap
     selected = [
-        Labels(
-            names=["index_delta", "x_y_z"],
-            values=np.array([[1, 0]], dtype=np.int32),
-        ),
-        Labels(
-            names=["index_delta", "x_y_z"],
-            values=np.array([[0, 1]], dtype=np.int32),
-        ),
+        Labels(names=["index_delta", "x_y_z"], values=np.array([[1, 0]])),
+        Labels(names=["index_delta", "x_y_z"], values=np.array([[0, 1]])),
     ]
     selected_properties = _tensor_map_selection("properties", keys, selected)
 
@@ -153,10 +132,7 @@ def test_name_errors():
     system = SystemForTests()
     calculator = DummyCalculator(cutoff=3.2, delta=2, name="")
 
-    selected_keys = Labels(
-        names=["bad_name"],
-        values=np.array([0, 3, 1], dtype=np.int32).reshape(3, 1),
-    )
+    selected_keys = Labels(names=["bad_name"], values=np.array([[0], [3], [1]]))
 
     message = (
         "invalid parameter: 'bad_name' in keys selection is not "
@@ -182,25 +158,13 @@ def test_key_errors():
     # in the case where both selected_properties/selected_samples and
     # selected_keys are given, the selected keys must be in the keys of the
     # predefined tensor_map
-    selected_keys = Labels(
-        names=["center_type"],
-        values=np.array([[4]], dtype=np.int32),
-    )
+    selected_keys = Labels(names=["center_type"], values=np.array([[4]]))
 
-    keys = Labels(
-        names=["center_type"],
-        values=np.array([[1], [8]], dtype=np.int32),
-    )
+    keys = Labels(names=["center_type"], values=np.array([[1], [8]]))
 
     selected = [
-        Labels(
-            names=["index_delta", "x_y_z"],
-            values=np.array([[1, 0]], dtype=np.int32),
-        ),
-        Labels(
-            names=["index_delta", "x_y_z"],
-            values=np.array([[0, 1]], dtype=np.int32),
-        ),
+        Labels(names=["index_delta", "x_y_z"], values=np.array([[1, 0]])),
+        Labels(names=["index_delta", "x_y_z"], values=np.array([[0, 1]])),
     ]
     selected_properties = _tensor_map_selection("properties", keys, selected)
 

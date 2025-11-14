@@ -57,7 +57,7 @@ print("keys names:", descriptor.keys.names)
 
 selection = Labels(
     names=["center_type", "neighbor_1_type", "neighbor_2_type"],
-    values=np.array([[1, 1, 1], [4, 4, 4]], dtype=np.int32),
+    values=np.array([[1, 1, 1], [4, 4, 4]]),
 )
 selected_descriptor = calculator.compute(frames, selected_keys=selection)
 
@@ -104,7 +104,7 @@ for entries in selection:
 
 keys = Labels(
     names=["center_type", "neighbor_1_type", "neighbor_2_type"],
-    values=np.array([[1, 1, 1], [8, 8, 8]], dtype=np.int32),
+    values=np.array([[1, 1, 1], [8, 8, 8]]),
 )
 
 selected_properties = TensorMap(keys, blocks)
@@ -116,7 +116,7 @@ selected_properties = TensorMap(keys, blocks)
 
 selected_keys = Labels(
     names=["center_type", "neighbor_1_type", "neighbor_2_type"],
-    values=np.array([[1, 1, 1]], dtype=np.int32),
+    values=np.array([[1, 1, 1]]),
 )
 
 descriptor = calculator.compute(
