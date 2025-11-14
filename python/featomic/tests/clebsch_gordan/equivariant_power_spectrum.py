@@ -1,6 +1,6 @@
 from typing import List
 
-import metatensor
+import metatensor as mts
 import numpy as np
 import pytest
 from metatensor import Labels, TensorBlock, TensorMap
@@ -96,13 +96,13 @@ def test_equivariant_power_spectrum_vs_powerspectrum():
     ps_2 = TensorMap(keys=keys, blocks=blocks)
 
     # Permute properties dimension to match ps_1 and sort
-    ps_2 = metatensor.sort(
-        metatensor.permute_dimensions(ps_2, "properties", [2, 0, 3, 1, 4]),
+    ps_2 = mts.sort(
+        mts.permute_dimensions(ps_2, "properties", [2, 0, 3, 1, 4]),
         "properties",
     )
 
-    metatensor.equal_metadata_raise(ps_1, ps_2)
-    metatensor.allclose_raise(ps_1, ps_2)
+    mts.equal_metadata_raise(ps_1, ps_2)
+    mts.allclose_raise(ps_1, ps_2)
 
 
 def test_equivariant_power_spectrum_neighbors_to_properties():
@@ -127,13 +127,13 @@ def test_equivariant_power_spectrum_neighbors_to_properties():
     )
 
     # Permute properties dimensions to match ``powspec_1`` and sort
-    powspec_2 = metatensor.sort(
-        metatensor.permute_dimensions(powspec_2, "properties", [2, 4, 0, 1, 3, 5])
+    powspec_2 = mts.sort(
+        mts.permute_dimensions(powspec_2, "properties", [2, 4, 0, 1, 3, 5])
     )
 
-    # Check equivalent
-    metatensor.equal_metadata_raise(powspec_1, powspec_2)
-    metatensor.equal_raise(powspec_1, powspec_2)
+    # Check equivalence
+    mts.equal_metadata_raise(powspec_1, powspec_2)
+    mts.equal_raise(powspec_1, powspec_2)
 
 
 def test_sample_selection() -> None:
@@ -147,11 +147,9 @@ def test_sample_selection() -> None:
 
     powspec_calc = EquivariantPowerSpectrum(SphericalExpansion(**SPHEX_HYPERS_SMALL))
 
-    label_1st = metatensor.Labels(
-        ["system", "atom"], np.array([[0, 0]], dtype=np.int32)
-    )
+    label_1st = mts.Labels(["system", "atom"], np.array([[0, 0]], dtype=np.int32))
 
-    label_2nd = metatensor.Labels(
+    label_2nd = mts.Labels(
         ["system", "atom"], np.array([[0, 1], [0, 2]], dtype=np.int32)
     )
 
@@ -163,12 +161,12 @@ def test_sample_selection() -> None:
         frame, neighbors_to_properties=True, selected_samples=label_2nd
     )
 
-    powspec_3 = metatensor.join([powspec_1, powspec_2], axis="samples")
+    powspec_3 = mts.join([powspec_1, powspec_2], axis="samples")
     powspec_4 = powspec_calc.compute(frame, neighbors_to_properties=True)
 
-    assert metatensor.equal(powspec_3, powspec_4)
-    assert not metatensor.equal(powspec_2, powspec_4)
-    assert not metatensor.equal(powspec_1, powspec_4)
+    assert mts.equal(powspec_3, powspec_4)
+    assert not mts.equal(powspec_2, powspec_4)
+    assert not mts.equal(powspec_1, powspec_4)
 
 
 def test_fill_types_option() -> None:

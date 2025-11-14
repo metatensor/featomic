@@ -1,4 +1,4 @@
-import metatensor
+import metatensor as mts
 import numpy as np
 import pytest
 from metatensor import Labels
@@ -92,23 +92,23 @@ def test_equivariant_power_spectrum_vs_equivariant_power_spectrum_by_pair():
     )
 
     # Manipulate metadata to match
-    reduced_ps_by_pair = metatensor.rename_dimension(
+    reduced_ps_by_pair = mts.rename_dimension(
         ps_by_pair, "keys", "first_atom_type", "center_type"
     )
-    reduced_ps_by_pair = metatensor.rename_dimension(
+    reduced_ps_by_pair = mts.rename_dimension(
         reduced_ps_by_pair,
         "keys",
         "second_atom_type",
         "neighbor_2_type",
     )
-    reduced_ps_by_pair = metatensor.rename_dimension(
+    reduced_ps_by_pair = mts.rename_dimension(
         reduced_ps_by_pair,
         "samples",
         "first_atom",
         "atom",
     )
     # Sum over `second_atom` and `cell_shift` samples
-    reduced_ps_by_pair = metatensor.sum_over_samples(
+    reduced_ps_by_pair = mts.sum_over_samples(
         reduced_ps_by_pair,
         ["second_atom", "cell_shift_a", "cell_shift_b", "cell_shift_c"],
     )
@@ -136,11 +136,9 @@ def test_sample_selection() -> None:
         SphericalExpansionByPair(**SPHEX_HYPERS_SMALL),
     )
 
-    label_1st = metatensor.Labels(
-        ["system", "atom"], np.array([[0, 0]], dtype=np.int32)
-    )
+    label_1st = mts.Labels(["system", "atom"], np.array([[0, 0]], dtype=np.int32))
 
-    label_2nd = metatensor.Labels(
+    label_2nd = mts.Labels(
         ["system", "atom"], np.array([[0, 1], [0, 2]], dtype=np.int32)
     )
 
@@ -152,12 +150,12 @@ def test_sample_selection() -> None:
         frame, neighbors_to_properties=True, selected_samples=label_2nd
     )
 
-    powspec_3 = metatensor.join([powspec_1, powspec_2], axis="samples")
+    powspec_3 = mts.join([powspec_1, powspec_2], axis="samples")
     powspec_4 = powspec_by_pair_calc.compute(frame, neighbors_to_properties=True)
 
-    assert metatensor.equal(powspec_3, powspec_4)
-    assert not metatensor.equal(powspec_2, powspec_4)
-    assert not metatensor.equal(powspec_1, powspec_4)
+    assert mts.equal(powspec_3, powspec_4)
+    assert not mts.equal(powspec_2, powspec_4)
+    assert not mts.equal(powspec_1, powspec_4)
 
 
 def test_equivariant_power_spectrum_neighbors_to_properties():
@@ -185,14 +183,14 @@ def test_equivariant_power_spectrum_neighbors_to_properties():
     )
 
     # Permute properties dimensions to match ``powspec_1`` and sort
-    powspec_2 = metatensor.sort(
-        metatensor.permute_dimensions(powspec_2, "properties", [2, 0, 1, 3, 4])
+    powspec_2 = mts.sort(
+        mts.permute_dimensions(powspec_2, "properties", [2, 0, 1, 3, 4])
     )
 
     # Check equivalent
-    powspec_1 = metatensor.sort(powspec_1)
-    metatensor.equal_metadata_raise(powspec_1, powspec_2)
-    metatensor.allclose_raise(powspec_1, powspec_2)
+    powspec_1 = mts.sort(powspec_1)
+    mts.equal_metadata_raise(powspec_1, powspec_2)
+    mts.allclose_raise(powspec_1, powspec_2)
 
 
 def test_fill_types_option() -> None:

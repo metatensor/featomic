@@ -1,6 +1,6 @@
 from typing import List
 
-import metatensor
+import metatensor as mts
 import pytest
 
 import featomic
@@ -128,7 +128,7 @@ def test_hypers_classes():
     )
 
     system = SystemForTests()
-    metatensor.equal_raise(with_dict.compute(system), with_classes.compute(system))
+    mts.equal_raise(with_dict.compute(system), with_classes.compute(system))
 
 
 def test_hypers_custom_classes_errors():
