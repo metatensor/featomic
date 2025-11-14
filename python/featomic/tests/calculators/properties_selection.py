@@ -41,7 +41,7 @@ def test_selection():
     # Manually constructing the selected properties
     selected_properties = Labels(
         names=["index_delta", "x_y_z"],
-        values=np.array([[1, 0]], dtype=np.int32),
+        values=np.array([[1, 0]]),
     )
     descriptor = calculator.compute(
         system, use_native_system=False, selected_properties=selected_properties
@@ -65,7 +65,7 @@ def test_subset_variables():
     # Only a subset of the variables defined
     selected_properties = Labels(
         names=["index_delta"],
-        values=np.array([[1]], dtype=np.int32),
+        values=np.array([[1]]),
     )
     descriptor = calculator.compute(
         system, use_native_system=False, selected_properties=selected_properties
@@ -88,8 +88,7 @@ def test_empty_selection():
 
     # empty selected features
     selected_properties = Labels(
-        names=["index_delta", "x_y_z"],
-        values=np.array([], dtype=np.int32).reshape(0, 2),
+        names=["index_delta", "x_y_z"], values=np.empty((0, 2), dtype=np.int32)
     )
     descriptor = calculator.compute(
         system, use_native_system=False, selected_properties=selected_properties
@@ -106,21 +105,12 @@ def test_predefined_selection():
     system = SystemForTests()
     calculator = DummyCalculator(cutoff=3.2, delta=2, name="")
 
-    keys = Labels(
-        names=["center_type"],
-        values=np.array([[1], [8]], dtype=np.int32),
-    )
+    keys = Labels(names=["center_type"], values=np.array([[1], [8]]))
 
     # selection from TensorMap
     selected = [
-        Labels(
-            names=["index_delta", "x_y_z"],
-            values=np.array([[1, 0]], dtype=np.int32),
-        ),
-        Labels(
-            names=["index_delta", "x_y_z"],
-            values=np.array([[0, 1]], dtype=np.int32),
-        ),
+        Labels(names=["index_delta", "x_y_z"], values=np.array([[1, 0]])),
+        Labels(names=["index_delta", "x_y_z"], values=np.array([[0, 1]])),
     ]
     selected_properties = _tensor_map_selection("properties", keys, selected)
 
@@ -143,10 +133,7 @@ def test_errors():
     system = SystemForTests()
     calculator = DummyCalculator(cutoff=3.2, delta=2, name="")
 
-    selected_properties = Labels(
-        names=["bad_name"],
-        values=np.array([0, 3, 1], dtype=np.int32).reshape(3, 1),
-    )
+    selected_properties = Labels(names=["bad_name"], values=np.array([[0], [3], [1]]))
 
     message = (
         "invalid parameter: 'bad_name' in properties selection is not "

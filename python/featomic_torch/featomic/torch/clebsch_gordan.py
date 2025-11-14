@@ -6,7 +6,7 @@ from typing import Any
 import metatensor.torch
 import torch
 
-import featomic.utils
+import featomic.clebsch_gordan
 
 from .calculator_base import CalculatorModule
 from .system import System

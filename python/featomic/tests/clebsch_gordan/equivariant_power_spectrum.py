@@ -147,11 +147,9 @@ def test_sample_selection() -> None:
 
     powspec_calc = EquivariantPowerSpectrum(SphericalExpansion(**SPHEX_HYPERS_SMALL))
 
-    label_1st = mts.Labels(["system", "atom"], np.array([[0, 0]], dtype=np.int32))
+    label_1st = mts.Labels(["system", "atom"], np.array([[0, 0]]))
 
-    label_2nd = mts.Labels(
-        ["system", "atom"], np.array([[0, 1], [0, 2]], dtype=np.int32)
-    )
+    label_2nd = mts.Labels(["system", "atom"], np.array([[0, 1], [0, 2]]))
 
     powspec_1 = powspec_calc.compute(
         frame, neighbors_to_properties=True, selected_samples=label_1st

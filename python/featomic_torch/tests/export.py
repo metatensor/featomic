@@ -75,10 +75,7 @@ class Model(torch.nn.Module):
             samples = soap.block().samples
         else:
             features = soap.block().values.sum(dim=0, keepdim=True)
-            samples = Labels(
-                ["system"],
-                torch.arange(len(systems), dtype=torch.int32).reshape(-1, 1),
-            )
+            samples = Labels(["system"], torch.arange(len(systems)).reshape(-1, 1))
 
         block = TensorBlock(
             values=self.linear(features),

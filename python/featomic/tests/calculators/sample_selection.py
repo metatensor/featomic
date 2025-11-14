@@ -40,8 +40,7 @@ def test_selection():
 
     # Manually constructing the selected samples
     selected_samples = Labels(
-        names=["system", "atom"],
-        values=np.array([(0, 0), (0, 3), (0, 1)], dtype=np.int32),
+        names=["system", "atom"], values=np.array([[0, 0], [0, 3], [0, 1]])
     )
     descriptor = calculator.compute(
         system, use_native_system=False, selected_samples=selected_samples
@@ -62,10 +61,7 @@ def test_subset_variables():
     calculator = DummyCalculator(cutoff=3.2, delta=2, name="")
 
     # Only a subset of the variables defined
-    selected_samples = Labels(
-        names=["atom"],
-        values=np.array([0, 3, 1], dtype=np.int32).reshape(3, 1),
-    )
+    selected_samples = Labels(names=["atom"], values=np.array([0, 3, 1]).reshape(3, 1))
     descriptor = calculator.compute(
         system, use_native_system=False, selected_samples=selected_samples
     )
@@ -85,10 +81,7 @@ def test_empty_selection():
     calculator = DummyCalculator(cutoff=3.2, delta=2, name="")
 
     # empty selected samples
-    selected_samples = Labels(
-        names=["atom"],
-        values=np.empty((0, 1), dtype=np.int32),
-    )
+    selected_samples = Labels(names=["atom"], values=np.empty((0, 1), dtype=np.int32))
     descriptor = calculator.compute(
         system, use_native_system=False, selected_samples=selected_samples
     )
@@ -104,21 +97,12 @@ def test_predefined_selection():
     system = SystemForTests()
     calculator = DummyCalculator(cutoff=3.2, delta=2, name="")
 
-    keys = Labels(
-        names=["center_type"],
-        values=np.array([[1], [8]], dtype=np.int32),
-    )
+    keys = Labels(names=["center_type"], values=np.array([[1], [8]]))
 
     # selection from TensorMap
     selected = [
-        Labels(
-            names=["system", "atom"],
-            values=np.array([[0, 1]], dtype=np.int32),
-        ),
-        Labels(
-            names=["system", "atom"],
-            values=np.array([[0, 3]], dtype=np.int32),
-        ),
+        Labels(names=["system", "atom"], values=np.array([[0, 1]])),
+        Labels(names=["system", "atom"], values=np.array([[0, 3]])),
     ]
     selected_samples = _tensor_map_selection("samples", keys, selected)
 
@@ -139,10 +123,7 @@ def test_errors():
     system = SystemForTests()
     calculator = DummyCalculator(cutoff=3.2, delta=2, name="")
 
-    samples = Labels(
-        names=["bad_name"],
-        values=np.array([0, 3, 1], dtype=np.int32).reshape(3, 1),
-    )
+    samples = Labels(names=["bad_name"], values=np.array([0, 3, 1]).reshape(3, 1))
 
     message = (
         "invalid parameter: 'bad_name' in samples selection is not part "
