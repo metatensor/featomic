@@ -152,9 +152,7 @@ def test_sample_selection() -> None:
         frame, neighbors_to_properties=True, selected_samples=label_2nd
     )
 
-    powspec_3 = metatensor.join(
-        [powspec_1, powspec_2], axis="samples", remove_tensor_name=True
-    )
+    powspec_3 = metatensor.join([powspec_1, powspec_2], axis="samples")
     powspec_4 = powspec_by_pair_calc.compute(frame, neighbors_to_properties=True)
 
     assert metatensor.equal(powspec_3, powspec_4)
