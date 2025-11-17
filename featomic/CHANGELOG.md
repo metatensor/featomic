@@ -17,11 +17,14 @@ a changelog](https://keepachangelog.com/en/1.1.0/) format. This project follows
 ### Removed
 -->
 
+## [Version 0.6.4](https://github.com/metatensor/featomic/releases/tag/featomic-v0.6.4) - 2025-11-17
+
 ### Changed
 
 - We now require Python >= 3.10
+- Added support for metatomic-operations v0.4.0
 
-## [Version 0.6.3](https://github.com/metatensor/featomic/releases/tag/featomic-v0.6.2) - 2025-10-06
+## [Version 0.6.3](https://github.com/metatensor/featomic/releases/tag/featomic-v0.6.3) - 2025-10-06
 
 ### Fixed
 
