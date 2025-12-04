@@ -110,7 +110,7 @@ endif()
 # fixed version in `cmake/FindCUDNN.cmake`
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 
-find_package(Torch 2.1 REQUIRED)
+find_package(Torch 2.3 REQUIRED)
 
 # ============================================================================ #
 # Setup metatensor_torch
@@ -122,7 +122,7 @@ find_package(Torch 2.1 REQUIRED)
 #
 # When updating METATENSOR_TORCH_FETCH_VERSION, you will also have to update the
 # SHA256 sum of the file in `FetchContent_Declare`.
-set(METATENSOR_TORCH_FETCH_VERSION "0.8.0")
+set(METATENSOR_TORCH_FETCH_VERSION "0.8.2")
 set(REQUIRED_METATENSOR_TORCH_VERSION "0.8")
 if (FEATOMIC_FETCH_METATENSOR_TORCH)
     message(STATUS "Fetching metatensor-torch from github")
@@ -132,7 +132,7 @@ if (FEATOMIC_FETCH_METATENSOR_TORCH)
     FetchContent_Declare(
         metatensor_torch
         URL      ${URL_ROOT}/metatensor-torch-v${METATENSOR_TORCH_FETCH_VERSION}/metatensor-torch-cxx-${METATENSOR_TORCH_FETCH_VERSION}.tar.gz
-        URL_HASH SHA256=61d383ce958deafe0e3916088185527680c9118588722b17ec5c39cfbaa6da55
+        URL_HASH SHA256=0be618d0cdcfca86cd0c25f47d360b6a2410ebb09ece8d21f153e933ce64bb55
     )
 
     FetchContent_MakeAvailable(metatensor_torch)
@@ -150,7 +150,7 @@ endif()
 #
 # When updating METATOMIC_TORCH_FETCH_VERSION, you will also have to update the
 # SHA256 sum of the file in `FetchContent_Declare`.
-set(METATOMIC_TORCH_FETCH_VERSION "0.1.4")
+set(METATOMIC_TORCH_FETCH_VERSION "0.1.7")
 set(REQUIRED_METATOMIC_TORCH_VERSION "0.1")
 if (FEATOMIC_FETCH_METATENSOR_TORCH)
     message(STATUS "Fetching metatomic-torch from github")
@@ -160,7 +160,7 @@ if (FEATOMIC_FETCH_METATENSOR_TORCH)
     FetchContent_Declare(
         metatomic_torch
         URL      ${URL_ROOT}/metatomic-torch-v${METATOMIC_TORCH_FETCH_VERSION}/metatomic-torch-cxx-${METATOMIC_TORCH_FETCH_VERSION}.tar.gz
-        URL_HASH SHA256=385ec8b8515d674b6a9f093f724792b2469e7ea2365ca596f574b64e38494f94
+        URL_HASH SHA256=726f5711b70c4b8cc80d9bc6c3ce6f3449f31d20acc644ab68dab083aa4ea572
     )
 
     FetchContent_MakeAvailable(metatomic_torch)
