@@ -17,7 +17,7 @@ a changelog](https://keepachangelog.com/en/1.1.0/) format. This project follows
 ### Removed
 -->
 
-### Changed
+## [Version 0.7.2](https://github.com/metatensor/featomic/releases/tag/featomic-torch-v0.7.2) - 2025-12-04
 
 - We now require Python >= 3.10
 - Added support for torch v2.9, removed support for torch 2.1 and 2.2
