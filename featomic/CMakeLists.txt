@@ -339,14 +339,19 @@ else()
     endif()
 endif()
 
-add_custom_target(cargo-build-featomic ALL
-    COMMAND
-        ${CMAKE_COMMAND} -E env ${CARGO_ENV}
-        cargo rustc ${CARGO_BUILD_ARG} -- ${CARGO_RUSTC_ARGS}
+set(FEATOMIC_OUTPUTS ${FEATOMIC_STATIC_LOCATION} ${FEATOMIC_SHARED_LOCATION} $<$<PLATFORM_ID:Windows>:${FEATOMIC_IMPLIB_LOCATION}>)
+add_custom_command(
+    OUTPUT ${FEATOMIC_OUTPUTS}
+    COMMAND ${CMAKE_COMMAND} -E env ${CARGO_ENV}
+            cargo rustc ${CARGO_BUILD_ARG} -- ${CARGO_RUSTC_ARGS}
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     DEPENDS ${ALL_RUST_SOURCES}
-    COMMENT "Building ${FILES_CREATED_BY_CARGO} with cargo"
-    BYPRODUCTS ${FEATOMIC_STATIC_LOCATION} ${FEATOMIC_SHARED_LOCATION} ${FEATOMIC_IMPLIB_LOCATION}
+    COMMENT "Building libfeatomic with cargo"
+    VERBATIM
+)
+
+add_custom_target(cargo-build-featomic ALL
+    DEPENDS ${FEATOMIC_OUTPUTS}
 )
 
 add_dependencies(featomic::shared cargo-build-featomic)
