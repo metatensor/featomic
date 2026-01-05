@@ -317,7 +317,7 @@ if (NOT "${EXTRA_RUST_FLAGS}" STREQUAL "")
     set(CARGO_RUSTC_ARGS "${CARGO_RUSTC_ARGS};${EXTRA_RUST_FLAGS}")
 endif()
 
-# Set environement variables for cargo build
+# Set environment variables for cargo build
 set(CARGO_ENV "")
 if (NOT "${CMAKE_OSX_DEPLOYMENT_TARGET}" STREQUAL "")
     list(APPEND CARGO_ENV "MACOSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET}")
@@ -328,32 +328,41 @@ endif()
 
 if (FEATOMIC_INSTALL_BOTH_STATIC_SHARED)
     set(CARGO_BUILD_ARG "${CARGO_BUILD_ARG};--crate-type=cdylib;--crate-type=staticlib")
-    set(FILES_CREATED_BY_CARGO "${FEATOMIC_SHARED_LIB_NAME} and ${FEATOMIC_STATIC_LIB_NAME}")
+    set(CARGO_OUTPUTS ${FEATOMIC_SHARED_LOCATION} ${FEATOMIC_STATIC_LOCATION})
+    if (WIN32)
+        list(APPEND CARGO_OUTPUTS ${FEATOMIC_IMPLIB_LOCATION})
+        set(FILE_CREATED_MESSAGE "${FEATOMIC_SHARED_LIB_NAME}, ${FEATOMIC_STATIC_LIB_NAME}, and ${FEATOMIC_IMPLIB_NAME}")
+    else()
+        set(FILE_CREATED_MESSAGE "${FEATOMIC_SHARED_LIB_NAME} and ${FEATOMIC_STATIC_LIB_NAME}")
+    endif()
 else()
     if (BUILD_SHARED_LIBS)
         set(CARGO_BUILD_ARG "${CARGO_BUILD_ARG};--crate-type=cdylib")
-        set(FILES_CREATED_BY_CARGO "${FEATOMIC_SHARED_LIB_NAME}")
+        set(CARGO_OUTPUTS ${FEATOMIC_SHARED_LOCATION})
+        if (WIN32)
+            list(APPEND CARGO_OUTPUTS ${FEATOMIC_IMPLIB_LOCATION})
+            set(FILE_CREATED_MESSAGE "${FEATOMIC_SHARED_LIB_NAME} and ${FEATOMIC_IMPLIB_NAME}")
+        else()
+            set(FILE_CREATED_MESSAGE "${FEATOMIC_SHARED_LIB_NAME}")
+        endif()
     else()
         set(CARGO_BUILD_ARG "${CARGO_BUILD_ARG};--crate-type=staticlib")
-        set(FILES_CREATED_BY_CARGO "${FEATOMIC_STATIC_LIB_NAME}")
+        set(CARGO_OUTPUTS ${FEATOMIC_STATIC_LOCATION})
+        set(FILE_CREATED_MESSAGE "${FEATOMIC_STATIC_LIB_NAME}")
     endif()
 endif()
 
-set(FEATOMIC_OUTPUTS ${FEATOMIC_STATIC_LOCATION} $<$<BOOL:${BUILD_SHARED_LIBS}>:${FEATOMIC_SHARED_LOCATION}> $<$<PLATFORM_ID:Windows>:${FEATOMIC_IMPLIB_LOCATION}>)
 add_custom_command(
-    OUTPUT ${FEATOMIC_OUTPUTS}
+    OUTPUT ${CARGO_OUTPUTS}
     COMMAND ${CMAKE_COMMAND} -E env ${CARGO_ENV}
             cargo rustc ${CARGO_BUILD_ARG} -- ${CARGO_RUSTC_ARGS}
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     DEPENDS ${ALL_RUST_SOURCES}
-    COMMENT "Building libfeatomic with cargo"
+    COMMENT "Building ${FILE_CREATED_MESSAGE} with cargo"
     VERBATIM
 )
 
-add_custom_target(cargo-build-featomic ALL
-    DEPENDS ${FEATOMIC_OUTPUTS}
-)
-
+add_custom_target(cargo-build-featomic ALL DEPENDS ${CARGO_OUTPUTS})
 add_dependencies(featomic::shared cargo-build-featomic)
 add_dependencies(featomic::static cargo-build-featomic)
 
