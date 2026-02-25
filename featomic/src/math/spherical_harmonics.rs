@@ -282,7 +282,7 @@ impl SphericalHarmonics {
         }
 
         // legendre_over_theta
-        if sin_theta > 0.1 {
+        if sin_theta > 1e-6 {
             for l in 0..(self.max_angular + 1) {
                 for m in 0..=l {
                     self.legendre_over_theta[[l, m]] = m as f64 / sin_theta * self.legendre_polynomials[[l, m]];
