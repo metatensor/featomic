@@ -246,7 +246,7 @@ endif()
 #
 # When updating METATENSOR_FETCH_VERSION, you will also have to update the
 # SHA256 sum of the file in `FetchContent_Declare`.
-+set(METATENSOR_FETCH_VERSION "0.1.19")
+set(METATENSOR_FETCH_VERSION "0.1.19")
 set(METATENSOR_REQUIRED_VERSION "0.1")
 if (FEATOMIC_FETCH_METATENSOR)
     message(STATUS "Fetching metatensor-core from github")
