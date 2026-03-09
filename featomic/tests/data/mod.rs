@@ -1,8 +1,8 @@
 #![allow(dead_code)]
+use std::io::Read;
 use std::path::Path;
 
 use serde_json::Value;
-use ndarray_npy::ReadNpyExt;
 use ndarray::ArrayD;
 use flate2::read::GzDecoder;
 
@@ -63,5 +63,48 @@ pub fn load_expected_values(path: impl AsRef<Path>) -> ArrayD<f64> {
     let file = std::fs::File::open(format!("tests/data/generated/{}", path.as_ref().display()))
         .expect("failed to open file");
 
-    ArrayD::<f64>::read_npy(GzDecoder::new(file)).expect("failed to convert data to ndarray")
+    let mut reader = GzDecoder::new(file);
+
+    let mut magic = [0u8; 6];
+    reader.read_exact(&mut magic).expect("failed to read magic");
+    assert_eq!(&magic, b"\x93NUMPY");
+
+    let mut version = [0u8; 2];
+    reader.read_exact(&mut version).expect("failed to read version");
+
+    let mut header_len_bytes = [0u8; 2];
+    reader.read_exact(&mut header_len_bytes).expect("failed to read header len");
+    let header_len = u16::from_le_bytes(header_len_bytes) as usize;
+
+    let mut header_bytes = vec![0u8; header_len];
+    reader.read_exact(&mut header_bytes).expect("failed to read header");
+    let header = String::from_utf8(header_bytes).expect("failed to parse header as utf8");
+
+    if !header.contains("'descr': '<f8'") {
+        panic!("only float64 is supported, got header: {}", header);
+    }
+
+    if !header.contains("'fortran_order': False") {
+        panic!("only C-order is supported, got header: {}", header);
+    }
+
+    let start = header.find("'shape': (").expect("failed to find shape") + 10;
+    let end = header[start..].find(")").expect("failed to find end of shape");
+    let shape_str = &header[start..start + end];
+    let shape: Vec<usize> = shape_str
+        .split(',')
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .map(|s| s.parse().expect("failed to parse shape"))
+        .collect();
+
+    let mut data_bytes = Vec::new();
+    reader.read_to_end(&mut data_bytes).expect("failed to read data");
+
+    let data: Vec<f64> = data_bytes
+        .chunks_exact(8)
+        .map(|chunk| f64::from_le_bytes(chunk.try_into().unwrap()))
+        .collect();
+
+    ArrayD::from_shape_vec(shape, data).expect("failed to create array")
 }

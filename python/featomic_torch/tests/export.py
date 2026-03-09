@@ -7,14 +7,13 @@ from metatensor.torch import Labels, TensorBlock, TensorMap
 from metatomic.torch import (
     AtomisticModel,
     ModelCapabilities,
-    ModelEvaluationOptions,
     ModelMetadata,
     ModelOutput,
     System,
 )
-from metatomic.torch.ase_calculator import _compute_ase_neighbors
+from metatomic.torch.ase_calculator import MetatomicCalculator
 
-from featomic.torch import SoapPowerSpectrum, systems_to_torch
+from featomic.torch import SoapPowerSpectrum
 
 
 HYPERS = {
@@ -89,7 +88,7 @@ class Model(torch.nn.Module):
         }
 
 
-def test_export_as_metatensor_model(tmpdir):
+def test_export_as_metatomic_model(tmpdir):
     model = Model(types=[1, 6, 8])
     model.eval()
 
@@ -115,16 +114,16 @@ def test_export_as_metatensor_model(tmpdir):
     export.save(os.path.join(tmpdir, "model.pt"))
 
     # check that we can run the model
-    frame = ase.Atoms(
-        numbers=[1, 8], positions=[[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], pbc=False
+    atoms = ase.Atoms(
+        numbers=[1, 8],
+        positions=[[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]],
+        pbc=False,
     )
-    system = systems_to_torch(frame)
-    neighbors = _compute_ase_neighbors(
-        frame, requests[0], dtype=torch.float64, device="cpu"
-    )
-    system.add_neighbor_list(requests[0], neighbors)
 
-    options = ModelEvaluationOptions(
-        length_unit="", outputs={"energy": energy_output}, selected_atoms=None
+    atoms.calc = MetatomicCalculator(
+        os.path.join(tmpdir, "model.pt"),
+        check_consistency=True,
     )
-    _ = export([system], options, check_consistency=True)
+
+    # This should run without issues
+    _ = atoms.get_potential_energy()

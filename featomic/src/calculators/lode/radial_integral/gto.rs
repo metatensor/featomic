@@ -127,9 +127,11 @@ impl LodeRadialIntegral for LodeRadialIntegralGto {
             }
         }
 
-        values.assign(&values.dot(&self.gto_orthonormalization));
+        let new_values = values.dot(&self.gto_orthonormalization);
+        values.assign(&new_values);
         if let Some(ref mut gradients) = gradients {
-            gradients.assign(&gradients.dot(&self.gto_orthonormalization));
+            let new_gradients = gradients.dot(&self.gto_orthonormalization);
+            gradients.assign(&new_gradients);
         }
     }
 

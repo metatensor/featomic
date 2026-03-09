@@ -142,7 +142,7 @@ impl From<LodeTabulated> for LodeTabulatedSerde {
             });
         }
 
-        let center_contribution = tabulated.center_contribution.as_ref().map(Array1::to_vec);
+        let center_contribution = tabulated.center_contribution.as_ref().map(|a| a.to_vec());
         return LodeTabulatedSerde { points, center_contribution };
     }
 }
