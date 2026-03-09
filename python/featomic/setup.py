@@ -260,10 +260,12 @@ def create_version_number(version):
         # this is using a private API which is intended to become public soon:
         # https://github.com/pypa/packaging/pull/698. In the mean time we'll
         # use this
-        version._version = version._version._replace(release=release)
-        version._version = version._version._replace(pre=pre)
-        version._version = version._version._replace(dev=("dev", n_commits))
-        version._version = version._version._replace(local=(git_hash,))
+        version = version.__replace__(
+            release=release,
+            pre=pre,
+            dev=n_commits,
+            local=git_hash,
+        )
 
     return str(version)
 

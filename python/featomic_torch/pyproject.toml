@@ -34,7 +34,7 @@ repository = "https://github.com/metatensor/featomic"
 [build-system]
 requires = [
     "setuptools >=77",
-    "packaging",
+    "packaging >=26",
 ]
 
 # use a custom build backend to add a dependency on the right version of featomic
