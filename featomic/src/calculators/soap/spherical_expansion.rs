@@ -185,12 +185,28 @@ impl SphericalExpansion {
             pairs_for_positions_gradient: HashMap::new(),
         };
 
-        for (pair_id, pair) in pairs.iter().filter(pair_should_contribute).enumerate() {
+        for (position_grad_id, (pair_id, pair)) in pairs
+            .iter()
+            .enumerate()
+            .filter(|(_, pair)| pair_should_contribute(pair))
+            .enumerate()
+        {
             debug_assert!(requested_atoms.contains(&pair.first) || requested_atoms.contains(&pair.second));
 
             let direction = pair.vector / pair.distance;
 
             self.by_pair.compute_for_pair(pair.distance, direction, do_gradients, &mut contribution);
+
+            if let Some(ref mut positions_gradients_by_pair) = result.positions_gradient_by_pair {
+                if let Some(ref contribution_gradients_all) = contribution.gradients {
+                    for (o3_lambda, _) in angular_channels.iter().zip(&radial_sizes) {
+                        let contribution_gradients = contribution_gradients_all.get(o3_lambda).expect("missing o3_lambda");
+                        let positions_gradients = positions_gradients_by_pair.get_mut(o3_lambda).expect("missing o3_lambda");
+                        let gradients = &mut positions_gradients.slice_mut(s![position_grad_id, .., .., ..]);
+                        gradients.assign(contribution_gradients);
+                    }
+                }
+            }
 
             if let Some(mapped_center) = result.center_mapping[pair.first] {
                 // add the pair contribution to the atomic environnement
@@ -199,7 +215,7 @@ impl SphericalExpansion {
 
                 result.pairs_for_positions_gradient.entry((pair.first, pair.second))
                     .or_default()
-                    .push(pair_id);
+                    .push(PairIndices { pair_id, position_grad_id });
 
                 let neighbor_type_i = result.types_mapping[&types[neighbor_i]];
                 for (o3_lambda, &radial_size) in angular_channels.iter().zip(&radial_sizes) {
@@ -210,12 +226,6 @@ impl SphericalExpansion {
 
                     if let Some(ref contribution_gradients) = contribution.gradients {
                         let contribution_gradients = contribution_gradients.get(o3_lambda).expect("missing o3_lambda");
-
-                        if let Some(ref mut positions_gradients) = result.positions_gradient_by_pair {
-                            let positions_gradients = positions_gradients.get_mut(o3_lambda).expect("missing o3_lambda");
-                            let gradients = &mut positions_gradients.slice_mut(s![pair_id, .., .., ..]);
-                            gradients.assign(contribution_gradients);
-                        }
 
                         if pair.first != pair.second {
                             if let Some(ref mut positions_gradients) = result.self_positions_gradients {
@@ -280,7 +290,7 @@ impl SphericalExpansion {
 
                 result.pairs_for_positions_gradient.entry((pair.second, pair.first))
                     .or_default()
-                    .push(pair_id);
+                    .push(PairIndices { pair_id, position_grad_id });
 
                 contribution.inverse_pair(&self.m_1_pow_l);
 
@@ -495,8 +505,8 @@ impl SphericalExpansion {
             } else {
                 // gradient w.r.t. the position of a neighboring atom
                 debug_assert!(types[neighbor_i] == neighbor_type);
-                for &pair_id in &result.pairs_for_positions_gradient[&(center_i, neighbor_i)] {
-                    let pair = pairs[pair_id];
+                for pair_indices in &result.pairs_for_positions_gradient[&(center_i, neighbor_i)] {
+                    let pair = pairs[pair_indices.pair_id];
                     let factor = if pair.first == center_i {
                         debug_assert_eq!(pair.second, neighbor_i);
                         1.0
@@ -512,7 +522,7 @@ impl SphericalExpansion {
                                 // SAFETY: same as above
                                 unsafe {
                                     let out = array.uget_mut([grad_sample_i, xyz, m, property_i]);
-                                    *out += factor * *positions_gradients.uget([pair_id, xyz, m, n.usize()]);
+                                    *out += factor * *positions_gradients.uget([pair_indices.position_grad_id, xyz, m, n.usize()]);
                                 }
                             }
                         }
@@ -604,6 +614,17 @@ impl SphericalExpansion {
     }
 }
 
+/// Struct to store the indices of a pair in the system list and in the gradient
+/// storage array. The two indices here can be different when doing sample
+/// selection.
+#[derive(Debug, Clone, Copy)]
+struct PairIndices {
+    /// Index of the pair in the system's pair list
+    pair_id: usize,
+    /// Index of the pair in the gradient storage array
+    position_grad_id: usize,
+}
+
 /// Result of `accumulate_all_pairs`, summing over all pairs in a system
 struct PairAccumulationResult {
     /// values of the spherical expansion
@@ -614,7 +635,7 @@ struct PairAccumulationResult {
     /// calculation. This is used for gradients of a given center representation
     /// with respect to one of the neighbors
     ///
-    /// the shape is `l => [pair_id, xyz, 2 l + 1, n]`
+    /// the shape is `l => [position_grad_id, xyz, 2 l + 1, n]`
     positions_gradient_by_pair: Option<BTreeMap<usize, ndarray::Array4<f64>>>,
     /// gradient of spherical expansion w.r.t. the position of the central atom
     ///
@@ -638,12 +659,11 @@ struct PairAccumulationResult {
     /// Mapping from the atomic index to the second dimension of
     /// values/cell gradients/strain gradients
     center_mapping: Vec<Option<usize>>,
-    /// Mapping from (center, neighbor) to (potentially multiple) `pair_id`
-    /// (first dimension of `positions_gradient_by_pair`).
+    /// Mapping from (center, neighbor) to (potentially multiple) `PairIndices`
     ///
-    /// Two atoms can have more than one pair between them, so we need to be
-    /// able store more than one pair id.
-    pairs_for_positions_gradient: HashMap<(usize, usize), Vec<usize>>,
+    /// Two atoms can have more than one pair between them through PBC, so we
+    /// need to be able store more than one set of pair indices.
+    pairs_for_positions_gradient: HashMap<(usize, usize), Vec<PairIndices>>,
 }
 
 impl CalculatorBase for SphericalExpansion {
