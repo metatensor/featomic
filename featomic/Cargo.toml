@@ -71,6 +71,8 @@ time-graph = {version = "0.3.0", features = ["table", "json"]}
 # Pins to the last versions supporting rustc 1.74
 half = "=2.4.1"
 pest = "=2.8.0"
+clap_builder = "=4.5.61"
+clap_lex = "=1.0.1"
 
 
 [[bench]]
