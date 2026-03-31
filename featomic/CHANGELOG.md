@@ -17,6 +17,14 @@ a changelog](https://keepachangelog.com/en/1.1.0/) format. This project follows
 ### Removed
 -->
 
+## [Version 0.6.5](https://github.com/metatensor/featomic/releases/tag/featomic-v0.6.5) - 2026-03-31
+
+### Fixed
+
+- Fixes an indexing issue affecting the `SoapSphericalExpansion` and
+  `SoapPowerSpectrum` calculator, that created wrong gradients when using keys
+  and/or sample selection.
+
 ## [Version 0.6.4](https://github.com/metatensor/featomic/releases/tag/featomic-v0.6.4) - 2025-11-17
 
 ### Changed
