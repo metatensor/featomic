@@ -64,3 +64,4 @@ or the documentation of featomic.
    references/index
    explanations/index
    devdoc/index
+   cite

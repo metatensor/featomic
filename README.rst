@@ -54,6 +54,36 @@ List of implemented representations
 
 For details, tutorials, and examples, please have a look at our `documentation`_.
 
+
+.. inclusion-citing-start
+
+Citing featomic
+###############
+
+If you found featomic useful for your work, please cite the corresponding article:
+
+F. Bigi, J.W. Abbott, P. Loche et al.,
+Metatensor and metatomic: foundational libraries for interoperable atomistic machine learning, (2026).
+https://doi.org/10.1063/5.0304911
+
+.. code-block:: bibtex
+
+  @article{bigi_metatensor_2026,
+    title = {Metatensor and Metatomic: {{Foundational}} Libraries for Interoperable Atomistic Machine Learning},
+    shorttitle = {Metatensor and Metatomic},
+    author = {Bigi, Filippo and Abbott, Joseph W. and Loche, Philip and Mazitov, Arslan and Tisi, Davide and Langer, Marcel F. and Goscinski, Alexander and Pegolo, Paolo and Chong, Sanggyu and Goswami, Rohit and Febrer, Pol and Chorna, Sofiia and Kellner, Matthias and Ceriotti, Michele and Fraux, Guillaume},
+    year = 2026,
+    month = feb,
+    journal = {J. Chem. Phys.},
+    volume = {164},
+    number = {6},
+    pages = {064113},
+    issn = {0021-9606},
+    doi = {10.1063/5.0304911},
+  }
+
+.. inclusion-citing-end
+
 .. _`documentation`: https://metatensor.github.io/featomic/index.html
 
 .. |test| image:: https://img.shields.io/github/check-runs/metatensor/featomic/main?logo=github&label=tests
