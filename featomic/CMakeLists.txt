@@ -246,17 +246,17 @@ endif()
 #
 # When updating METATENSOR_FETCH_VERSION, you will also have to update the
 # SHA256 sum of the file in `FetchContent_Declare`.
-set(METATENSOR_FETCH_VERSION "0.1.20")
+set(METATENSOR_FETCH_VERSION "0.2.0")
 set(METATENSOR_REQUIRED_VERSION "0.1")
 if (FEATOMIC_FETCH_METATENSOR)
-    message(STATUS "Fetching metatensor-core from github")
+    message(STATUS "Fetching metatensor-core from github (labels-values-array-clean branch)")
 
     include(FetchContent)
-    set(URL_ROOT "https://github.com/metatensor/metatensor/releases/download")
     FetchContent_Declare(
         metatensor
-        URL      ${URL_ROOT}/metatensor-core-v${METATENSOR_FETCH_VERSION}/metatensor-core-cxx-${METATENSOR_FETCH_VERSION}.tar.gz
-        URL_HASH SHA256=eec78853aa8d2e91d931712242566f8ad3c03cbd291c852fb67a166bfa2e0eaa
+        GIT_REPOSITORY https://github.com/HaoZeke/metatensor.git
+        GIT_TAG        labels-values-array-clean
+        SOURCE_SUBDIR  metatensor-core
     )
 
     FetchContent_MakeAvailable(metatensor)
