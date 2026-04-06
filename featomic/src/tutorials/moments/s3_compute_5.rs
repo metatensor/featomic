@@ -105,7 +105,7 @@ impl CalculatorBase for GeometricMoments {
 
                         for (property_i, [k]) in gradient.properties.iter_fixed_size().enumerate() {
                             if let Some(sample_i) = gradient_wrt_second {
-                                let grad = moment_gradients[k as usize];
+                                let grad = moment_gradients[*k as usize];
                                 // There is one extra dimension in the gradients
                                 // array compared to the values, accounting for
                                 // each of the Cartesian directions.
@@ -115,7 +115,7 @@ impl CalculatorBase for GeometricMoments {
                             }
 
                             if let Some(sample_i) = gradient_wrt_self {
-                                let grad = moment_gradients[k as usize];
+                                let grad = moment_gradients[*k as usize];
                                 array[[sample_i, 0, property_i]] -= grad[0] / n_neighbors_first;
                                 array[[sample_i, 1, property_i]] -= grad[1] / n_neighbors_first;
                                 array[[sample_i, 2, property_i]] -= grad[2] / n_neighbors_first;
@@ -140,14 +140,14 @@ impl CalculatorBase for GeometricMoments {
 
                         for (property_i, [k]) in gradient.properties.iter_fixed_size().enumerate() {
                             if let Some(sample_i) = gradient_wrt_first {
-                                let grad = moment_gradients[k as usize];
+                                let grad = moment_gradients[*k as usize];
                                 array[[sample_i, 0, property_i]] -= grad[0] / n_neighbors_second;
                                 array[[sample_i, 1, property_i]] -= grad[1] / n_neighbors_second;
                                 array[[sample_i, 2, property_i]] -= grad[2] / n_neighbors_second;
                             }
 
                             if let Some(sample_i) = gradient_wrt_self {
-                                let grad = moment_gradients[k as usize];
+                                let grad = moment_gradients[*k as usize];
                                 array[[sample_i, 0, property_i]] += grad[0] / n_neighbors_second;
                                 array[[sample_i, 1, property_i]] += grad[1] / n_neighbors_second;
                                 array[[sample_i, 2, property_i]] += grad[2] / n_neighbors_second;

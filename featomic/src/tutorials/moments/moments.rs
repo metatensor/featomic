@@ -41,11 +41,11 @@ impl CalculatorBase for GeometricMoments {
         assert_eq!(keys.names(), ["center_type", "neighbor_type"]);
 
         let mut samples = Vec::new();
-        for [&center_type, &neighbor_type] in keys.iter_fixed_size() {
+        for [center_type, neighbor_type] in keys.iter_fixed_size() {
             let builder = AtomCenteredSamples {
                 cutoff: self.cutoff,
-                center_type: AtomicTypeFilter::Single(center_type),
-                neighbor_type: AtomicTypeFilter::Single(neighbor_type),
+                center_type: AtomicTypeFilter::Single(*center_type),
+                neighbor_type: AtomicTypeFilter::Single(*neighbor_type),
                 self_pairs: false,
             };
 
@@ -70,8 +70,8 @@ impl CalculatorBase for GeometricMoments {
         for ([center_type, neighbor_type], samples_for_key) in keys.iter_fixed_size().zip(samples) {
             let builder = AtomCenteredSamples {
                 cutoff: self.cutoff,
-                center_type: AtomicTypeFilter::Single(center_type),
-                neighbor_type: AtomicTypeFilter::Single(neighbor_type),
+                center_type: AtomicTypeFilter::Single(*center_type),
+                neighbor_type: AtomicTypeFilter::Single(*neighbor_type),
                 self_pairs: false,
             };
 
@@ -92,7 +92,7 @@ impl CalculatorBase for GeometricMoments {
     fn properties(&self, keys: &Labels) -> Vec<Labels> {
         let mut builder = LabelsBuilder::new(self.property_names());
         for k in 0..=self.max_moment {
-            builder.add(&[k]);
+            builder.add(&[k as i32]);
         }
         let properties = builder.finish();
 
@@ -148,7 +148,7 @@ impl CalculatorBase for GeometricMoments {
                     let array = block.values.to_ndarray_mut();
 
                     for (property_i, [k]) in block.properties.iter_fixed_size().enumerate() {
-                        let value = f64::powi(pair.distance, k) / n_neighbors_first;
+                        let value = f64::powi(pair.distance, *k) / n_neighbors_first;
                         array[[sample_i, property_i]] += value;
                     }
                 }
@@ -160,7 +160,7 @@ impl CalculatorBase for GeometricMoments {
                     let array = block.values.to_ndarray_mut();
 
                     for (property_i, [k]) in block.properties.iter_fixed_size().enumerate() {
-                        let value = f64::powi(pair.distance, k) / n_neighbors_second;
+                        let value = f64::powi(pair.distance, *k) / n_neighbors_second;
                         array[[sample_i, property_i]] += value;
                     }
                 }
@@ -192,14 +192,14 @@ impl CalculatorBase for GeometricMoments {
 
                         for (property_i, [k]) in gradient.properties.iter_fixed_size().enumerate() {
                             if let Some(sample_i) = gradient_wrt_second {
-                                let grad = moment_gradients[k as usize];
+                                let grad = moment_gradients[*k as usize];
                                 array[[sample_i, 0, property_i]] += grad[0] / n_neighbors_first;
                                 array[[sample_i, 1, property_i]] += grad[1] / n_neighbors_first;
                                 array[[sample_i, 2, property_i]] += grad[2] / n_neighbors_first;
                             }
 
                             if let Some(sample_i) = gradient_wrt_self {
-                                let grad = moment_gradients[k as usize];
+                                let grad = moment_gradients[*k as usize];
                                 array[[sample_i, 0, property_i]] -= grad[0] / n_neighbors_first;
                                 array[[sample_i, 1, property_i]] -= grad[1] / n_neighbors_first;
                                 array[[sample_i, 2, property_i]] -= grad[2] / n_neighbors_first;
@@ -224,14 +224,14 @@ impl CalculatorBase for GeometricMoments {
 
                         for (property_i, [k]) in gradient.properties.iter_fixed_size().enumerate() {
                             if let Some(sample_i) = gradient_wrt_first {
-                                let grad = moment_gradients[k as usize];
+                                let grad = moment_gradients[*k as usize];
                                 array[[sample_i, 0, property_i]] -= grad[0] / n_neighbors_second;
                                 array[[sample_i, 1, property_i]] -= grad[1] / n_neighbors_second;
                                 array[[sample_i, 2, property_i]] -= grad[2] / n_neighbors_second;
                             }
 
                             if let Some(sample_i) = gradient_wrt_self {
-                                let grad = moment_gradients[k as usize];
+                                let grad = moment_gradients[*k as usize];
                                 array[[sample_i, 0, property_i]] += grad[0] / n_neighbors_second;
                                 array[[sample_i, 1, property_i]] += grad[1] / n_neighbors_second;
                                 array[[sample_i, 2, property_i]] += grad[2] / n_neighbors_second;
@@ -293,7 +293,7 @@ mod tests {
 
         assert_eq!(block.properties(), expected_properties);
 
-        assert_relative_eq!(block.values().as_ndarray(), &array![[2.0 / 2.0]].into_dyn());
+        assert_relative_eq!(block.values().as_ndarray(), &array![[2.0 / 2.0]].into_dyn().into_shared());
 
         /**********************************************************************/
         // H center, O neighbor
@@ -305,7 +305,7 @@ mod tests {
 
         assert_eq!(block.properties(), expected_properties);
 
-        assert_relative_eq!(block.values().as_ndarray(), &array![[1.0 / 2.0], [1.0 / 2.0]].into_dyn());
+        assert_relative_eq!(block.values().as_ndarray(), &array![[1.0 / 2.0], [1.0 / 2.0]].into_dyn().into_shared());
 
         /**********************************************************************/
         // H center, H neighbor
@@ -317,7 +317,7 @@ mod tests {
 
         assert_eq!(block.properties(), expected_properties);
 
-        assert_relative_eq!(block.values().as_ndarray(), &array![[1.0 / 2.0], [1.0 / 2.0]].into_dyn());
+        assert_relative_eq!(block.values().as_ndarray(), &array![[1.0 / 2.0], [1.0 / 2.0]].into_dyn().into_shared());
 
         /**********************************************************************/
         // H center, C neighbor
@@ -329,7 +329,7 @@ mod tests {
 
         assert_eq!(block.properties(), expected_properties);
 
-        assert_relative_eq!(block.values().as_ndarray(), &array![[1.0 / 1.0]].into_dyn());
+        assert_relative_eq!(block.values().as_ndarray(), &array![[1.0 / 1.0]].into_dyn().into_shared());
 
         /**********************************************************************/
         // C center, H neighbor
@@ -341,7 +341,7 @@ mod tests {
 
         assert_eq!(block.properties(), expected_properties);
 
-        assert_relative_eq!(block.values().as_ndarray(), &array![[1.0 / 1.0]].into_dyn());
+        assert_relative_eq!(block.values().as_ndarray(), &array![[1.0 / 1.0]].into_dyn().into_shared());
     }
 }
 // [property-test]

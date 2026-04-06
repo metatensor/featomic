@@ -670,7 +670,7 @@ mod tests {
         let expected = &ndarray::arr3(&[
             [[0.0], [0.75545], [-0.58895]],
             [[0.0], [-0.75545], [-0.58895]]
-        ]).into_dyn();
+        ]).into_dyn().into_shared();
         assert_relative_eq!(array, expected, max_relative=1e-6);
 
         // H-H block
@@ -686,7 +686,7 @@ mod tests {
         let expected = &ndarray::arr3(&[
             [[0.0], [-1.5109], [0.0]],
             [[0.0], [1.4891], [0.0]],
-        ]).into_dyn();
+        ]).into_dyn().into_shared();
         assert_relative_eq!(array, expected, max_relative=1e-6);
     }
 
@@ -724,7 +724,7 @@ mod tests {
         let expected = &ndarray::arr3(&[
             [[0.0], [0.75545], [-0.58895]],
             [[0.0], [-0.75545], [-0.58895]]
-        ]).into_dyn();
+        ]).into_dyn().into_shared();
         assert_relative_eq!(array, expected, max_relative=1e-6);
 
         // H-O block
@@ -744,7 +744,7 @@ mod tests {
         let expected = &ndarray::arr3(&[
             [[0.0], [-0.75545], [0.58895]],
             [[0.0], [0.75545], [0.58895]]
-        ]).into_dyn();
+        ]).into_dyn().into_shared();
         assert_relative_eq!(array, expected, max_relative=1e-6);
 
         // H-H block
@@ -764,7 +764,7 @@ mod tests {
             [[0.0], [1.5109], [0.0]],
             [[0.0], [1.4891], [0.0]],
             [[0.0], [-1.4891], [0.0]],
-        ]).into_dyn();
+        ]).into_dyn().into_shared();
         assert_relative_eq!(array, expected, max_relative=1e-6);
     }
 
@@ -797,7 +797,7 @@ mod tests {
             [[0.0], [0.0], [10.0]],
             [[0.0], [10.0], [0.0]],
             [[10.0], [0.0], [0.0]],
-        ]).into_dyn();
+        ]).into_dyn().into_shared();
         assert_relative_eq!(array, expected, max_relative=1e-6);
 
         // now a full NL
@@ -833,7 +833,7 @@ mod tests {
             [[0.0], [-10.0], [0.0]],
             [[10.0], [0.0], [0.0]],
             [[-10.0], [0.0], [0.0]],
-        ]).into_dyn();
+        ]).into_dyn().into_shared();
         assert_relative_eq!(array, expected, max_relative=1e-6);
     }
 

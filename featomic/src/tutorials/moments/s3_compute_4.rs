@@ -82,7 +82,7 @@ impl CalculatorBase for GeometricMoments {
                     let array = block.values.to_ndarray_mut();
 
                     for (property_i, [k]) in block.properties.iter_fixed_size().enumerate() {
-                        let value = f64::powi(pair.distance, k) / n_neighbors_first;
+                        let value = f64::powi(pair.distance, *k) / n_neighbors_first;
                         array[[sample_i, property_i]] += value;
                     }
                 }
@@ -94,7 +94,7 @@ impl CalculatorBase for GeometricMoments {
                     let array = block.values.to_ndarray_mut();
 
                     for (property_i, [k]) in block.properties.iter_fixed_size().enumerate() {
-                        let value = f64::powi(pair.distance, k) / n_neighbors_second;
+                        let value = f64::powi(pair.distance, *k) / n_neighbors_second;
                         array[[sample_i, property_i]] += value;
                     }
                 }
