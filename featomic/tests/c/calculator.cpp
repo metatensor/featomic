@@ -141,9 +141,7 @@ struct LabelsInfo {
     uintptr_t size;       // number of dimensions
     uintptr_t count;      // number of entries
     const char* const* names;
-    int32_t* values;
-    mts_array_t values_array;
-    DLPackHandle dl_handle; // must outlive `values`
+    std::vector<int32_t> values; // copied out
 };
 
 static LabelsInfo query_labels(const mts_labels_t* labels) {
@@ -151,22 +149,32 @@ static LabelsInfo query_labels(const mts_labels_t* labels) {
     info.size = 0;
     info.count = 0;
     info.names = nullptr;
-    info.values = nullptr;
-    info.values_array = {};
 
     mts_labels_dimensions(labels, &info.names, &info.size);
 
-    mts_labels_values(labels, &info.values_array);
+    mts_array_t values_array = {};
+    mts_labels_values(labels, &values_array);
 
     const uintptr_t* shape = nullptr;
     uintptr_t shape_count = 0;
-    info.values_array.shape(info.values_array.ptr, &shape, &shape_count);
+    values_array.shape(values_array.ptr, &shape, &shape_count);
 
-    if (shape_count >= 1) {
+    if (shape_count >= 2) {
+        info.count = shape[0];
+        // shape[1] should equal info.size
+    } else if (shape_count == 1) {
         info.count = shape[0];
     }
 
-    info.values = dlpack_i32_data_ptr(info.values_array, info.dl_handle);
+    // Extract values via DLPack -- keep handle alive during copy
+    DLPackHandle handle;
+    DLDevice cpu_device = {kDLCPU, 0};
+    DLPackVersion max_ver = {1, 0};
+    auto status = values_array.as_dlpack(values_array.ptr, &handle.dl, cpu_device, nullptr, max_ver);
+    if (status == MTS_SUCCESS && handle.dl != nullptr) {
+        auto* ptr = static_cast<int32_t*>(handle.dl->dl_tensor.data);
+        info.values.assign(ptr, ptr + info.count * info.size);
+    }
 
     return info;
 }
@@ -777,10 +785,7 @@ void check_block(
     CHECK(info.names[1] == std::string("atom"));
     auto n_samples = info.count;
 
-    auto label_values = std::vector<int32_t>(
-        info.values, info.values + info.count * info.size
-    );
-    CHECK(label_values == samples);
+    CHECK(info.values == samples);
     mts_labels_free(labels);
 
     /**************************************************************************/
@@ -793,10 +798,7 @@ void check_block(
     CHECK(info.names[1] == std::string("x_y_z"));
     auto n_properties = info.count;
 
-    label_values = std::vector<int32_t>(
-        info.values, info.values + info.count * info.size
-    );
-    CHECK(label_values == properties);
+    CHECK(info.values == properties);
     mts_labels_free(labels);
 
     /**************************************************************************/
@@ -837,10 +839,7 @@ void check_block(
     CHECK(info.names[2] == std::string("atom"));
     auto n_gradient_samples = info.count;
 
-    label_values = std::vector<int32_t>(
-        info.values, info.values + info.count * info.size
-    );
-    CHECK(label_values == gradient_samples);
+    CHECK(info.values == gradient_samples);
     mts_labels_free(labels);
 
     /**************************************************************************/
