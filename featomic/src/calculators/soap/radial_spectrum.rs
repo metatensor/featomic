@@ -256,8 +256,8 @@ impl CalculatorBase for SoapRadialSpectrum {
         for ((_, mut block), (_, block_spx)) in
             descriptor.iter_mut().zip(spherical_expansion.iter())
         {
-            let array = block.values_mut().to_array_mut();
-            let array_spx = block_spx.values().to_array();
+            let array = block.values_mut().to_ndarray_mut();
+            let array_spx = block_spx.values().to_ndarray();
             let shape = array_spx.shape();
             // shape[1] is the m component
             debug_assert_eq!(shape[1], 1);
@@ -270,8 +270,8 @@ impl CalculatorBase for SoapRadialSpectrum {
                 let gradient_spx = block_spx.gradient("positions").expect("missing spherical expansion gradients");
                 debug_assert_eq!(gradient.samples(), gradient_spx.samples());
 
-                let array = gradient.values_mut().to_array_mut();
-                let array_spx = gradient_spx.values().to_array();
+                let array = gradient.values_mut().to_ndarray_mut();
+                let array_spx = gradient_spx.values().to_ndarray();
                 let shape = array_spx.shape();
                 // shape[2] is the m component
                 debug_assert_eq!(shape[2], 1);
@@ -286,8 +286,8 @@ impl CalculatorBase for SoapRadialSpectrum {
                 let gradient_spx = block_spx.gradient("cell").expect("missing spherical expansion gradients");
                 debug_assert_eq!(gradient.samples(), gradient_spx.samples());
 
-                let array = gradient.values_mut().to_array_mut();
-                let array_spx = gradient_spx.values().to_array();
+                let array = gradient.values_mut().to_ndarray_mut();
+                let array_spx = gradient_spx.values().to_ndarray();
                 let shape = array_spx.shape();
                 // shape[2] is the m component
                 debug_assert_eq!(shape[3], 1);
@@ -302,8 +302,8 @@ impl CalculatorBase for SoapRadialSpectrum {
                 let gradient_spx = block_spx.gradient("strain").expect("missing spherical expansion gradients");
                 debug_assert_eq!(gradient.samples(), gradient_spx.samples());
 
-                let array = gradient.values_mut().to_array_mut();
-                let array_spx = gradient_spx.values().to_array();
+                let array = gradient.values_mut().to_ndarray_mut();
+                let array_spx = gradient_spx.values().to_ndarray();
                 let shape = array_spx.shape();
                 // shape[2] is the m component
                 debug_assert_eq!(shape[3], 1);

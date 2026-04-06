@@ -119,7 +119,7 @@ impl CalculatorBase for AtomicComposition {
             let center_type = key[0].i32();
 
             let block = block.data_mut();
-            let array = block.values.to_array_mut();
+            let array = block.values.to_ndarray_mut();
 
             for (property_i, &[count]) in block.properties.iter_fixed_size().enumerate() {
                 if count == 0 {
@@ -181,7 +181,7 @@ mod tests {
 
         assert_eq!(descriptor.blocks().len(), 2);
         // test against hydrogen block which has the id `1`
-        let values = descriptor.block_by_id(1).values().to_array();
+        let values = descriptor.block_by_id(1).values().to_ndarray();
         assert_eq!(values.shape(), [2, 1]);
 
         assert_eq!(values, array![[1.0], [1.0]].into_dyn());
@@ -200,7 +200,7 @@ mod tests {
 
         assert_eq!(descriptor.blocks().len(), 2);
         // test against hydrogen block which has the id `1`
-        let values = descriptor.block_by_id(1).values().to_array();
+        let values = descriptor.block_by_id(1).values().to_ndarray();
         assert_eq!(values.shape(), [1, 1]);
 
         assert_eq!(values, array![[2.0]].into_dyn());

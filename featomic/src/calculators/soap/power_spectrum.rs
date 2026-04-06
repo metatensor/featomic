@@ -559,10 +559,10 @@ impl CalculatorBase for SoapPowerSpectrum {
         let spherical_expansion = spherical_expansion.iter().map(|(key, block)| {
             let spx_block = SphericalExpansionBlock {
                 properties: block.properties(),
-                values: block.values().to_array(),
-                positions_gradients: block.gradient("positions").map(|g| g.values().to_array()),
-                cell_gradients: block.gradient("cell").map(|g| g.values().to_array()),
-                strain_gradients: block.gradient("strain").map(|g| g.values().to_array()),
+                values: block.values().to_ndarray(),
+                positions_gradients: block.gradient("positions").map(|g| g.values().to_ndarray()),
+                cell_gradients: block.gradient("cell").map(|g| g.values().to_ndarray()),
+                strain_gradients: block.gradient("strain").map(|g| g.values().to_ndarray()),
             };
 
             (key, spx_block)
@@ -581,7 +581,7 @@ impl CalculatorBase for SoapPowerSpectrum {
 
             let mapping = samples_mapping.get(key).expect("missing sample mapping");
 
-            block_data.values.as_array_mut()
+            block_data.values.as_ndarray_mut()
                 .axis_iter_mut(ndarray::Axis(0))
                 .into_par_iter()
                 .zip_eq(&mapping.values)
@@ -621,7 +621,7 @@ impl CalculatorBase for SoapPowerSpectrum {
             if let Some(mut gradient) = block.gradient_mut("positions") {
                 let gradient = gradient.data_mut();
 
-                gradient.values.to_array_mut()
+                gradient.values.to_ndarray_mut()
                     .axis_iter_mut(ndarray::Axis(0))
                     .into_par_iter()
                     .zip_eq(gradient.samples.par_iter())
@@ -682,7 +682,7 @@ impl CalculatorBase for SoapPowerSpectrum {
                 if let Some(mut gradient) = block.gradient_mut(parameter) {
                     let gradient = gradient.data_mut();
 
-                    gradient.values.to_array_mut()
+                    gradient.values.to_ndarray_mut()
                         .axis_iter_mut(ndarray::Axis(0))
                         .into_par_iter()
                         .zip_eq(gradient.samples.par_iter())
@@ -981,12 +981,12 @@ mod tests {
 
         assert_eq!(descriptor.keys(), selection.keys());
 
-        assert_eq!(descriptor.block_by_id(0).values().as_array().shape(), [4, 1]);
-        assert_eq!(descriptor.block_by_id(1).values().as_array().shape(), [4, 0]);
-        assert_eq!(descriptor.block_by_id(2).values().as_array().shape(), [4, 0]);
-        assert_eq!(descriptor.block_by_id(3).values().as_array().shape(), [1, 0]);
-        assert_eq!(descriptor.block_by_id(4).values().as_array().shape(), [1, 1]);
-        assert_eq!(descriptor.block_by_id(5).values().as_array().shape(), [1, 0]);
+        assert_eq!(descriptor.block_by_id(0).values().as_ndarray().shape(), [4, 1]);
+        assert_eq!(descriptor.block_by_id(1).values().as_ndarray().shape(), [4, 0]);
+        assert_eq!(descriptor.block_by_id(2).values().as_ndarray().shape(), [4, 0]);
+        assert_eq!(descriptor.block_by_id(3).values().as_ndarray().shape(), [1, 0]);
+        assert_eq!(descriptor.block_by_id(4).values().as_ndarray().shape(), [1, 1]);
+        assert_eq!(descriptor.block_by_id(5).values().as_ndarray().shape(), [1, 0]);
     }
 
     #[test]
@@ -1024,7 +1024,7 @@ mod tests {
         let descriptor_scaled = calculator.compute(system, Default::default()).unwrap();
 
         for (block, block_scaled) in descriptor.blocks().iter().zip(descriptor_scaled.blocks()) {
-            assert_eq!(block.values().as_array(), 4.0 * block_scaled.values().as_array());
+            assert_eq!(block.values().as_ndarray(), 4.0 * block_scaled.values().as_ndarray());
         }
     }
 }

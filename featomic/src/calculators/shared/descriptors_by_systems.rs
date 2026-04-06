@@ -37,15 +37,11 @@ impl metatensor::Array for UnsafeArrayViewMut {
         self
     }
 
-    fn create(&self, _: &[usize]) -> Box<dyn metatensor::Array> {
+    fn create(&self, _: &[usize], _: metatensor::MtsArray) -> Box<dyn metatensor::Array> {
         unimplemented!("invalid operation on UnsafeArrayViewMut");
     }
 
     fn copy(&self) -> Box<dyn metatensor::Array> {
-        unimplemented!("invalid operation on UnsafeArrayViewMut");
-    }
-
-    fn data(&mut self) -> &mut [f64] {
         unimplemented!("invalid operation on UnsafeArrayViewMut");
     }
 
@@ -61,12 +57,28 @@ impl metatensor::Array for UnsafeArrayViewMut {
         unimplemented!("invalid operation on UnsafeArrayViewMut");
     }
 
-    fn move_samples_from(
+    fn move_data(
         &mut self,
         _: &dyn metatensor::Array,
-        _: &[metatensor::c_api::mts_sample_mapping_t],
-        _: std::ops::Range<usize>,
+        _: &[metatensor::c_api::mts_data_movement_t],
     ) {
+        unimplemented!("invalid operation on UnsafeArrayViewMut");
+    }
+
+    fn device(&self) -> dlpk::sys::DLDevice {
+        dlpk::sys::DLDevice { device_type: dlpk::sys::DLDeviceType::kDLCPU, device_id: 0 }
+    }
+
+    fn dtype(&self) -> dlpk::sys::DLDataType {
+        dlpk::sys::DLDataType { code: dlpk::sys::DLDataTypeCode::kDLFloat, bits: 64, lanes: 1 }
+    }
+
+    fn as_dlpack(
+        &self,
+        _: dlpk::sys::DLDevice,
+        _: Option<i64>,
+        _: dlpk::sys::DLPackVersion,
+    ) -> Result<dlpk::DLPackTensor, metatensor::Error> {
         unimplemented!("invalid operation on UnsafeArrayViewMut");
     }
 }
@@ -170,7 +182,7 @@ pub fn split_tensor_map_by_system(descriptor: &mut TensorMap, n_systems: usize) 
                     //
                     // `per_sample_size * system_start` skips all the data
                     // associated with the previous systems.
-                    block_data.values.as_array_mut().as_mut_ptr().add(per_sample_size * system_start)
+                    block_data.values.as_ndarray_mut().as_mut_ptr().add(per_sample_size * system_start)
                 };
 
                 let values = UnsafeArrayViewMut {
@@ -230,7 +242,7 @@ pub fn split_tensor_map_by_system(descriptor: &mut TensorMap, n_systems: usize) 
                     let data_ptr = unsafe {
                         // SAFETY: same as the values above, this is creating
                         // multiple non-overlapping regions in memory
-                        gradient.values.to_array_mut().as_mut_ptr().add(per_sample_size * system_start_grad)
+                        gradient.values.to_ndarray_mut().as_mut_ptr().add(per_sample_size * system_start_grad)
                     };
 
                     let values = UnsafeArrayViewMut {

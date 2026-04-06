@@ -130,7 +130,7 @@ impl CalculatorBase for SortedDistances {
             };
 
             let block_data = block.data_mut();
-            let array = block_data.values.to_array_mut();
+            let array = block_data.values.to_ndarray_mut();
 
             for (sample_i, [system_i, center_i]) in block_data.samples.iter_fixed_size().enumerate() {
                 let center_i = center_i.usize();
@@ -207,11 +207,14 @@ mod tests {
         let descriptor = calculator.compute(&mut systems, Default::default()).unwrap();
 
         let keys_to_move = Labels::empty(vec!["center_type"]);
-        let descriptor = descriptor.keys_to_samples(&keys_to_move, true).unwrap();
+        let fill_value = metatensor::c_api::mts_array_t::from(
+            Box::new(metatensor::EmptyArray::new(vec![1])) as Box<dyn metatensor::Array>
+        );
+        let descriptor = descriptor.keys_to_samples(&keys_to_move, fill_value, true).unwrap();
 
         assert_eq!(descriptor.blocks().len(), 1);
         let block = descriptor.block_by_id(0);
-        let values = block.values().to_array();
+        let values = block.values().to_ndarray();
         assert_eq!(values.shape(), [3, 4]);
 
         assert_eq!(values.slice(s![0, ..]), aview1(&[0.957897074324794, 0.957897074324794, 1.7, 1.7]));

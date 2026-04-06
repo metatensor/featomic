@@ -277,7 +277,7 @@ impl SphericalExpansionByPair {
             }
 
             let data = block.data_mut();
-            let array = data.values.to_array_mut();
+            let array = data.values.to_ndarray_mut();
 
             // loop over all samples in this block, find self pairs (`i == j`
             // and `shift == [0, 0, 0]`), and fill the data using
@@ -431,7 +431,7 @@ impl SphericalExpansionByPair {
         pair_vector: Vector3D,
     ) {
         let data = block.data_mut();
-        let array = data.values.to_array_mut();
+        let array = data.values.to_ndarray_mut();
 
         let contribution_values = contributions.values.get(&o3_lambda).expect("missing o3_lambda");
         let sample_i = data.samples.position(sample);
@@ -451,7 +451,7 @@ impl SphericalExpansionByPair {
                     let mut gradient = block.gradient_mut("positions").expect("missing positions gradients");
                     let gradient = gradient.data_mut();
 
-                    let array = gradient.values.to_array_mut();
+                    let array = gradient.values.to_ndarray_mut();
                     debug_assert_eq!(gradient.samples.names(), ["sample", "system", "atom"]);
 
                     // gradient of the pair contribution w.r.t. the position of
@@ -496,7 +496,7 @@ impl SphericalExpansionByPair {
                     debug_assert_eq!(gradient.samples.names(), ["sample"]);
                     assert_eq!(gradient.samples[sample_i][0].usize(), sample_i);
 
-                    let array = gradient.values.to_array_mut();
+                    let array = gradient.values.to_ndarray_mut();
                     for xyz_1 in 0..3 {
                         for xyz_2 in 0..3 {
                             for m in 0..(2 * o3_lambda + 1) {
@@ -524,7 +524,7 @@ impl SphericalExpansionByPair {
                         sample[5].i32() as f64,
                     ];
 
-                    let array = gradient.values.to_array_mut();
+                    let array = gradient.values.to_ndarray_mut();
                     for abc in 0..3 {
                         for xyz in 0..3 {
                             for m in 0..(2 * o3_lambda + 1) {
@@ -1000,10 +1000,10 @@ mod tests {
 
         for (block, spx) in by_pair.blocks().iter().zip(expected.blocks()) {
             let spx = spx.data();
-            let spx_values = spx.values.as_array();
+            let spx_values = spx.values.as_ndarray();
 
             let block = block.data();
-            let values = block.values.as_array();
+            let values = block.values.as_ndarray();
 
             assert_eq!(spx.samples.names(), ["system", "atom"]);
             for (spx_sample, expected) in spx.samples.iter().zip(spx_values.axis_iter(Axis(0))) {

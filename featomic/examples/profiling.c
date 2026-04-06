@@ -100,7 +100,7 @@ mts_tensormap_t* compute_soap(const char* path) {
     mts_tensormap_t* descriptor = NULL;
     const mts_block_t* block = NULL;
     mts_array_t data = {0};
-    mts_labels_t keys_to_move = {0};
+    (void)0; // removed unused mts_labels_t keys_to_move
 
     const char* parameters = "{\n"
         "\"cutoff\": {\n"
@@ -160,15 +160,18 @@ cleanup:
 
 
 mts_tensormap_t* move_keys_to_samples(mts_tensormap_t* descriptor, const char* keys_to_move[], size_t keys_to_move_len) {
-    mts_labels_t keys = {0};
     mts_tensormap_t* moved_descriptor = NULL;
 
-    keys.names = keys_to_move;
-    keys.size = keys_to_move_len;
-    keys.values = NULL;
-    keys.count = 0;
+    mts_array_t empty_values = {0};
+    mts_labels_t* keys = mts_labels_create(keys_to_move, keys_to_move_len, empty_values);
+    if (keys == NULL) {
+        mts_tensormap_free(descriptor);
+        return NULL;
+    }
 
-    moved_descriptor = mts_tensormap_keys_to_samples(descriptor, keys, true);
+    mts_array_t fill_value = {0};
+    moved_descriptor = mts_tensormap_keys_to_samples(descriptor, keys, fill_value, true);
+    mts_labels_free(keys);
     mts_tensormap_free(descriptor);
 
     return moved_descriptor;
@@ -176,15 +179,18 @@ mts_tensormap_t* move_keys_to_samples(mts_tensormap_t* descriptor, const char* k
 
 
 mts_tensormap_t* move_keys_to_properties(mts_tensormap_t* descriptor, const char* keys_to_move[], size_t keys_to_move_len) {
-    mts_labels_t keys = {0};
     mts_tensormap_t* moved_descriptor = NULL;
 
-    keys.names = keys_to_move;
-    keys.size = keys_to_move_len;
-    keys.values = NULL;
-    keys.count = 0;
+    mts_array_t empty_values = {0};
+    mts_labels_t* keys = mts_labels_create(keys_to_move, keys_to_move_len, empty_values);
+    if (keys == NULL) {
+        mts_tensormap_free(descriptor);
+        return NULL;
+    }
 
-    moved_descriptor = mts_tensormap_keys_to_properties(descriptor, keys, true);
+    mts_array_t fill_value = {0};
+    moved_descriptor = mts_tensormap_keys_to_properties(descriptor, keys, fill_value, true);
+    mts_labels_free(keys);
     mts_tensormap_free(descriptor);
 
     return moved_descriptor;

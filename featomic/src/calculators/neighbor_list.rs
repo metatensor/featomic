@@ -320,7 +320,7 @@ impl HalfNeighborList {
                     ]);
 
                     if let Some(sample_i) = sample_i {
-                        let array = block_data.values.to_array_mut();
+                        let array = block_data.values.to_ndarray_mut();
                         for (property_i, &[distance]) in block_data.properties.iter_fixed_size().enumerate() {
                             if distance == 0 {
                                 array[[sample_i, 0, property_i]] = pair_vector[0];
@@ -339,7 +339,7 @@ impl HalfNeighborList {
                                 sample_i.into(), system_i.into(), atom_j.into()
                             ]).expect("missing gradient sample");
 
-                            let array = gradient.values.to_array_mut();
+                            let array = gradient.values.to_ndarray_mut();
 
                             for (property_i, &[distance]) in gradient.properties.iter_fixed_size().enumerate() {
                                 if distance == 0 {
@@ -530,7 +530,7 @@ impl FullNeighborList {
                     ]);
 
                     if let Some(sample_i) = sample_i {
-                        let array = block_data.values.to_array_mut();
+                        let array = block_data.values.to_ndarray_mut();
 
                         for (property_i, &[distance]) in block_data.properties.iter_fixed_size().enumerate() {
                             if distance == 0 {
@@ -550,7 +550,7 @@ impl FullNeighborList {
                                 sample_i.into(), system_i.into(), pair.second.into()
                             ]).expect("missing gradient sample");
 
-                            let array = gradient.values.to_array_mut();
+                            let array = gradient.values.to_ndarray_mut();
 
                             for (property_i, &[distance]) in gradient.properties.iter_fixed_size().enumerate() {
                                 if distance == 0 {
@@ -582,7 +582,7 @@ impl FullNeighborList {
                     ]);
 
                     if let Some(sample_i) = sample_i {
-                        let array = block_data.values.to_array_mut();
+                        let array = block_data.values.to_ndarray_mut();
                         for (property_i, &[distance]) in block_data.properties.iter_fixed_size().enumerate() {
                             if distance == 0 {
                                 array[[sample_i, 0, property_i]] = -pair.vector[0];
@@ -601,7 +601,7 @@ impl FullNeighborList {
                                 sample_i.into(), system_i.into(), pair.first.into()
                             ]).expect("missing gradient sample");
 
-                            let array = gradient.values.to_array_mut();
+                            let array = gradient.values.to_ndarray_mut();
 
                             for (property_i, &[distance]) in gradient.properties.iter_fixed_size().enumerate() {
                                 if distance == 0 {
@@ -666,7 +666,7 @@ mod tests {
             &[[0, 0, 1, 0, 0, 0], [0, 0, 2, 0, 0, 0]]
         ));
 
-        let array = block.values().to_array();
+        let array = block.values().to_ndarray();
         let expected = &ndarray::arr3(&[
             [[0.0], [0.75545], [-0.58895]],
             [[0.0], [-0.75545], [-0.58895]]
@@ -682,7 +682,7 @@ mod tests {
             &[[0, 1, 2, 0, 0, 0], [0, 1, 2, 0, 1, 0]]
         ));
 
-        let array = block.values().to_array();
+        let array = block.values().to_ndarray();
         let expected = &ndarray::arr3(&[
             [[0.0], [-1.5109], [0.0]],
             [[0.0], [1.4891], [0.0]],
@@ -720,7 +720,7 @@ mod tests {
             &[[0, 0, 1, 0, 0, 0], [0, 0, 2, 0, 0, 0]]
         ));
 
-        let array = block.values().to_array();
+        let array = block.values().to_ndarray();
         let expected = &ndarray::arr3(&[
             [[0.0], [0.75545], [-0.58895]],
             [[0.0], [-0.75545], [-0.58895]]
@@ -740,7 +740,7 @@ mod tests {
             &[[0, 1, 0, 0, 0, 0], [0, 2, 0, 0, 0, 0]]
         ));
 
-        let array = block.values().to_array();
+        let array = block.values().to_ndarray();
         let expected = &ndarray::arr3(&[
             [[0.0], [-0.75545], [0.58895]],
             [[0.0], [0.75545], [0.58895]]
@@ -758,7 +758,7 @@ mod tests {
             ]
         ));
 
-        let array = block.values().to_array();
+        let array = block.values().to_ndarray();
         let expected = &ndarray::arr3(&[
             [[0.0], [-1.5109], [0.0]],
             [[0.0], [1.5109], [0.0]],
@@ -792,7 +792,7 @@ mod tests {
             &[[0, 1, 1, 0, 0, 1], [0, 1, 1, 0, 1, 0], [0, 1, 1, 1, 0, 0]]
         ));
 
-        let array = block.values().to_array();
+        let array = block.values().to_ndarray();
         let expected = &ndarray::arr3(&[
             [[0.0], [0.0], [10.0]],
             [[0.0], [10.0], [0.0]],
@@ -825,7 +825,7 @@ mod tests {
             ]
         ));
 
-        let array = block.values().to_array();
+        let array = block.values().to_ndarray();
         let expected = &ndarray::arr3(&[
             [[0.0], [0.0], [10.0]],
             [[0.0], [0.0], [-10.0]],

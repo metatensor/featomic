@@ -111,16 +111,21 @@ int main(int argc, char* argv[]) {
         goto cleanup;
     }
 
-    status = array.data(array.ptr, &values);
-    if (status != MTS_SUCCESS) {
-        printf("Error: %s\n", mts_last_error());
-        goto cleanup;
+    {
+        DLManagedTensorVersioned* dl_managed = NULL;
+        DLDevice cpu_device = {kDLCPU, 0};
+        DLPackVersion max_ver = {1, 0};
+        status = array.as_dlpack(array.ptr, &dl_managed, cpu_device, NULL, max_ver);
+        if (status != MTS_SUCCESS) {
+            printf("Error: %s\n", mts_last_error());
+            goto cleanup;
+        }
+        values = (double*)dl_managed->dl_tensor.data;
+        if (dl_managed->deleter) {
+            dl_managed->deleter(dl_managed);
+        }
     }
 
-    if (status != MTS_SUCCESS) {
-        printf("Error: %s\n", mts_last_error());
-        goto cleanup;
-    }
     assert(shape_count == 2);
 
     // you can now use `values` as the input of a machine learning algorithm
@@ -142,15 +147,21 @@ cleanup:
 
 
 mts_tensormap_t* move_keys_to_samples(mts_tensormap_t* descriptor, const char* keys_to_move[], size_t keys_to_move_len) {
-    mts_labels_t keys = {0};
     mts_tensormap_t* moved_descriptor = NULL;
 
-    keys.names = keys_to_move;
-    keys.size = keys_to_move_len;
-    keys.values = NULL;
-    keys.count = 0;
+    // Create empty labels with the given dimension names and an empty array
+    mts_array_t empty_values = {0};
+    mts_labels_t* keys = mts_labels_create(keys_to_move, keys_to_move_len, empty_values);
+    if (keys == NULL) {
+        printf("Error creating labels: %s\n", mts_last_error());
+        mts_tensormap_free(descriptor);
+        return NULL;
+    }
 
-    moved_descriptor = mts_tensormap_keys_to_samples(descriptor, keys, true);
+    // Create an empty fill_value array (not used when all blocks have same properties)
+    mts_array_t fill_value = {0};
+    moved_descriptor = mts_tensormap_keys_to_samples(descriptor, keys, fill_value, true);
+    mts_labels_free(keys);
     mts_tensormap_free(descriptor);
 
     return moved_descriptor;
@@ -158,15 +169,21 @@ mts_tensormap_t* move_keys_to_samples(mts_tensormap_t* descriptor, const char* k
 
 
 mts_tensormap_t* move_keys_to_properties(mts_tensormap_t* descriptor, const char* keys_to_move[], size_t keys_to_move_len) {
-    mts_labels_t keys = {0};
     mts_tensormap_t* moved_descriptor = NULL;
 
-    keys.names = keys_to_move;
-    keys.size = keys_to_move_len;
-    keys.values = NULL;
-    keys.count = 0;
+    // Create empty labels with the given dimension names and an empty array
+    mts_array_t empty_values = {0};
+    mts_labels_t* keys = mts_labels_create(keys_to_move, keys_to_move_len, empty_values);
+    if (keys == NULL) {
+        printf("Error creating labels: %s\n", mts_last_error());
+        mts_tensormap_free(descriptor);
+        return NULL;
+    }
 
-    moved_descriptor = mts_tensormap_keys_to_properties(descriptor, keys, true);
+    // Create an empty fill_value array (not used when all blocks have same properties)
+    mts_array_t fill_value = {0};
+    moved_descriptor = mts_tensormap_keys_to_properties(descriptor, keys, fill_value, true);
+    mts_labels_free(keys);
     mts_tensormap_free(descriptor);
 
     return moved_descriptor;

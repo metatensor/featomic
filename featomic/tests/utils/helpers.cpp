@@ -108,6 +108,17 @@ mts_array_t empty_array(std::vector<size_t> array_shape) {
         mts_register_data_origin("c-tests-empty-array", origin);
         return MTS_SUCCESS;
     };
+    array.device = [](const void *, DLDevice *device) -> mts_status_t {
+        device->device_type = kDLCPU;
+        device->device_id = 0;
+        return MTS_SUCCESS;
+    };
+    array.dtype = [](const void *, DLDataType *dtype) -> mts_status_t {
+        dtype->code = kDLFloat;
+        dtype->bits = 64;
+        dtype->lanes = 1;
+        return MTS_SUCCESS;
+    };
     array.shape = [](const void *array, const uintptr_t** shape, uintptr_t* shape_count){
         const auto* array_shape = static_cast<const std::vector<size_t>*>(array);
         *shape = array_shape->data();
@@ -121,6 +132,11 @@ mts_array_t empty_array(std::vector<size_t> array_shape) {
     array.copy = [](const void *array, mts_array_t* new_array){
         const auto* array_shape = static_cast<const std::vector<size_t>*>(array);
         *new_array = empty_array(*array_shape);
+        return MTS_SUCCESS;
+    };
+    array.create = [](const void *array, const uintptr_t* shape, uintptr_t shape_count, mts_array_t, mts_array_t* new_array){
+        auto new_shape = std::vector<size_t>(shape, shape + shape_count);
+        *new_array = empty_array(std::move(new_shape));
         return MTS_SUCCESS;
     };
 
