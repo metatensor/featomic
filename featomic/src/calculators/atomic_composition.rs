@@ -61,7 +61,7 @@ impl CalculatorBase for AtomicComposition {
                     let types = system.types()?;
 
                     for (center_i, &center_type) in types.iter().enumerate() {
-                        if center_type_key == center_type {
+                        if *center_type_key == center_type {
                             builder.add(&[system_i as i32, center_i as i32]);
                         }
                     }
