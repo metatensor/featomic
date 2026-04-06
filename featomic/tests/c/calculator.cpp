@@ -27,20 +27,28 @@ static double* dlpack_data_ptr(mts_array_t& array) {
     return ptr;
 }
 
-// Extract an int32_t* data pointer from an mts_array_t via DLPack
-static int32_t* dlpack_i32_data_ptr(mts_array_t& array) {
+// Managed DLPack handle that cleans up on destruction
+struct DLPackHandle {
     DLManagedTensorVersioned* dl = nullptr;
+    ~DLPackHandle() { if (dl && dl->deleter) dl->deleter(dl); }
+    // non-copyable
+    DLPackHandle() = default;
+    DLPackHandle(const DLPackHandle&) = delete;
+    DLPackHandle& operator=(const DLPackHandle&) = delete;
+    DLPackHandle(DLPackHandle&& o) noexcept : dl(o.dl) { o.dl = nullptr; }
+    DLPackHandle& operator=(DLPackHandle&& o) noexcept { if (dl && dl->deleter) dl->deleter(dl); dl = o.dl; o.dl = nullptr; return *this; }
+};
+
+// Extract an int32_t* data pointer from an mts_array_t via DLPack.
+// The returned DLPackHandle must outlive the pointer.
+static int32_t* dlpack_i32_data_ptr(mts_array_t& array, DLPackHandle& handle) {
     DLDevice cpu_device = {kDLCPU, 0};
     DLPackVersion max_ver = {1, 0};
-    auto status = array.as_dlpack(array.ptr, &dl, cpu_device, nullptr, max_ver);
-    if (status != MTS_SUCCESS || dl == nullptr) {
+    auto status = array.as_dlpack(array.ptr, &handle.dl, cpu_device, nullptr, max_ver);
+    if (status != MTS_SUCCESS || handle.dl == nullptr) {
         return nullptr;
     }
-    auto* ptr = static_cast<int32_t*>(dl->dl_tensor.data);
-    if (dl->deleter) {
-        dl->deleter(dl);
-    }
-    return ptr;
+    return static_cast<int32_t*>(handle.dl->dl_tensor.data);
 }
 
 // Wrapper struct holding int32 data + shape for creating mts_array_t
@@ -133,12 +141,18 @@ struct LabelsInfo {
     uintptr_t size;       // number of dimensions
     uintptr_t count;      // number of entries
     const char* const* names;
-    int32_t* values;      // owned copy
+    int32_t* values;
     mts_array_t values_array;
+    DLPackHandle dl_handle; // must outlive `values`
 };
 
 static LabelsInfo query_labels(const mts_labels_t* labels) {
-    LabelsInfo info = {};
+    LabelsInfo info;
+    info.size = 0;
+    info.count = 0;
+    info.names = nullptr;
+    info.values = nullptr;
+    info.values_array = {};
 
     mts_labels_dimensions(labels, &info.names, &info.size);
 
@@ -152,7 +166,7 @@ static LabelsInfo query_labels(const mts_labels_t* labels) {
         info.count = shape[0];
     }
 
-    info.values = dlpack_i32_data_ptr(info.values_array);
+    info.values = dlpack_i32_data_ptr(info.values_array, info.dl_handle);
 
     return info;
 }
