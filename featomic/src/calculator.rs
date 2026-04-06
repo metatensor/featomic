@@ -420,7 +420,7 @@ impl Calculator {
                 &samples, &components, &properties
             );
             let mut new_block = TensorBlock::new(
-                ArrayD::from_elem(shape, 0.0),
+                ArrayD::from_elem(shape, 0.0).into_shared(),
                 &samples,
                 &components,
                 &properties,
@@ -440,7 +440,7 @@ impl Calculator {
                 new_block.add_gradient(
                     "positions",
                     TensorBlock::new(
-                        ArrayD::from_elem(shape, 0.0),
+                        ArrayD::from_elem(shape, 0.0).into_shared(),
                         gradient_samples,
                         &components,
                         &properties
@@ -462,7 +462,7 @@ impl Calculator {
                 new_block.add_gradient(
                     "cell",
                     TensorBlock::new(
-                        ArrayD::from_elem(shape, 0.0),
+                        ArrayD::from_elem(shape, 0.0).into_shared(),
                         gradient_samples,
                         &components,
                         &properties
@@ -484,7 +484,7 @@ impl Calculator {
                 new_block.add_gradient(
                     "strain",
                     TensorBlock::new(
-                        ArrayD::from_elem(shape, 0.0),
+                        ArrayD::from_elem(shape, 0.0).into_shared(),
                         gradient_samples,
                         &components,
                         &properties

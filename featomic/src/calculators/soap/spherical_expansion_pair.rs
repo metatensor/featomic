@@ -440,7 +440,7 @@ impl SphericalExpansionByPair {
                 for (property_i, [n]) in data.properties.iter_fixed_size().enumerate() {
                     unsafe {
                         let out = array.uget_mut([sample_i, m, property_i]);
-                        *out += *contribution_values.uget([m, n as usize]);
+                        *out += *contribution_values.uget([m, *n as usize]);
                     }
                 }
             }
@@ -465,7 +465,7 @@ impl SphericalExpansionByPair {
                             for (property_i, [n]) in gradient.properties.iter_fixed_size().enumerate() {
                                 unsafe {
                                     let out = array.uget_mut([first_grad_sample_i, xyz, m, property_i]);
-                                    *out -= contribution_gradients.uget([xyz, m, n as usize]);
+                                    *out -= contribution_gradients.uget([xyz, m, *n as usize]);
                                 }
                             }
                         }
@@ -482,7 +482,7 @@ impl SphericalExpansionByPair {
                             for (property_i, [n]) in gradient.properties.iter_fixed_size().enumerate() {
                                 unsafe {
                                     let out = array.uget_mut([second_grad_sample_i, xyz, m, property_i]);
-                                    *out += contribution_gradients.uget([xyz, m, n as usize]);
+                                    *out += contribution_gradients.uget([xyz, m, *n as usize]);
                                 }
                             }
                         }
@@ -503,7 +503,7 @@ impl SphericalExpansionByPair {
                                 for (property_i, [n]) in gradient.properties.iter_fixed_size().enumerate() {
                                     unsafe {
                                         let out = array.uget_mut([sample_i, xyz_1, xyz_2, m, property_i]);
-                                        *out += pair_vector[xyz_1] * contribution_gradients.uget([xyz_2, m, n as usize]);
+                                        *out += pair_vector[xyz_1] * contribution_gradients.uget([xyz_2, m, *n as usize]);
                                     }
                                 }
                             }
@@ -531,7 +531,7 @@ impl SphericalExpansionByPair {
                                 for (property_i, [n]) in gradient.properties.iter_fixed_size().enumerate() {
                                     unsafe {
                                         let out = array.uget_mut([sample_i, abc, xyz, m, property_i]);
-                                        *out += shifts[abc] * contribution_gradients.uget([xyz, m, n as usize]);
+                                        *out += shifts[abc] * contribution_gradients.uget([xyz, m, *n as usize]);
                                     }
                                 }
                             }
@@ -706,19 +706,19 @@ impl CalculatorBase for SphericalExpansionByPair {
             SphericalExpansionBasis::TensorProduct(ref basis) => {
                 let mut properties = LabelsBuilder::new(self.property_names());
                 for n in 0..basis.radial.size() {
-                    properties.add(&[n]);
+                    properties.add(&[n as i32]);
                 }
 
                 return vec![properties.finish_assume_unique(); keys.count()];
             }
             SphericalExpansionBasis::Explicit(ref basis) => {
                 let mut result = Vec::new();
-                for [&o3_lambda, _, _, _] in keys.iter_fixed_size() {
+                for [o3_lambda, _, _, _] in keys.iter_fixed_size() {
                     let mut properties = LabelsBuilder::new(self.property_names());
 
-                    let radial = basis.by_angular.get(&o3_lambda as usize).expect("missing o3_lambda");
+                    let radial = basis.by_angular.get(&(*o3_lambda as usize)).expect("missing o3_lambda");
                     for n in 0..radial.size() {
-                        properties.add(&[n]);
+                        properties.add(&[n as i32]);
                     }
 
                     result.push(properties.finish_assume_unique());
@@ -782,12 +782,12 @@ impl CalculatorBase for SphericalExpansionByPair {
 
                     if let Some(block_i) = block_i {
                         let sample = &[
-                            LabelValue::from(system_i),
-                            LabelValue::from(pair.first),
-                            LabelValue::from(pair.second),
-                            LabelValue::from(cell_shift_a),
-                            LabelValue::from(cell_shift_b),
-                            LabelValue::from(cell_shift_c),
+                            system_i as i32,
+                            pair.first as i32,
+                            pair.second as i32,
+                            cell_shift_a,
+                            cell_shift_b,
+                            cell_shift_c,
                         ];
 
                         SphericalExpansionByPair::accumulate_in_block(
@@ -814,9 +814,9 @@ impl CalculatorBase for SphericalExpansionByPair {
 
                     if let Some(block_i) = block_i {
                         let sample = &[
-                            LabelValue::from(system_i),
-                            LabelValue::from(pair.second),
-                            LabelValue::from(pair.first),
+                            system_i as i32,
+                            pair.second as i32,
+                            pair.first as i32,
                             LabelValue::from(-cell_shift_a),
                             LabelValue::from(-cell_shift_b),
                             LabelValue::from(-cell_shift_c),

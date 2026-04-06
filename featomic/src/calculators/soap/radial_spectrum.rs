@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use metatensor::{EmptyArray, TensorBlock, TensorMap};
-use metatensor::{LabelValue, Labels, LabelsBuilder};
+use metatensor::{Labels, LabelsBuilder};
 
 use crate::calculators::CalculatorBase;
 use crate::{CalculationOptions, Calculator, LabelsSelection};
@@ -165,11 +165,11 @@ impl CalculatorBase for SoapRadialSpectrum {
     ) -> Result<Vec<Labels>, Error> {
         assert_eq!(keys.names(), ["center_type", "neighbor_type"]);
         let mut result = Vec::new();
-        for [&center_type, &neighbor_type] in keys.iter_fixed_size() {
+        for [center_type, neighbor_type] in keys.iter_fixed_size() {
             let builder = AtomCenteredSamples {
                 cutoff: self.parameters.cutoff.radius,
-                center_type: AtomicTypeFilter::Single(center_type),
-                neighbor_type: AtomicTypeFilter::Single(neighbor_type),
+                center_type: AtomicTypeFilter::Single(*center_type),
+                neighbor_type: AtomicTypeFilter::Single(*neighbor_type),
                 self_pairs: true,
             };
 
@@ -194,8 +194,8 @@ impl CalculatorBase for SoapRadialSpectrum {
         for ([center_type, neighbor_type], samples) in keys.iter_fixed_size().zip(samples) {
             let builder = AtomCenteredSamples {
                 cutoff: self.parameters.cutoff.radius,
-                center_type: AtomicTypeFilter::Single(center_type),
-                neighbor_type: AtomicTypeFilter::Single(neighbor_type),
+                center_type: AtomicTypeFilter::Single(*center_type),
+                neighbor_type: AtomicTypeFilter::Single(*neighbor_type),
                 self_pairs: true,
             };
 
@@ -216,7 +216,7 @@ impl CalculatorBase for SoapRadialSpectrum {
     fn properties(&self, keys: &metatensor::Labels) -> Vec<Labels> {
         let mut properties = LabelsBuilder::new(self.property_names());
         for n in 0..self.parameters.basis.radial.size() {
-            properties.add(&[n]);
+            properties.add(&[n as i32]);
         }
         let properties = properties.finish_assume_unique();
 

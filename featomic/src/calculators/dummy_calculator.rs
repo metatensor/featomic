@@ -54,10 +54,10 @@ impl CalculatorBase for DummyCalculator {
     fn samples(&self, keys: &Labels, systems: &mut [Box<dyn System>]) -> Result<Vec<Labels>, Error> {
         assert_eq!(keys.names(), ["center_type"]);
         let mut samples = Vec::new();
-        for [&center_type] in keys.iter_fixed_size() {
+        for [center_type] in keys.iter_fixed_size() {
             let builder = AtomCenteredSamples {
                 cutoff: self.cutoff,
-                center_type: AtomicTypeFilter::Single(center_type),
+                center_type: AtomicTypeFilter::Single(*center_type),
                 neighbor_type: AtomicTypeFilter::Any,
                 self_pairs: false,
             };
@@ -81,7 +81,7 @@ impl CalculatorBase for DummyCalculator {
         for ([center_type], samples) in keys.iter_fixed_size().zip(samples) {
             let builder = AtomCenteredSamples{
                 cutoff: self.cutoff,
-                center_type: AtomicTypeFilter::Single(center_type),
+                center_type: AtomicTypeFilter::Single(*center_type),
                 neighbor_type: AtomicTypeFilter::Any,
                 self_pairs: false,
             };
@@ -124,8 +124,8 @@ impl CalculatorBase for DummyCalculator {
             let array = block_data.values.to_ndarray_mut();
 
             for (sample_i, [system, atom]) in block_data.samples.iter_fixed_size().enumerate() {
-                let system_i = system as usize;
-                let atom_i = atom as usize;
+                let system_i = *system as usize;
+                let atom_i = *atom as usize;
 
                 debug_assert_eq!(systems[system_i].types()?[atom_i], center_type);
 

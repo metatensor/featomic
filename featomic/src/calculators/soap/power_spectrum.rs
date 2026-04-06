@@ -382,13 +382,13 @@ struct SpxPropertiesToCombine<'a> {
 struct SphericalExpansionBlock<'a> {
     properties: Labels,
     /// spherical expansion values
-    values: &'a ndarray::ArrayD<f64>,
+    values: &'a ndarray::ArcArray<f64, ndarray::IxDyn>,
     /// spherical expansion position gradients
-    positions_gradients: Option<&'a ndarray::ArrayD<f64>>,
+    positions_gradients: Option<&'a ndarray::ArcArray<f64, ndarray::IxDyn>>,
     /// spherical expansion cell gradients
-    cell_gradients: Option<&'a ndarray::ArrayD<f64>>,
+    cell_gradients: Option<&'a ndarray::ArcArray<f64, ndarray::IxDyn>>,
     /// spherical expansion strain gradients
-    strain_gradients: Option<&'a ndarray::ArrayD<f64>>,
+    strain_gradients: Option<&'a ndarray::ArcArray<f64, ndarray::IxDyn>>,
 }
 
 /// Indexes of the spherical expansion samples/rows corresponding to each power
@@ -436,16 +436,16 @@ impl CalculatorBase for SoapPowerSpectrum {
     fn samples(&self, keys: &metatensor::Labels, systems: &mut [Box<dyn System>]) -> Result<Vec<Labels>, Error> {
         assert_eq!(keys.names(), ["center_type", "neighbor_1_type", "neighbor_2_type"]);
         let mut result = Vec::new();
-        for [&center_type, &neighbor_1_type, &neighbor_2_type] in keys.iter_fixed_size() {
+        for [center_type, neighbor_1_type, neighbor_2_type] in keys.iter_fixed_size() {
 
             let builder = AtomCenteredSamples {
                 cutoff: self.parameters.cutoff.radius,
-                center_type: AtomicTypeFilter::Single(center_type),
+                center_type: AtomicTypeFilter::Single(*center_type),
                 // we only want center with both neighbor types present
                 neighbor_type: AtomicTypeFilter::AllOf(
                     [
-                        neighbor_1_type,
-                        neighbor_2_type
+                        *neighbor_1_type,
+                        *neighbor_2_type
                     ].iter().copied().collect()
                 ),
                 self_pairs: true,
@@ -465,11 +465,11 @@ impl CalculatorBase for SoapPowerSpectrum {
         for ([center_type, neighbor_1_type, neighbor_2_type], samples) in keys.iter_fixed_size().zip(samples) {
             let builder = AtomCenteredSamples {
                 cutoff: self.parameters.cutoff.radius,
-                center_type: AtomicTypeFilter::Single(center_type),
+                center_type: AtomicTypeFilter::Single(*center_type),
                 // gradients samples should contain either neighbor types
                 neighbor_type: AtomicTypeFilter::OneOf(vec![
-                    neighbor_1_type,
-                    neighbor_2_type
+                    *neighbor_1_type,
+                    *neighbor_2_type
                 ]),
                 self_pairs: true,
             };
@@ -502,7 +502,7 @@ impl CalculatorBase for SoapPowerSpectrum {
                 for l in 0..=basis.max_angular {
                     for n1 in 0..basis.radial.size() {
                         for n2 in 0..basis.radial.size() {
-                            properties.add(&[l, n1, n2]);
+                            properties.add(&[l as i32, n1 as i32, n2 as i32]);
                         }
                     }
                 }
@@ -514,7 +514,7 @@ impl CalculatorBase for SoapPowerSpectrum {
                 for (&l, radial) in &*basis.by_angular {
                     for n1 in 0..radial.size() {
                         for n2 in 0..radial.size() {
-                            properties.add(&[l, n1, n2]);
+                            properties.add(&[l as i32, n1 as i32, n2 as i32]);
                         }
                     }
                 }

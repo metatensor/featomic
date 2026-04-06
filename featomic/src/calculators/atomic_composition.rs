@@ -51,7 +51,7 @@ impl CalculatorBase for AtomicComposition {
     fn samples(&self, keys: &Labels, systems: &mut [Box<dyn System>]) -> Result<Vec<Labels>, Error> {
         assert_eq!(keys.names(), ["center_type"]);
         let mut samples = Vec::new();
-        for [&center_type_key] in keys.iter_fixed_size() {
+        for [center_type_key] in keys.iter_fixed_size() {
             let mut builder = LabelsBuilder::new(self.sample_names());
 
             for (system_i, system) in systems.iter_mut().enumerate() {

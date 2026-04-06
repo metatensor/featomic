@@ -5,7 +5,7 @@ use rayon::prelude::*;
 use ndarray::ArrayViewMutD;
 
 use metatensor::{TensorMap, TensorBlock};
-use metatensor::{LabelsBuilder, LabelValue};
+use metatensor::LabelsBuilder;
 
 
 /// Implementation of `metatensor::Array` storing a view inside another array
@@ -141,7 +141,7 @@ pub fn split_tensor_map_by_system(descriptor: &mut TensorMap, n_systems: usize) 
 
                 let mut samples = LabelsBuilder::new(block_data.samples.names());
                 let mut samples_mapping = BTreeMap::new();
-                let mut system_per_sample = vec![(-1 as i32); block_data.samples.count()];
+                let mut system_per_sample = vec![-1_i32; block_data.samples.count()];
 
                 let system_start = *system_end;
                 for (sample_i, &[system, atom]) in block_data.samples.iter_fixed_size().enumerate().skip(system_start) {

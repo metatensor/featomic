@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use metatensor::TensorMap;
-use metatensor::{Labels, LabelsBuilder, LabelValue};
+use metatensor::{Labels, LabelsBuilder};
 
 use super::CalculatorBase;
 
@@ -202,7 +202,7 @@ impl HalfNeighborList {
     fn samples(&self, keys: &Labels, systems: &mut [Box<dyn System>]) -> Result<Vec<Labels>, Error> {
         let mut results = Vec::new();
 
-        for [&first_atom_type, &second_atom_type] in keys.iter_fixed_size() {
+        for [first_atom_type, second_atom_type] in keys.iter_fixed_size() {
             let mut builder = LabelsBuilder::new(vec![
                 "system",
                 "first_atom",
@@ -232,29 +232,29 @@ impl HalfNeighborList {
                         (pair.first, pair.second)
                     };
 
-                    if type_i == first_atom_type && type_j == second_atom_type {
+                    if type_i == *first_atom_type && type_j == *second_atom_type {
                         builder.add(&[
-                            LabelValue::from(system_i),
-                            LabelValue::from(atom_i),
-                            LabelValue::from(atom_j),
-                            LabelValue::from(cell_a),
-                            LabelValue::from(cell_b),
-                            LabelValue::from(cell_c),
+                            system_i as i32,
+                            atom_i as i32,
+                            atom_j as i32,
+                            cell_a,
+                            cell_b,
+                            cell_c,
                         ]);
                     }
                 }
 
                 // handle self pairs
-                if self.self_pairs && first_atom_type == second_atom_type {
+                if self.self_pairs && *first_atom_type == *second_atom_type {
                     for center_i in 0..system.size()? {
-                        if types[center_i] == first_atom_type {
+                        if types[center_i] == *first_atom_type {
                             builder.add(&[
                                 system_i as i32,
                                 center_i as i32,
                                 center_i as i32,
-                                LabelValue::from(0),
-                                LabelValue::from(0),
-                                LabelValue::from(0),
+                                0_i32,
+                                0_i32,
+                                0_i32,
                             ]);
                         }
                     }
@@ -311,12 +311,12 @@ impl HalfNeighborList {
                     let block_data = block.data_mut();
 
                     let sample_i = block_data.samples.position(&[
-                        LabelValue::from(system_i),
-                        LabelValue::from(atom_i),
-                        LabelValue::from(atom_j),
-                        LabelValue::from(cell_a),
-                        LabelValue::from(cell_b),
-                        LabelValue::from(cell_c),
+                        system_i as i32,
+                        atom_i as i32,
+                        atom_j as i32,
+                        cell_a,
+                        cell_b,
+                        cell_c,
                     ]);
 
                     if let Some(sample_i) = sample_i {
@@ -427,42 +427,42 @@ impl FullNeighborList {
                         // twice in both directions.
                         if types[pair.first] == first_atom_type && types[pair.second] == second_atom_type {
                             builder.add(&[
-                                LabelValue::from(system_i),
-                                LabelValue::from(pair.first),
-                                LabelValue::from(pair.second),
-                                LabelValue::from(cell_a),
-                                LabelValue::from(cell_b),
-                                LabelValue::from(cell_c),
+                                system_i as i32,
+                                pair.first as i32,
+                                pair.second as i32,
+                                cell_a,
+                                cell_b,
+                                cell_c,
                             ]);
 
                             builder.add(&[
-                                LabelValue::from(system_i),
-                                LabelValue::from(pair.second),
-                                LabelValue::from(pair.first),
-                                LabelValue::from(-cell_a),
-                                LabelValue::from(-cell_b),
-                                LabelValue::from(-cell_c),
+                                system_i as i32,
+                                pair.second as i32,
+                                pair.first as i32,
+                                -cell_a,
+                                -cell_b,
+                                -cell_c,
                             ]);
                         }
                     } else {
                         // different types, find the right order for the pair
                         if types[pair.first] == first_atom_type && types[pair.second] == second_atom_type {
                             builder.add(&[
-                                LabelValue::from(system_i),
-                                LabelValue::from(pair.first),
-                                LabelValue::from(pair.second),
-                                LabelValue::from(cell_a),
-                                LabelValue::from(cell_b),
-                                LabelValue::from(cell_c),
+                                system_i as i32,
+                                pair.first as i32,
+                                pair.second as i32,
+                                cell_a,
+                                cell_b,
+                                cell_c,
                             ]);
                         } else if types[pair.second] == first_atom_type && types[pair.first] == second_atom_type {
                             builder.add(&[
-                                LabelValue::from(system_i),
-                                LabelValue::from(pair.second),
-                                LabelValue::from(pair.first),
-                                LabelValue::from(-cell_a),
-                                LabelValue::from(-cell_b),
-                                LabelValue::from(-cell_c),
+                                system_i as i32,
+                                pair.second as i32,
+                                pair.first as i32,
+                                -cell_a,
+                                -cell_b,
+                                -cell_c,
                             ]);
                         }
                     }
@@ -476,9 +476,9 @@ impl FullNeighborList {
                                 system_i as i32,
                                 center_i as i32,
                                 center_i as i32,
-                                LabelValue::from(0),
-                                LabelValue::from(0),
-                                LabelValue::from(0),
+                                0_i32,
+                                0_i32,
+                                0_i32,
                             ]);
                         }
                     }
@@ -521,12 +521,12 @@ impl FullNeighborList {
                     let block_data = block.data_mut();
 
                     let sample_i = block_data.samples.position(&[
-                        LabelValue::from(system_i),
-                        LabelValue::from(pair.first),
-                        LabelValue::from(pair.second),
-                        LabelValue::from(cell_a),
-                        LabelValue::from(cell_b),
-                        LabelValue::from(cell_c),
+                        system_i as i32,
+                        pair.first as i32,
+                        pair.second as i32,
+                        cell_a,
+                        cell_b,
+                        cell_c,
                     ]);
 
                     if let Some(sample_i) = sample_i {
@@ -573,12 +573,12 @@ impl FullNeighborList {
 
                     let block_data = block.data_mut();
                     let sample_i = block_data.samples.position(&[
-                        LabelValue::from(system_i),
-                        LabelValue::from(pair.second),
-                        LabelValue::from(pair.first),
-                        LabelValue::from(-cell_a),
-                        LabelValue::from(-cell_b),
-                        LabelValue::from(-cell_c),
+                        system_i as i32,
+                        pair.second as i32,
+                        pair.first as i32,
+                        -cell_a,
+                        -cell_b,
+                        -cell_c,
                     ]);
 
                     if let Some(sample_i) = sample_i {
