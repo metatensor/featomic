@@ -43,7 +43,7 @@ impl SamplesBuilder for LongRangeSamplesPerAtom {
             if has_matching_neighbor {
                 for (center_i, &center_type) in types.iter().enumerate() {
                     if self.center_type.matches(center_type) {
-                        builder.add(&[system_i, center_i]);
+                        builder.add(&[system_i as i32, center_i as i32]);
                     }
                 }
             }
@@ -62,7 +62,7 @@ impl SamplesBuilder for LongRangeSamplesPerAtom {
             let system = &mut systems[system_i];
             for (neighbor_i, &neighbor_type) in system.types()?.iter().enumerate() {
                 if self.neighbor_type.matches(neighbor_type) || neighbor_i == center_i as usize {
-                    builder.add(&[sample_i, system_i, neighbor_i]);
+                    builder.add(&[sample_i as i32, system_i as i32, neighbor_i as i32]);
                 }
             }
         }

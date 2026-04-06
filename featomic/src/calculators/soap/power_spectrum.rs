@@ -91,12 +91,12 @@ impl SoapPowerSpectrum {
                 requested_o3_lambda.insert(l as usize);
 
                 let (_, properties) = requested_by_key
-                    .entry([l, 1.into(), center, neighbor_1])
+                    .entry([l, 1_i32, center, neighbor_1])
                     .or_insert_with(|| (BTreeSet::new(), BTreeSet::new()));
                 properties.insert([n1]);
 
                 let (_, properties) = requested_by_key
-                    .entry([l, 1.into(), center, neighbor_2])
+                    .entry([l, 1_i32, center, neighbor_2])
                     .or_insert_with(|| (BTreeSet::new(), BTreeSet::new()));
                 properties.insert([n2]);
             }
@@ -108,11 +108,11 @@ impl SoapPowerSpectrum {
         for &[center, neighbor_1, neighbor_2] in descriptor.keys().iter_fixed_size() {
             for &l in &requested_o3_lambda {
                 requested_by_key
-                    .entry([l.into(), 1.into(), center, neighbor_1])
+                    .entry([l as i32, 1_i32, center, neighbor_1])
                     .or_insert_with(|| (BTreeSet::new(), BTreeSet::new()));
 
                 requested_by_key
-                    .entry([l.into(), 1.into(), center, neighbor_2])
+                    .entry([l as i32, 1_i32, center, neighbor_2])
                     .or_insert_with(|| (BTreeSet::new(), BTreeSet::new()));
             }
         }
@@ -171,8 +171,8 @@ impl SoapPowerSpectrum {
         for &[center, neighbor_1, neighbor_2] in descriptor.keys().iter_fixed_size() {
             for o3_lambda in self.parameters.basis.angular_channels() {
                 if !requested_o3_lambda.contains(&o3_lambda) {
-                    missing_keys.insert([o3_lambda.into(), 1.into(), center, neighbor_1]);
-                    missing_keys.insert([o3_lambda.into(), 1.into(), center, neighbor_2]);
+                    missing_keys.insert([o3_lambda as i32, 1_i32, center, neighbor_1]);
+                    missing_keys.insert([o3_lambda as i32, 1_i32, center, neighbor_2]);
                 }
             }
         }
@@ -245,13 +245,13 @@ impl SoapPowerSpectrum {
             let first_l = block_data.properties[0][0];
 
             let block_id_1 = spherical_expansion.keys().position(&[
-                first_l, 1.into(), center_type, neighbor_1_type
+                first_l, 1_i32, center_type, neighbor_1_type
             ]).expect("missing block in spherical expansion");
             let spx_block_1 = &spherical_expansion.block_by_id(block_id_1);
             let spx_samples_1 = spx_block_1.samples();
 
             let block_id_2 = spherical_expansion.keys().position(&[
-                first_l, 1.into(), center_type, neighbor_2_type
+                first_l, 1_i32, center_type, neighbor_2_type
             ]).expect("missing block in spherical expansion");
             let spx_block_2 = &spherical_expansion.block_by_id(block_id_2);
             let spx_samples_2 = spx_block_2.samples();
@@ -323,11 +323,11 @@ impl SoapPowerSpectrum {
             let n1 = property[1];
             let n2 = property[2];
 
-            let key_1: &[_] = &[l, 1.into(), center_type, neighbor_1_type];
+            let key_1: &[_] = &[l, 1_i32, center_type, neighbor_1_type];
             let block_1 = spherical_expansion.get(&key_1)
             .expect("missing first neighbor type block in spherical expansion");
 
-            let key_2: &[_] = &[l, 1.into(), center_type, neighbor_2_type];
+            let key_2: &[_] = &[l, 1_i32, center_type, neighbor_2_type];
             let block_2 = spherical_expansion.get(&key_2)
                 .expect("missing first neighbor type block in spherical expansion");
 
@@ -436,7 +436,7 @@ impl CalculatorBase for SoapPowerSpectrum {
     fn samples(&self, keys: &metatensor::Labels, systems: &mut [Box<dyn System>]) -> Result<Vec<Labels>, Error> {
         assert_eq!(keys.names(), ["center_type", "neighbor_1_type", "neighbor_2_type"]);
         let mut result = Vec::new();
-        for [center_type, neighbor_1_type, neighbor_2_type] in keys.iter_fixed_size() {
+        for [&center_type, &neighbor_1_type, &neighbor_2_type] in keys.iter_fixed_size() {
 
             let builder = AtomCenteredSamples {
                 cutoff: self.parameters.cutoff.radius,

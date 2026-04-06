@@ -165,7 +165,7 @@ impl CalculatorBase for SoapRadialSpectrum {
     ) -> Result<Vec<Labels>, Error> {
         assert_eq!(keys.names(), ["center_type", "neighbor_type"]);
         let mut result = Vec::new();
-        for [center_type, neighbor_type] in keys.iter_fixed_size() {
+        for [&center_type, &neighbor_type] in keys.iter_fixed_size() {
             let builder = AtomCenteredSamples {
                 cutoff: self.parameters.cutoff.radius,
                 center_type: AtomicTypeFilter::Single(center_type),

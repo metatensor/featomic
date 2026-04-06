@@ -364,7 +364,7 @@ impl Calculator {
             for samples in &samples {
                 let mut builder = LabelsBuilder::new(vec!["sample"]);
                 for sample_i in 0..samples.count() {
-                    builder.add(&[sample_i]);
+                    builder.add(&[sample_i as i32]);
                 }
                 cell_gradient_samples.push(builder.finish_assume_unique());
             }
@@ -385,7 +385,7 @@ impl Calculator {
             for samples in &samples {
                 let mut builder = LabelsBuilder::new(vec!["sample"]);
                 for sample_i in 0..samples.count() {
-                    builder.add(&[sample_i]);
+                    builder.add(&[sample_i as i32]);
                 }
                 strain_gradient_samples.push(builder.finish_assume_unique());
             }

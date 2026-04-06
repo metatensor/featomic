@@ -574,7 +574,7 @@ impl CalculatorBase for SphericalExpansionByPair {
 
         for &[first_type, second_type] in full_neighbors_list_keys.iter_fixed_size() {
             for o3_lambda in self.parameters.basis.angular_channels() {
-                keys.add(&[o3_lambda.into(), 1.into(), first_type, second_type]);
+                keys.add(&[o3_lambda as i32, 1_i32, first_type, second_type]);
             }
         }
 
@@ -713,7 +713,7 @@ impl CalculatorBase for SphericalExpansionByPair {
             }
             SphericalExpansionBasis::Explicit(ref basis) => {
                 let mut result = Vec::new();
-                for [o3_lambda, _, _, _] in keys.iter_fixed_size() {
+                for [&o3_lambda, _, _, _] in keys.iter_fixed_size() {
                     let mut properties = LabelsBuilder::new(self.property_names());
 
                     let radial = basis.by_angular.get(&o3_lambda as usize).expect("missing o3_lambda");
@@ -774,8 +774,8 @@ impl CalculatorBase for SphericalExpansionByPair {
                 let second_type = types[pair.second];
                 for o3_lambda in self.parameters.basis.angular_channels() {
                     let block_i = keys.position(&[
-                        o3_lambda.into(),
-                        1.into(),
+                        o3_lambda as i32,
+                        1_i32,
                         first_type.into(),
                         second_type.into(),
                     ]);
@@ -806,8 +806,8 @@ impl CalculatorBase for SphericalExpansionByPair {
 
                 for o3_lambda in self.parameters.basis.angular_channels() {
                     let block_i = keys.position(&[
-                        o3_lambda.into(),
-                        1.into(),
+                        o3_lambda as i32,
+                        1_i32,
                         second_type.into(),
                         first_type.into(),
                     ]);

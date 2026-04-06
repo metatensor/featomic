@@ -61,7 +61,7 @@ impl CalculatorBase for SortedDistances {
         let mut samples = Vec::new();
         if self.separate_neighbor_types {
             assert_eq!(keys.names(), ["center_type", "neighbor_type"]);
-            for [center_type, neighbor_type] in keys.iter_fixed_size() {
+            for [&center_type, &neighbor_type] in keys.iter_fixed_size() {
                 let builder = AtomCenteredSamples {
                     cutoff: self.cutoff,
                     center_type: AtomicTypeFilter::Single(center_type),
@@ -73,7 +73,7 @@ impl CalculatorBase for SortedDistances {
             }
         } else {
             assert_eq!(keys.names(), ["center_type"]);
-            for [center_type] in keys.iter_fixed_size() {
+            for [&center_type] in keys.iter_fixed_size() {
                 let builder = AtomCenteredSamples {
                     cutoff: self.cutoff,
                     center_type: AtomicTypeFilter::Single(center_type),

@@ -202,7 +202,7 @@ impl HalfNeighborList {
     fn samples(&self, keys: &Labels, systems: &mut [Box<dyn System>]) -> Result<Vec<Labels>, Error> {
         let mut results = Vec::new();
 
-        for [first_atom_type, second_atom_type] in keys.iter_fixed_size() {
+        for [&first_atom_type, &second_atom_type] in keys.iter_fixed_size() {
             let mut builder = LabelsBuilder::new(vec![
                 "system",
                 "first_atom",

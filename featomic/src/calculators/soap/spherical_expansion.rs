@@ -689,7 +689,7 @@ impl CalculatorBase for SphericalExpansion {
         let mut builder = LabelsBuilder::new(vec!["o3_lambda", "o3_sigma", "center_type", "neighbor_type"]);
         for &[center_type, neighbor_type] in keys.iter_fixed_size() {
             for o3_lambda in self.by_pair.parameters().basis.angular_channels() {
-                builder.add(&[o3_lambda.into(), 1.into(), center_type, neighbor_type]);
+                builder.add(&[o3_lambda as i32, 1_i32, center_type, neighbor_type]);
             }
         }
 
@@ -706,7 +706,7 @@ impl CalculatorBase for SphericalExpansion {
         // only compute the samples once for each `center_type, neighbor_type`,
         // and re-use the results across `o3_lambda`.
         let mut samples_per_types = BTreeMap::new();
-        for [_, _, center_type, neighbor_type] in keys.iter_fixed_size() {
+        for [_, _, &center_type, &neighbor_type] in keys.iter_fixed_size() {
             if samples_per_types.contains_key(&(center_type, neighbor_type)) {
                 continue;
             }
@@ -722,7 +722,7 @@ impl CalculatorBase for SphericalExpansion {
         }
 
         let mut result = Vec::new();
-        for [_, _, center_type, neighbor_type] in keys.iter_fixed_size() {
+        for [_, _, &center_type, &neighbor_type] in keys.iter_fixed_size() {
             let samples = samples_per_types.get(
                 &(center_type, neighbor_type)
             ).expect("missing samples");
@@ -767,7 +767,7 @@ impl CalculatorBase for SphericalExpansion {
         // only compute the components once for each `o3_lambda`,
         // and re-use the results across `center_type, neighbor_type`.
         let mut component_by_l = BTreeMap::new();
-        for [o3_lambda, _, _, _] in keys.iter_fixed_size() {
+        for [&o3_lambda, _, _, _] in keys.iter_fixed_size() {
             if component_by_l.contains_key(o3_lambda) {
                 continue;
             }
@@ -782,7 +782,7 @@ impl CalculatorBase for SphericalExpansion {
         }
 
         let mut result = Vec::new();
-        for [o3_lambda, _, _, _] in keys.iter_fixed_size() {
+        for [&o3_lambda, _, _, _] in keys.iter_fixed_size() {
             let components = component_by_l.get(o3_lambda).expect("missing samples");
             result.push(components.clone());
         }
@@ -807,7 +807,7 @@ impl CalculatorBase for SphericalExpansion {
             }
             SphericalExpansionBasis::Explicit(ref basis) => {
                 let mut result = Vec::new();
-                for [o3_lambda, _, _, _] in keys.iter_fixed_size() {
+                for [&o3_lambda, _, _, _] in keys.iter_fixed_size() {
                     let mut properties = LabelsBuilder::new(self.property_names());
 
                     let radial = basis.by_angular.get(&o3_lambda as usize).expect("missing o3_lambda");
@@ -927,7 +927,7 @@ mod tests {
             for center_type in [1, -42] {
                 for neighbor_type in [1, -42] {
                     let block_i = descriptor.keys().position(&[
-                        l.into(), 1.into(), center_type.into() , neighbor_type.into()
+                        l as i32, 1_i32, center_type.into() , neighbor_type as i32
                     ]);
                     assert!(block_i.is_some());
                     let block = &descriptor.block_by_id(block_i.unwrap());

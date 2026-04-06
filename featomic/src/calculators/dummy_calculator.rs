@@ -54,7 +54,7 @@ impl CalculatorBase for DummyCalculator {
     fn samples(&self, keys: &Labels, systems: &mut [Box<dyn System>]) -> Result<Vec<Labels>, Error> {
         assert_eq!(keys.names(), ["center_type"]);
         let mut samples = Vec::new();
-        for [center_type] in keys.iter_fixed_size() {
+        for [&center_type] in keys.iter_fixed_size() {
             let builder = AtomCenteredSamples {
                 cutoff: self.cutoff,
                 center_type: AtomicTypeFilter::Single(center_type),

@@ -39,7 +39,7 @@ impl SamplesBuilder for AtomCenteredSamples {
                 AtomicTypeFilter::Any => {
                     for (center_i, &center_type) in types.iter().enumerate() {
                         if self.center_type.matches(center_type) {
-                            builder.add(&[system_i, center_i]);
+                            builder.add(&[system_i as i32, center_i as i32]);
                         }
                     }
                 }
@@ -62,7 +62,7 @@ impl SamplesBuilder for AtomCenteredSamples {
                             }
 
                             if requested_types.is_subset(&neighbor_types) {
-                                builder.add(&[system_i, atom_i]);
+                                builder.add(&[system_i as i32, atom_i as i32]);
                             }
                             neighbor_types.clear();
                         }
@@ -91,7 +91,7 @@ impl SamplesBuilder for AtomCenteredSamples {
                     }
 
                     for atom_i in matching_atoms {
-                        builder.add(&[system_i, atom_i]);
+                        builder.add(&[system_i as i32, atom_i as i32]);
                     }
                 }
             }
@@ -141,7 +141,7 @@ impl SamplesBuilder for AtomCenteredSamples {
             }
 
             for neighbor in neighbors {
-                builder.add(&[sample_i, system_i, neighbor]);
+                builder.add(&[sample_i as i32, system_i as i32, neighbor as i32]);
             }
         }
 

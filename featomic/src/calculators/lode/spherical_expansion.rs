@@ -417,10 +417,10 @@ impl LodeSphericalExpansion {
 
             for center_i in 0..system.size()? {
                 let block_i = descriptor.keys().position(&[
-                    0.into(),
-                    1.into(),
-                    types[center_i].into(),
-                    types[center_i].into(),
+                    0_i32,
+                    1_i32,
+                    types[center_i] as i32,
+                    types[center_i] as i32,
                 ]);
 
                 if block_i.is_none() {
@@ -469,7 +469,7 @@ impl CalculatorBase for LodeSphericalExpansion {
         let mut builder = LabelsBuilder::new(vec!["o3_lambda", "o3_sigma", "center_type", "neighbor_type"]);
         for &[center_type, neighbor_type] in keys.iter_fixed_size() {
             for o3_lambda in self.parameters.basis.angular_channels() {
-                builder.add(&[o3_lambda.into(), 1.into(), center_type, neighbor_type]);
+                builder.add(&[o3_lambda as i32, 1_i32, center_type, neighbor_type]);
             }
         }
 
@@ -486,7 +486,7 @@ impl CalculatorBase for LodeSphericalExpansion {
         // only compute the samples once for each `center_type, neighbor_type`,
         // and re-use the results across `o3_lambda`.
         let mut samples_per_types = BTreeMap::new();
-        for [_, _, center_type, neighbor_type] in keys.iter_fixed_size() {
+        for [_, _, &center_type, &neighbor_type] in keys.iter_fixed_size() {
             if samples_per_types.contains_key(&(center_type, neighbor_type)) {
                 continue;
             }
@@ -501,7 +501,7 @@ impl CalculatorBase for LodeSphericalExpansion {
         }
 
         let mut result = Vec::new();
-        for [_, _, center_type, neighbor_type] in keys.iter_fixed_size() {
+        for [_, _, &center_type, &neighbor_type] in keys.iter_fixed_size() {
             let samples = samples_per_types.get(
                 &(center_type, neighbor_type)
             ).expect("missing samples");
@@ -543,7 +543,7 @@ impl CalculatorBase for LodeSphericalExpansion {
         // only compute the components once for each `o3_lambda`,
         // and re-use the results across `center_type, neighbor_type`.
         let mut component_by_l = BTreeMap::new();
-        for [o3_lambda, _, _, _] in keys.iter_fixed_size() {
+        for [&o3_lambda, _, _, _] in keys.iter_fixed_size() {
             if component_by_l.contains_key(o3_lambda) {
                 continue;
             }
@@ -558,7 +558,7 @@ impl CalculatorBase for LodeSphericalExpansion {
         }
 
         let mut result = Vec::new();
-        for [o3_lambda, _, _, _] in keys.iter_fixed_size() {
+        for [&o3_lambda, _, _, _] in keys.iter_fixed_size() {
             let components = component_by_l.get(o3_lambda).expect("missing samples");
             result.push(components.clone());
         }
@@ -583,7 +583,7 @@ impl CalculatorBase for LodeSphericalExpansion {
             }
             SphericalExpansionBasis::Explicit(ref basis) => {
                 let mut result = Vec::new();
-                for [o3_lambda, _, _, _] in keys.iter_fixed_size() {
+                for [&o3_lambda, _, _, _] in keys.iter_fixed_size() {
                     let mut properties = LabelsBuilder::new(self.property_names());
 
                     let radial = basis.by_angular.get(&o3_lambda as usize).expect("missing o3_lambda");
@@ -662,10 +662,10 @@ impl CalculatorBase for LodeSphericalExpansion {
                     for &neighbor_type in types {
                         for center_i in 0..system.size()? {
                             let block_i = descriptor.keys().position(&[
-                                0.into(),
-                                1.into(),
-                                types[center_i].into(),
-                                neighbor_type.into(),
+                                0_i32,
+                                1_i32,
+                                types[center_i] as i32,
+                                neighbor_type as i32,
                             ]).expect("missing block");
 
                             let mut block = descriptor.block_mut_by_id(block_i);
