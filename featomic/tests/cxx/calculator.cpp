@@ -6,6 +6,12 @@
 
 #include "test_system.hpp"
 
+// Helper: convert DLPackArray to NDArray for comparison
+template<typename T>
+static metatensor::NDArray<T> to_ndarray(const metatensor::DLPackArray<T>& arr) {
+    return metatensor::NDArray<T>(arr.data(), arr.shape());
+}
+
 TEST_CASE("Calculator name") {
     SECTION("dummy_calculator") {
         const char* HYPERS_JSON = R"({
@@ -111,7 +117,7 @@ TEST_CASE("Compute descriptor") {
             {"index_delta", "x_y_z"},
             {{1, 0}, {0, 1}}
         ));
-        CHECK(block.values() == metatensor::NDArray<double>(
+        CHECK(to_ndarray(block.values()) == metatensor::NDArray<double>(
             {5.0, 39.0, 6.0, 18.0, 7.0, 15.0},
             {3, 2}
         ));
@@ -125,7 +131,7 @@ TEST_CASE("Compute descriptor") {
                 {2, 0, 2}, {2, 0, 3},
             }
         ));
-        CHECK(gradient.values() == metatensor::NDArray<double>(
+        CHECK(to_ndarray(gradient.values()) == metatensor::NDArray<double>(
             {
                 0.0, 1.0, /**/ 0.0, 1.0, /**/ 0.0, 1.0,
                 0.0, 1.0, /**/ 0.0, 1.0, /**/ 0.0, 1.0,
@@ -149,7 +155,7 @@ TEST_CASE("Compute descriptor") {
             {"index_delta", "x_y_z"},
             {{1, 0}, {0, 1}}
         ));
-        CHECK(block.values() == metatensor::NDArray<double>(
+        CHECK(to_ndarray(block.values()) == metatensor::NDArray<double>(
             {4.0, 33.0},
             {1, 2}
         ));
@@ -159,7 +165,7 @@ TEST_CASE("Compute descriptor") {
             {"sample", "system", "atom"},
             {{0, 0, 0}, {0, 0, 1}}
         ));
-        CHECK(gradient.values() == metatensor::NDArray<double>(
+        CHECK(to_ndarray(gradient.values()) == metatensor::NDArray<double>(
             {
                 0.0, 1.0, /**/ 0.0, 1.0, /**/ 0.0, 1.0,
                 0.0, 1.0, /**/ 0.0, 1.0, /**/ 0.0, 1.0,
@@ -191,7 +197,7 @@ TEST_CASE("Compute descriptor") {
             {"index_delta", "x_y_z"},
             {{1, 0}, {0, 1}}
         ));
-        CHECK(block.values() == metatensor::NDArray<double>(
+        CHECK(to_ndarray(block.values()) == metatensor::NDArray<double>(
             {5.0, 39.0, 7.0, 15.0},
             {2, 2}
         ));
@@ -204,7 +210,7 @@ TEST_CASE("Compute descriptor") {
                 {1, 0, 2}, {1, 0, 3},
             }
         ));
-        CHECK(gradient.values() == metatensor::NDArray<double>(
+        CHECK(to_ndarray(gradient.values()) == metatensor::NDArray<double>(
             {
                 0.0, 1.0, /**/ 0.0, 1.0, /**/ 0.0, 1.0,
                 0.0, 1.0, /**/ 0.0, 1.0, /**/ 0.0, 1.0,
@@ -225,7 +231,7 @@ TEST_CASE("Compute descriptor") {
             {"index_delta", "x_y_z"},
             {{1, 0}, {0, 1}}
         ));
-        CHECK(block.values() == metatensor::NDArray<double>(
+        CHECK(to_ndarray(block.values()) == metatensor::NDArray<double>(
             std::vector<double>{},
             {0, 2}
         ));
@@ -235,7 +241,7 @@ TEST_CASE("Compute descriptor") {
             {"sample", "system", "atom"},
             {}
         ));
-        CHECK(gradient.values() == metatensor::NDArray<double>(
+        CHECK(to_ndarray(gradient.values()) == metatensor::NDArray<double>(
             std::vector<double>{},
             {0, 3, 2}
         ));
@@ -264,7 +270,7 @@ TEST_CASE("Compute descriptor") {
             {"index_delta", "x_y_z"},
             {{0, 1}}
         ));
-        CHECK(block.values() == metatensor::NDArray<double>(
+        CHECK(to_ndarray(block.values()) == metatensor::NDArray<double>(
             {39.0, 18.0, 15.0},
             {3, 1}
         ));
@@ -278,7 +284,7 @@ TEST_CASE("Compute descriptor") {
                 {2, 0, 2}, {2, 0, 3},
             }
         ));
-        CHECK(gradient.values() == metatensor::NDArray<double>(
+        CHECK(to_ndarray(gradient.values()) == metatensor::NDArray<double>(
             {
                 1.0, /**/ 1.0, /**/ 1.0,
                 1.0, /**/ 1.0, /**/ 1.0,
@@ -302,7 +308,7 @@ TEST_CASE("Compute descriptor") {
             {"index_delta", "x_y_z"},
             {{0, 1}}
         ));
-        CHECK(block.values() == metatensor::NDArray<double>(
+        CHECK(to_ndarray(block.values()) == metatensor::NDArray<double>(
             {33.0},
             {1, 1}
         ));
@@ -312,7 +318,7 @@ TEST_CASE("Compute descriptor") {
             {"sample", "system", "atom"},
             {{0, 0, 0}, {0, 0, 1}}
         ));
-        CHECK(gradient.values() == metatensor::NDArray<double>(
+        CHECK(to_ndarray(gradient.values()) == metatensor::NDArray<double>(
             {
                 1.0, /**/ 1.0, /**/ 1.0,
                 1.0, /**/ 1.0, /**/ 1.0,
@@ -368,7 +374,7 @@ TEST_CASE("Compute descriptor") {
             {"index_delta", "x_y_z"},
             {{0, 1}}
         ));
-        CHECK(block.values() == metatensor::NDArray<double>(
+        CHECK(to_ndarray(block.values()) == metatensor::NDArray<double>(
             {15.0},
             {1, 1}
         ));
@@ -380,7 +386,7 @@ TEST_CASE("Compute descriptor") {
                 {0, 0, 2}, {0, 0, 3},
             }
         ));
-        CHECK(gradient.values() == metatensor::NDArray<double>(
+        CHECK(to_ndarray(gradient.values()) == metatensor::NDArray<double>(
             {
                 1.0, /**/ 1.0, /**/ 1.0,
                 1.0, /**/ 1.0, /**/ 1.0,
@@ -398,7 +404,7 @@ TEST_CASE("Compute descriptor") {
             {"index_delta", "x_y_z"},
             {{1, 0}}
         ));
-        CHECK(block.values() == metatensor::NDArray<double>(
+        CHECK(to_ndarray(block.values()) == metatensor::NDArray<double>(
             {4.0},
             {1, 1}
         ));
@@ -408,7 +414,7 @@ TEST_CASE("Compute descriptor") {
             {"sample", "system", "atom"},
             {{0, 0, 0}, {0, 0, 1}}
         ));
-        CHECK(gradient.values() == metatensor::NDArray<double>(
+        CHECK(to_ndarray(gradient.values()) == metatensor::NDArray<double>(
             {
                 0.0, /**/ 0.0, /**/ 0.0,
                 0.0, /**/ 0.0, /**/ 0.0,
@@ -444,7 +450,7 @@ TEST_CASE("Compute descriptor") {
             {"index_delta", "x_y_z"},
             {{1, 0}, {0, 1}}
         ));
-        CHECK(block.values() == metatensor::NDArray<double>(
+        CHECK(to_ndarray(block.values()) == metatensor::NDArray<double>(
             std::vector<double>{},
             {0, 2}
         ));
@@ -459,7 +465,7 @@ TEST_CASE("Compute descriptor") {
             {"index_delta", "x_y_z"},
             {{1, 0}, {0, 1}}
         ));
-        CHECK(block.values() == metatensor::NDArray<double>(
+        CHECK(to_ndarray(block.values()) == metatensor::NDArray<double>(
             {4.0, 33.0},
             {1, 2}
         ));
