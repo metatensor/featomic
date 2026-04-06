@@ -213,32 +213,16 @@ pub struct featomic_labels_selection_t {
     predefined: *const mts_tensormap_t,
 }
 
-fn c_labels_to_rust(mut labels: mts_labels_t) -> Result<mts_labels_t, Error> {
-    if labels.internal_ptr_.is_null() {
-        // create new metatensor-core labels
-        unsafe {
-            metatensor::errors::check_status(
-                metatensor::c_api::mts_labels_create(&mut labels)
-            )?;
-        }
-
-        return Ok(labels);
+fn c_labels_clone(labels: *const mts_labels_t) -> Result<*mut mts_labels_t, Error> {
+    let cloned = unsafe { metatensor::c_api::mts_labels_clone(labels) };
+    if cloned.is_null() {
+        let msg = unsafe {
+            let ptr = metatensor::c_api::mts_last_error();
+            std::ffi::CStr::from_ptr(ptr).to_str().unwrap_or("unknown error")
+        };
+        return Err(Error::External(msg.to_string()));
     }
-
-    // increment reference count
-    let mut clone = mts_labels_t {
-        internal_ptr_: std::ptr::null_mut(),
-        names: std::ptr::null(),
-        values: std::ptr::null(),
-        size: 0,
-        count: 0
-    };
-    unsafe {
-        metatensor::errors::check_status(
-            metatensor::c_api::mts_labels_clone(labels, &mut clone)
-        )?;
-    }
-    return Ok(clone);
+    Ok(cloned)
 }
 
 fn convert_labels_selection<'a>(
@@ -249,8 +233,8 @@ fn convert_labels_selection<'a>(
     match (selection.subset.is_null(), selection.predefined.is_null()) {
         (true, true) => Ok(LabelsSelection::All),
         (false, true) => {
-            *labels = unsafe {
-                let raw_labels = c_labels_to_rust(*selection.subset)?;
+            *labels = {
+                let raw_labels = c_labels_clone(selection.subset)?;
                 Some(Labels::from_raw(raw_labels))
             };
 
@@ -289,10 +273,8 @@ fn key_selection(value: *const mts_labels_t, labels: &'_ mut Option<Labels>) -> 
         return Ok(None);
     }
 
-    unsafe {
-        let raw_labels = c_labels_to_rust(*value)?;
-        *labels = Some(Labels::from_raw(raw_labels));
-    }
+    let raw_labels = c_labels_clone(value)?;
+    *labels = Some(Labels::from_raw(raw_labels));
 
     return Ok(labels.as_ref());
 }
