@@ -170,10 +170,18 @@ static LabelsInfo query_labels(const mts_labels_t* labels) {
     DLPackHandle handle;
     DLDevice cpu_device = {kDLCPU, 0};
     DLPackVersion max_ver = {1, 0};
-    auto status = values_array.as_dlpack(values_array.ptr, &handle.dl, cpu_device, nullptr, max_ver);
-    if (status == MTS_SUCCESS && handle.dl != nullptr) {
-        auto* ptr = static_cast<int32_t*>(handle.dl->dl_tensor.data);
-        info.values.assign(ptr, ptr + info.count * info.size);
+    if (values_array.as_dlpack == nullptr) {
+        fprintf(stderr, "query_labels: as_dlpack is NULL on values_array\n");
+    } else {
+        auto status = values_array.as_dlpack(values_array.ptr, &handle.dl, cpu_device, nullptr, max_ver);
+        if (status != MTS_SUCCESS) {
+            fprintf(stderr, "query_labels: as_dlpack failed with status %d: %s\n", status, mts_last_error());
+        } else if (handle.dl == nullptr) {
+            fprintf(stderr, "query_labels: as_dlpack returned null DL handle\n");
+        } else {
+            auto* ptr = static_cast<int32_t*>(handle.dl->dl_tensor.data);
+            info.values.assign(ptr, ptr + info.count * info.size);
+        }
     }
 
     return info;
