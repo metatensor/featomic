@@ -58,10 +58,10 @@ impl CalculatorBase for GeometricMoments {
             let builder = AtomCenteredSamples {
                 cutoff: self.cutoff,
                 // only include central atoms of this type
-                center_type: AtomicTypeFilter::Single(center_type.i32()),
+                center_type: AtomicTypeFilter::Single(center_type),
                 // with a neighbor of this type somewhere in the neighborhood
                 // defined by the spherical `cutoff`.
-                neighbor_type: AtomicTypeFilter::Single(neighbor_type.i32()),
+                neighbor_type: AtomicTypeFilter::Single(neighbor_type),
                 self_pairs: false,
             };
 
@@ -90,11 +90,11 @@ impl CalculatorBase for GeometricMoments {
         for ([center_type, neighbor_type], samples_for_key) in keys.iter_fixed_size().zip(samples) {
             let builder = AtomCenteredSamples {
                 cutoff: self.cutoff,
-                center_type: AtomicTypeFilter::Single(center_type.i32()),
+                center_type: AtomicTypeFilter::Single(center_type),
                 // only include gradients with respect to neighbor atoms with
                 // this atomic type (the other atoms do not contribute to the
                 // gradients in the current block).
-                neighbor_type: AtomicTypeFilter::Single(neighbor_type.i32()),
+                neighbor_type: AtomicTypeFilter::Single(neighbor_type),
                 self_pairs: false,
             };
 

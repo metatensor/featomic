@@ -61,7 +61,7 @@ impl CalculatorBase for AtomicComposition {
                     let types = system.types()?;
 
                     for (center_i, &center_type) in types.iter().enumerate() {
-                        if center_type_key.i32() == center_type {
+                        if center_type_key == center_type {
                             builder.add(&[system_i, center_i]);
                         }
                     }
@@ -116,7 +116,7 @@ impl CalculatorBase for AtomicComposition {
         assert_eq!(descriptor.keys().names(), ["center_type"]);
 
         for (key, mut block) in descriptor {
-            let center_type = key[0].i32();
+            let center_type = key[0];
 
             let block = block.data_mut();
             let array = block.values.to_ndarray_mut();
@@ -128,7 +128,7 @@ impl CalculatorBase for AtomicComposition {
 
                         if self.per_system {
                             // Current system is saved in the 0th index of the samples.
-                            let system_i = samples[0].usize();
+                            let system_i = samples[0] as usize;
                             let system = &systems[system_i];
                             for &atomic_type in system.types()? {
                                 if atomic_type == center_type {

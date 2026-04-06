@@ -57,7 +57,7 @@ impl CalculatorBase for DummyCalculator {
         for [center_type] in keys.iter_fixed_size() {
             let builder = AtomCenteredSamples {
                 cutoff: self.cutoff,
-                center_type: AtomicTypeFilter::Single(center_type.i32()),
+                center_type: AtomicTypeFilter::Single(center_type),
                 neighbor_type: AtomicTypeFilter::Any,
                 self_pairs: false,
             };
@@ -81,7 +81,7 @@ impl CalculatorBase for DummyCalculator {
         for ([center_type], samples) in keys.iter_fixed_size().zip(samples) {
             let builder = AtomCenteredSamples{
                 cutoff: self.cutoff,
-                center_type: AtomicTypeFilter::Single(center_type.i32()),
+                center_type: AtomicTypeFilter::Single(center_type),
                 neighbor_type: AtomicTypeFilter::Any,
                 self_pairs: false,
             };
@@ -118,21 +118,21 @@ impl CalculatorBase for DummyCalculator {
         }
 
         for (key, mut block) in descriptor {
-            let center_type = key[0].i32();
+            let center_type = key[0];
 
             let block_data = block.data_mut();
             let array = block_data.values.to_ndarray_mut();
 
             for (sample_i, [system, atom]) in block_data.samples.iter_fixed_size().enumerate() {
-                let system_i = system.usize();
-                let atom_i = atom.usize();
+                let system_i = system as usize;
+                let atom_i = atom as usize;
 
                 debug_assert_eq!(systems[system_i].types()?[atom_i], center_type);
 
                 for (property_i, property) in block_data.properties.iter().enumerate() {
-                    if property[0].i32() == 1 {
+                    if property[0] == 1 {
                         array[[sample_i, property_i]] = atom_i as f64 + self.delta as f64;
-                    } else if property[1].i32() == 1 {
+                    } else if property[1] == 1 {
                         let system = &mut *systems[system_i];
                         system.compute_neighbors(self.cutoff)?;
 
@@ -202,11 +202,11 @@ impl CalculatorBase for DummyCalculator {
 
                 for gradient_sample_i in 0..array.shape()[0] {
                     for (property_i, property) in gradient.properties.iter().enumerate() {
-                        if property[0].i32() == 1 {
+                        if property[0] == 1 {
                             array[[gradient_sample_i, 0, property_i]] = 0.0;
                             array[[gradient_sample_i, 1, property_i]] = 0.0;
                             array[[gradient_sample_i, 2, property_i]] = 0.0;
-                        } else if property[1].i32() == 1 {
+                        } else if property[1] == 1 {
                             array[[gradient_sample_i, 0, property_i]] = 1.0;
                             array[[gradient_sample_i, 1, property_i]] = 1.0;
                             array[[gradient_sample_i, 2, property_i]] = 1.0;

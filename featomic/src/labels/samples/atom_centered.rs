@@ -111,8 +111,8 @@ impl SamplesBuilder for AtomCenteredSamples {
         builder.reserve(average_neighbors_per_atom * samples.count());
 
         for (sample_i, [system_i, center_i]) in samples.iter_fixed_size().enumerate() {
-            let system_i = system_i.usize();
-            let atom_i = center_i.usize();
+            let system_i = system_i as usize;
+            let atom_i = center_i as usize;
 
             let system = &mut systems[system_i];
             system.compute_neighbors(self.cutoff)?;

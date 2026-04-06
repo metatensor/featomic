@@ -116,7 +116,7 @@ impl SoapRadialSpectrum {
         let mut blocks = Vec::new();
         for (&[center, neighbor], block) in descriptor.keys().iter_fixed_size().zip(descriptor.blocks()) {
             // o3_lambda is always 0, o3_sigma always 1
-            keys_builder.add(&[LabelValue::new(0), LabelValue::new(1), center, neighbor]);
+            keys_builder.add(&[(0 as i32), (1 as i32), center, neighbor]);
 
             let block = block.data();
             blocks.push(
@@ -168,8 +168,8 @@ impl CalculatorBase for SoapRadialSpectrum {
         for [center_type, neighbor_type] in keys.iter_fixed_size() {
             let builder = AtomCenteredSamples {
                 cutoff: self.parameters.cutoff.radius,
-                center_type: AtomicTypeFilter::Single(center_type.i32()),
-                neighbor_type: AtomicTypeFilter::Single(neighbor_type.i32()),
+                center_type: AtomicTypeFilter::Single(center_type),
+                neighbor_type: AtomicTypeFilter::Single(neighbor_type),
                 self_pairs: true,
             };
 
@@ -194,8 +194,8 @@ impl CalculatorBase for SoapRadialSpectrum {
         for ([center_type, neighbor_type], samples) in keys.iter_fixed_size().zip(samples) {
             let builder = AtomCenteredSamples {
                 cutoff: self.parameters.cutoff.radius,
-                center_type: AtomicTypeFilter::Single(center_type.i32()),
-                neighbor_type: AtomicTypeFilter::Single(neighbor_type.i32()),
+                center_type: AtomicTypeFilter::Single(center_type),
+                neighbor_type: AtomicTypeFilter::Single(neighbor_type),
                 self_pairs: true,
             };
 
@@ -364,10 +364,10 @@ mod tests {
         let descriptor = calculator.compute(&mut systems, Default::default()).unwrap();
 
         assert_eq!(descriptor.keys().count(), 4);
-        assert!(descriptor.keys().contains(&[LabelValue::new(1), LabelValue::new(1)]));
-        assert!(descriptor.keys().contains(&[LabelValue::new(1), LabelValue::new(-42)]));
-        assert!(descriptor.keys().contains(&[LabelValue::new(-42), LabelValue::new(1)]));
-        assert!(descriptor.keys().contains(&[LabelValue::new(-42), LabelValue::new(-42)]));
+        assert!(descriptor.keys().contains(&[(1 as i32), (1 as i32)]));
+        assert!(descriptor.keys().contains(&[(1 as i32), (-42 as i32)]));
+        assert!(descriptor.keys().contains(&[(-42 as i32), (1 as i32)]));
+        assert!(descriptor.keys().contains(&[(-42 as i32), (-42 as i32)]));
     }
 
     #[test]

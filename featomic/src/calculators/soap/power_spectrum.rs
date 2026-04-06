@@ -88,7 +88,7 @@ impl SoapPowerSpectrum {
         let mut requested_o3_lambda = BTreeSet::new();
         for (&[center, neighbor_1, neighbor_2], block) in descriptor.keys().iter_fixed_size().zip(descriptor.blocks()) {
             for &[l, n1, n2] in block.properties().iter_fixed_size() {
-                requested_o3_lambda.insert(l.usize());
+                requested_o3_lambda.insert(l as usize);
 
                 let (_, properties) = requested_by_key
                     .entry([l, 1.into(), center, neighbor_1])
@@ -281,13 +281,13 @@ impl SoapPowerSpectrum {
                     // sample mapping for the values to create what would be the
                     // right gradient sample for spx, and then lookup its
                     // position in the spx gradient samples
-                    let (spx_1_sample, spx_2_sample) = values_mapping[sample.usize()];
+                    let (spx_1_sample, spx_2_sample) = values_mapping[sample as usize];
 
                     let mapping_1 = spx_gradient_1_samples.position(
-                        &[spx_1_sample.into(), system, atom]
+                        &[spx_1_sample as i32, system, atom]
                     );
                     let mapping_2 = spx_gradient_2_samples.position(
-                        &[spx_2_sample.into(), system, atom]
+                        &[spx_2_sample as i32, system, atom]
                     );
 
                     // at least one of the spx block should contribute to the
@@ -337,7 +337,7 @@ impl SoapPowerSpectrum {
             let property_1 = block_1.properties.position(&[n1]).expect("missing n1");
             let property_2 = block_2.properties.position(&[n2]).expect("missing n2");
 
-            let o3_lambda = l.usize();
+            let o3_lambda = l as usize;
 
             // For consistency with a full Clebsch-Gordan product we need to add
             // a `-1^l / sqrt(2 l + 1)` factor to the power spectrum invariants
@@ -440,12 +440,12 @@ impl CalculatorBase for SoapPowerSpectrum {
 
             let builder = AtomCenteredSamples {
                 cutoff: self.parameters.cutoff.radius,
-                center_type: AtomicTypeFilter::Single(center_type.i32()),
+                center_type: AtomicTypeFilter::Single(center_type),
                 // we only want center with both neighbor types present
                 neighbor_type: AtomicTypeFilter::AllOf(
                     [
-                        neighbor_1_type.i32(),
-                        neighbor_2_type.i32()
+                        neighbor_1_type,
+                        neighbor_2_type
                     ].iter().copied().collect()
                 ),
                 self_pairs: true,
@@ -465,11 +465,11 @@ impl CalculatorBase for SoapPowerSpectrum {
         for ([center_type, neighbor_1_type, neighbor_2_type], samples) in keys.iter_fixed_size().zip(samples) {
             let builder = AtomCenteredSamples {
                 cutoff: self.parameters.cutoff.radius,
-                center_type: AtomicTypeFilter::Single(center_type.i32()),
+                center_type: AtomicTypeFilter::Single(center_type),
                 // gradients samples should contain either neighbor types
                 neighbor_type: AtomicTypeFilter::OneOf(vec![
-                    neighbor_1_type.i32(),
-                    neighbor_2_type.i32()
+                    neighbor_1_type,
+                    neighbor_2_type
                 ]),
                 self_pairs: true,
             };
@@ -633,7 +633,7 @@ impl CalculatorBase for SoapPowerSpectrum {
                             let spx_1_gradient = spx_1.positions_gradients.expect("missing spherical expansion gradients");
                             let spx_2_gradient = spx_2.positions_gradients.expect("missing spherical expansion gradients");
 
-                            let sample_i = gradient_sample[0].usize();
+                            let sample_i = gradient_sample[0] as usize;
                             let (spx_sample_1, spx_sample_2) = mapping.values[sample_i];
 
                             let mut sum = [0.0, 0.0, 0.0];
@@ -705,7 +705,7 @@ impl CalculatorBase for SoapPowerSpectrum {
                                 };
 
 
-                                let sample_i = gradient_sample[0].usize();
+                                let sample_i = gradient_sample[0] as usize;
                                 let (spx_sample_1, spx_sample_2) = mapping.values[sample_i];
 
                                 let mut sum = [
@@ -817,23 +817,23 @@ mod tests {
 
         assert_eq!(descriptor.keys().count(), 6);
         assert!(descriptor.keys().contains(
-            &[LabelValue::new(1), LabelValue::new(1), LabelValue::new(1)]
+            &[(1 as i32), (1 as i32), (1 as i32)]
         ));
         assert!(descriptor.keys().contains(
-            &[LabelValue::new(1), LabelValue::new(-42), LabelValue::new(1)]
+            &[(1 as i32), (-42 as i32), (1 as i32)]
         ));
         assert!(descriptor.keys().contains(
-            &[LabelValue::new(1), LabelValue::new(-42), LabelValue::new(-42)]
+            &[(1 as i32), (-42 as i32), (-42 as i32)]
         ));
 
         assert!(descriptor.keys().contains(
-            &[LabelValue::new(-42), LabelValue::new(1), LabelValue::new(1)]
+            &[(-42 as i32), (1 as i32), (1 as i32)]
         ));
         assert!(descriptor.keys().contains(
-            &[LabelValue::new(-42), LabelValue::new(-42), LabelValue::new(1)]
+            &[(-42 as i32), (-42 as i32), (1 as i32)]
         ));
         assert!(descriptor.keys().contains(
-            &[LabelValue::new(-42), LabelValue::new(-42), LabelValue::new(-42)]
+            &[(-42 as i32), (-42 as i32), (-42 as i32)]
         ));
 
         // exact values for power spectrum are regression-tested in

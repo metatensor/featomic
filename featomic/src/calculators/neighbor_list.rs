@@ -119,8 +119,8 @@ impl CalculatorBase for NeighborList {
                 if first == second && cell_a == 0 && cell_b == 0 && cell_c == 0 {
                     continue;
                 }
-                builder.add(&[sample_i.into(), system_i, first]);
-                builder.add(&[sample_i.into(), system_i, second]);
+                builder.add(&[sample_i as i32, system_i, first]);
+                builder.add(&[sample_i as i32, system_i, second]);
             }
 
             results.push(builder.finish_assume_unique());
@@ -140,7 +140,7 @@ impl CalculatorBase for NeighborList {
 
     fn properties(&self, keys: &Labels) -> Vec<Labels> {
         let mut properties = LabelsBuilder::new(self.property_names());
-        properties.add(&[LabelValue::new(0)]);
+        properties.add(&[(0 as i32)]);
         let properties = properties.finish();
 
         return vec![properties; keys.count()];
@@ -232,7 +232,7 @@ impl HalfNeighborList {
                         (pair.first, pair.second)
                     };
 
-                    if type_i == first_atom_type.i32() && type_j == second_atom_type.i32() {
+                    if type_i == first_atom_type && type_j == second_atom_type {
                         builder.add(&[
                             LabelValue::from(system_i),
                             LabelValue::from(atom_i),
@@ -247,11 +247,11 @@ impl HalfNeighborList {
                 // handle self pairs
                 if self.self_pairs && first_atom_type == second_atom_type {
                     for center_i in 0..system.size()? {
-                        if types[center_i] == first_atom_type.i32() {
+                        if types[center_i] == first_atom_type {
                             builder.add(&[
-                                system_i.into(),
-                                center_i.into(),
-                                center_i.into(),
+                                system_i as i32,
+                                center_i as i32,
+                                center_i as i32,
                                 LabelValue::from(0),
                                 LabelValue::from(0),
                                 LabelValue::from(0),
@@ -333,10 +333,10 @@ impl HalfNeighborList {
                             let gradient = gradient.data_mut();
 
                             let first_grad_sample_i = gradient.samples.position(&[
-                                sample_i.into(), system_i.into(), atom_i.into()
+                                sample_i as i32, system_i as i32, atom_i as i32
                             ]).expect("missing gradient sample");
                             let second_grad_sample_i = gradient.samples.position(&[
-                                sample_i.into(), system_i.into(), atom_j.into()
+                                sample_i as i32, system_i as i32, atom_j as i32
                             ]).expect("missing gradient sample");
 
                             let array = gradient.values.to_ndarray_mut();
@@ -425,7 +425,7 @@ impl FullNeighborList {
                     if first_atom_type == second_atom_type {
                         // same type for both atoms in the pair, add the pair
                         // twice in both directions.
-                        if types[pair.first] == first_atom_type.i32() && types[pair.second] == second_atom_type.i32() {
+                        if types[pair.first] == first_atom_type && types[pair.second] == second_atom_type {
                             builder.add(&[
                                 LabelValue::from(system_i),
                                 LabelValue::from(pair.first),
@@ -446,7 +446,7 @@ impl FullNeighborList {
                         }
                     } else {
                         // different types, find the right order for the pair
-                        if types[pair.first] == first_atom_type.i32() && types[pair.second] == second_atom_type.i32() {
+                        if types[pair.first] == first_atom_type && types[pair.second] == second_atom_type {
                             builder.add(&[
                                 LabelValue::from(system_i),
                                 LabelValue::from(pair.first),
@@ -455,7 +455,7 @@ impl FullNeighborList {
                                 LabelValue::from(cell_b),
                                 LabelValue::from(cell_c),
                             ]);
-                        } else if types[pair.second] == first_atom_type.i32() && types[pair.first] == second_atom_type.i32() {
+                        } else if types[pair.second] == first_atom_type && types[pair.first] == second_atom_type {
                             builder.add(&[
                                 LabelValue::from(system_i),
                                 LabelValue::from(pair.second),
@@ -471,11 +471,11 @@ impl FullNeighborList {
                 // handle self pairs
                 if self.self_pairs && first_atom_type == second_atom_type {
                     for center_i in 0..system.size()? {
-                        if types[center_i] == first_atom_type.i32() {
+                        if types[center_i] == first_atom_type {
                             builder.add(&[
-                                system_i.into(),
-                                center_i.into(),
-                                center_i.into(),
+                                system_i as i32,
+                                center_i as i32,
+                                center_i as i32,
                                 LabelValue::from(0),
                                 LabelValue::from(0),
                                 LabelValue::from(0),
@@ -544,10 +544,10 @@ impl FullNeighborList {
                             let gradient = gradient.data_mut();
 
                             let first_grad_sample_i = gradient.samples.position(&[
-                                sample_i.into(), system_i.into(), pair.first.into()
+                                sample_i as i32, system_i as i32, pair.first as i32
                             ]).expect("missing gradient sample");
                             let second_grad_sample_i = gradient.samples.position(&[
-                                sample_i.into(), system_i.into(), pair.second.into()
+                                sample_i as i32, system_i as i32, pair.second as i32
                             ]).expect("missing gradient sample");
 
                             let array = gradient.values.to_ndarray_mut();
@@ -595,10 +595,10 @@ impl FullNeighborList {
                             let gradient = gradient.data_mut();
 
                             let first_grad_sample_i = gradient.samples.position(&[
-                                sample_i.into(), system_i.into(), pair.second.into()
+                                sample_i as i32, system_i as i32, pair.second as i32
                             ]).expect("missing gradient sample");
                             let second_grad_sample_i = gradient.samples.position(&[
-                                sample_i.into(), system_i.into(), pair.first.into()
+                                sample_i as i32, system_i as i32, pair.first as i32
                             ]).expect("missing gradient sample");
 
                             let array = gradient.values.to_ndarray_mut();

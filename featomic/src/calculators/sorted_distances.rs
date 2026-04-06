@@ -64,8 +64,8 @@ impl CalculatorBase for SortedDistances {
             for [center_type, neighbor_type] in keys.iter_fixed_size() {
                 let builder = AtomCenteredSamples {
                     cutoff: self.cutoff,
-                    center_type: AtomicTypeFilter::Single(center_type.i32()),
-                    neighbor_type: AtomicTypeFilter::Single(neighbor_type.i32()),
+                    center_type: AtomicTypeFilter::Single(center_type),
+                    neighbor_type: AtomicTypeFilter::Single(neighbor_type),
                     self_pairs: false,
                 };
 
@@ -76,7 +76,7 @@ impl CalculatorBase for SortedDistances {
             for [center_type] in keys.iter_fixed_size() {
                 let builder = AtomCenteredSamples {
                     cutoff: self.cutoff,
-                    center_type: AtomicTypeFilter::Single(center_type.i32()),
+                    center_type: AtomicTypeFilter::Single(center_type),
                     neighbor_type: AtomicTypeFilter::Any,
                     self_pairs: false,
                 };
@@ -124,7 +124,7 @@ impl CalculatorBase for SortedDistances {
 
         for (key, mut block) in descriptor {
             let neighbor_type = if self.separate_neighbor_types {
-                Some(key[1].i32())
+                Some(key[1])
             } else {
                 None
             };
@@ -133,9 +133,9 @@ impl CalculatorBase for SortedDistances {
             let array = block_data.values.to_ndarray_mut();
 
             for (sample_i, [system_i, center_i]) in block_data.samples.iter_fixed_size().enumerate() {
-                let center_i = center_i.usize();
+                let center_i = center_i as usize;
 
-                let system = &mut systems[system_i.usize()];
+                let system = &mut systems[system_i as usize];
                 system.compute_neighbors(self.cutoff)?;
                 let types = system.types()?;
 
@@ -163,7 +163,7 @@ impl CalculatorBase for SortedDistances {
                 distances.resize(self.max_neighbors, self.cutoff);
 
                 for (property_i, [neighbor]) in block_data.properties.iter_fixed_size().enumerate() {
-                    array[[sample_i, property_i]] = distances[neighbor.usize()];
+                    array[[sample_i, property_i]] = distances[neighbor as usize];
                 }
             }
         }

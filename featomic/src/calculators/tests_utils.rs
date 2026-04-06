@@ -165,11 +165,11 @@ fn check_compute_partial_samples(
             let partial_gradient_data = partial_gradient.values().to_ndarray();
 
             for (grad_sample_i, grad_sample) in partial_gradient.samples().iter().enumerate() {
-                let sample = &partial.samples()[grad_sample[0].usize()];
+                let sample = &partial.samples()[grad_sample[0] as usize];
                 let full_sample_i = full.samples().position(sample).unwrap();
 
                 let full_grad_sample_i = full_gradient.samples().position(
-                    &[full_sample_i.into(), grad_sample[1], grad_sample[2]]
+                    &[full_sample_i as i32, grad_sample[1], grad_sample[2]]
                 ).unwrap();
 
                 assert_ulps_eq!(
@@ -225,11 +225,11 @@ fn check_compute_partial_both(
             let property_axis = Axis(full_gradient_data.shape().len() - 2);
 
             for (grad_sample_i, grad_sample) in partial_gradient.samples().iter().enumerate() {
-                let sample = &partial.samples()[grad_sample[0].usize()];
+                let sample = &partial.samples()[grad_sample[0] as usize];
                 let full_sample_i = full.samples().position(sample).unwrap();
 
                 let full_grad_sample_i = full_gradient.samples().position(
-                    &[full_sample_i.into(), grad_sample[1], grad_sample[2]]
+                    &[full_sample_i as i32, grad_sample[1], grad_sample[2]]
                 ).unwrap();
 
                 for (property_i, property) in properties.iter().enumerate() {
@@ -286,11 +286,11 @@ pub fn finite_differences_positions(mut calculator: Calculator, system: &SimpleS
                 let block_neg = &updated_neg.block_by_id(block_i);
 
                 for (gradient_i, [sample_i, _, neighbor]) in gradients.samples().iter_fixed_size().enumerate() {
-                    if neighbor.usize() != neighbor_i {
+                    if neighbor as usize != neighbor_i {
                         continue;
                     }
 
-                    let sample_i = sample_i.usize();
+                    let sample_i = sample_i as usize;
                     let sample = &block.samples()[sample_i];
 
                     // find the corresponding sample in both descriptors
@@ -349,7 +349,7 @@ pub fn finite_differences_cell(mut calculator: Calculator, system: &SimpleSystem
                 let block_neg = &updated_neg.block_by_id(block_i);
 
                 for (gradient_i, [sample_i]) in gradients.samples().iter_fixed_size().enumerate() {
-                    let sample_i = sample_i.usize();
+                    let sample_i = sample_i as usize;
                     let sample = &block.samples()[sample_i];
 
                     // check that the same sample is here in both descriptors
@@ -417,7 +417,7 @@ pub fn finite_differences_strain(mut calculator: Calculator, system: &SimpleSyst
                 let block_neg = &updated_neg.block_by_id(block_i);
 
                 for (gradient_i, [sample_i]) in gradients.samples().iter_fixed_size().enumerate() {
-                    let sample_i = sample_i.usize();
+                    let sample_i = sample_i as usize;
                     let sample = &block.samples()[sample_i];
 
                     // find the corresponding sample in both descriptors
