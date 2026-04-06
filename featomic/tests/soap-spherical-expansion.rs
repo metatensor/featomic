@@ -28,8 +28,8 @@ fn values_no_pbc() {
     let block = &descriptor.block_by_id(0);
     let array = block.values().to_ndarray();
 
-    let expected = &data::load_expected_values("spherical-expansion-values.npy.gz");
-    assert_relative_eq!(array, expected, max_relative=5e-5);
+    let expected = data::load_expected_values("spherical-expansion-values.npy.gz").into_shared();
+    assert_relative_eq!(array, &expected, max_relative=5e-5);
 }
 
 #[test]
@@ -53,8 +53,8 @@ fn values_pbc() {
     let block = &descriptor.block_by_id(0);
     let array = block.values().to_ndarray();
 
-    let expected = &data::load_expected_values("spherical-expansion-pbc-values.npy.gz");
-    assert_relative_eq!(array, expected, max_relative=1e-6);
+    let expected = data::load_expected_values("spherical-expansion-pbc-values.npy.gz").into_shared();
+    assert_relative_eq!(array, &expected, max_relative=1e-6);
 }
 
 #[test]
@@ -90,13 +90,13 @@ fn gradients() {
 
     let gradient = block.gradient("strain").unwrap();
     let array = gradient.values().to_ndarray();
-    let expected = &data::load_expected_values("spherical-expansion-strain-gradient.npy.gz");
-    assert_relative_eq!(array, expected, max_relative=1e-6);
+    let expected = data::load_expected_values("spherical-expansion-strain-gradient.npy.gz").into_shared();
+    assert_relative_eq!(array, &expected, max_relative=1e-6);
 
     let gradient = block.gradient("cell").unwrap();
     let array = gradient.values().to_ndarray();
-    let expected = &data::load_expected_values("spherical-expansion-cell-gradient.npy.gz");
-    assert_relative_eq!(array, expected, max_relative=1e-6);
+    let expected = data::load_expected_values("spherical-expansion-cell-gradient.npy.gz").into_shared();
+    assert_relative_eq!(array, &expected, max_relative=1e-6);
 }
 
 fn sum_gradients(n_atoms: usize, gradients: TensorBlockRef<'_>) -> ArrayD<f64> {
@@ -105,7 +105,7 @@ fn sum_gradients(n_atoms: usize, gradients: TensorBlockRef<'_>) -> ArrayD<f64> {
 
     let mut sum = ArrayD::from_elem(vec![n_atoms, 3, gradients.properties().count()], 0.0);
     for ([_, _, atom], row) in gradients.samples().iter_fixed_size().zip(array.axis_iter(Axis(0))) {
-        let mut slice = sum.slice_mut(s![atom.usize(), .., ..]);
+        let mut slice = sum.slice_mut(s![*atom as usize, .., ..]);
         slice += &row;
     }
 

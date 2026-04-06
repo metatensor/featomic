@@ -25,7 +25,7 @@ fn values() {
     let array = block.values().to_ndarray();
 
     let expected = data::load_expected_values("soap-power-spectrum-values.npy.gz").into_shared();
-    assert_relative_eq!(array, &&expected, max_relative=1e-5);
+    assert_relative_eq!(array, &expected, max_relative=1e-5);
 }
 
 #[test]
@@ -57,12 +57,12 @@ fn gradients() {
     let gradient = block.gradient("strain").unwrap();
     let array = gradient.values().to_ndarray();
     let expected = data::load_expected_values("soap-power-spectrum-strain-gradient.npy.gz").into_shared();
-    assert_relative_eq!(array, &&expected, max_relative=1e-6);
+    assert_relative_eq!(array, &expected, max_relative=1e-6);
 
     let gradient = block.gradient("cell").unwrap();
     let array = gradient.values().to_ndarray();
     let expected = data::load_expected_values("soap-power-spectrum-cell-gradient.npy.gz").into_shared();
-    assert_relative_eq!(array, &&expected, max_relative=1e-6);
+    assert_relative_eq!(array, &expected, max_relative=1e-6);
 }
 
 fn sum_gradients(n_atoms: usize, gradients: TensorBlockRef<'_>) -> ArrayD<f64> {

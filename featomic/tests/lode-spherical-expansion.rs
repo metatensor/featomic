@@ -37,9 +37,9 @@ fn values() {
         let mut path = PathBuf::from("lode-spherical-expansion");
         path.push(format!("exponent-{}", exponent));
         path.push("values.npy.gz");
-        let expected = &data::load_expected_values(path);
+        let expected = data::load_expected_values(path).into_shared();
 
-        assert_relative_eq!(array, expected, max_relative=1e-6, epsilon=1e-13);
+        assert_relative_eq!(array, &expected, max_relative=1e-6, epsilon=1e-13);
     }
 }
 
@@ -78,8 +78,8 @@ fn gradients() {
         path.push(format!("exponent-{}", exponent));
         path.push("positions-gradient.npy.gz");
 
-        let expected = &data::load_expected_values(path);
-        assert_relative_eq!(array, expected, max_relative=1e-6);
+        let expected = data::load_expected_values(path).into_shared();
+        assert_relative_eq!(array, &expected, max_relative=1e-6);
     }
 }
 
@@ -89,7 +89,7 @@ fn sum_gradients(n_atoms: usize, gradients: TensorBlockRef<'_>) -> ArrayD<f64> {
 
     let mut sum = ArrayD::from_elem(vec![n_atoms, 3, gradients.properties().count()], 0.0);
     for ([_, _, atom], row) in gradients.samples().iter_fixed_size().zip(array.axis_iter(Axis(0))) {
-        let mut slice = sum.slice_mut(s![atom.usize(), .., ..]);
+        let mut slice = sum.slice_mut(s![*atom as usize, .., ..]);
         slice += &row;
     }
 
