@@ -220,7 +220,7 @@ fn c_labels_clone(labels: *const mts_labels_t) -> Result<*mut mts_labels_t, Erro
             let ptr = metatensor::c_api::mts_last_error();
             std::ffi::CStr::from_ptr(ptr).to_str().unwrap_or("unknown error")
         };
-        return Err(Error::External(msg.to_string()));
+        return Err(Error::External { status: -1, message: msg.to_string() });
     }
     Ok(cloned)
 }
@@ -235,7 +235,7 @@ fn convert_labels_selection<'a>(
         (false, true) => {
             *labels = {
                 let raw_labels = c_labels_clone(selection.subset)?;
-                Some(Labels::from_raw(raw_labels))
+                Some(unsafe { Labels::from_raw(raw_labels) })
             };
 
             Ok(LabelsSelection::Subset(labels.as_ref().expect("just created it")))
@@ -274,7 +274,7 @@ fn key_selection(value: *const mts_labels_t, labels: &'_ mut Option<Labels>) -> 
     }
 
     let raw_labels = c_labels_clone(value)?;
-    *labels = Some(Labels::from_raw(raw_labels));
+    *labels = Some(unsafe { Labels::from_raw(raw_labels) });
 
     return Ok(labels.as_ref());
 }
