@@ -402,7 +402,7 @@ public:
 
         other.subset_ = std::nullopt;
         other.predefined_ = std::nullopt;
-        std::memset(&other.raw_subset_, 0, sizeof(mts_labels_t));
+        other.raw_subset_ = nullptr;
 
         return *this;
     }
@@ -413,7 +413,7 @@ public:
         std::memset(&selection, 0, sizeof(featomic_labels_selection_t));
 
         if (subset_) {
-            selection.subset = &raw_subset_;
+            selection.subset = raw_subset_;
         }
 
         if (predefined_) {
@@ -425,16 +425,15 @@ public:
 
 private:
     LabelsSelection(std::optional<metatensor::Labels> subset, std::optional<metatensor::TensorMap> predefined):
-        subset_(std::move(subset)), raw_subset_(), predefined_(std::move(predefined))
+        subset_(std::move(subset)), raw_subset_(nullptr), predefined_(std::move(predefined))
     {
-        std::memset(&raw_subset_, 0, sizeof(mts_labels_t));
         if (subset_) {
             raw_subset_ = subset_->as_mts_labels_t();
         }
     }
 
     std::optional<metatensor::Labels> subset_;
-    mts_labels_t raw_subset_;
+    const mts_labels_t* raw_subset_;
     std::optional<metatensor::TensorMap> predefined_;
 };
 
@@ -529,17 +528,15 @@ public:
         options.selected_properties = this->selected_properties.as_featomic_labels_selection_t();
 
         if (this->selected_keys) {
-            // store the raw mts_labels_t in a class variable to make sure
-            // it lives longer than this function
             this->raw_selected_keys_ = this->selected_keys->as_mts_labels_t();
-            options.selected_keys = &this->raw_selected_keys_;
+            options.selected_keys = this->raw_selected_keys_;
         }
 
         return options;
     }
 
 private:
-    mts_labels_t raw_selected_keys_;
+    const mts_labels_t* raw_selected_keys_ = nullptr;
 };
 
 
