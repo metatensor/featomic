@@ -15,10 +15,10 @@ fn values() {
     let descriptor = calculator.compute(&mut systems, Default::default()).expect("failed to run calculation");
 
     let keys_to_move = Labels::empty(vec!["center_type"]);
-    let descriptor = descriptor.keys_to_samples(&keys_to_move, metatensor::c_api::mts_array_t::from(Box::new(metatensor::EmptyArray::new(vec![1])) as Box<dyn metatensor::Array>), true).unwrap();
+    let descriptor = descriptor.keys_to_samples(&keys_to_move, metatensor::c_api::mts_array_t::from(Box::new(ndarray::ArcArray::from_elem(vec![1], 0.0)) as Box<dyn metatensor::Array>), true).unwrap();
 
     let keys_to_move = Labels::empty(vec!["neighbor_1_type", "neighbor_2_type"]);
-    let descriptor = descriptor.keys_to_properties(&keys_to_move, metatensor::c_api::mts_array_t::from(Box::new(metatensor::EmptyArray::new(vec![1])) as Box<dyn metatensor::Array>), true).unwrap();
+    let descriptor = descriptor.keys_to_properties(&keys_to_move, metatensor::c_api::mts_array_t::from(Box::new(ndarray::ArcArray::from_elem(vec![1], 0.0)) as Box<dyn metatensor::Array>), true).unwrap();
 
     assert_eq!(descriptor.blocks().len(), 1);
     let block = &descriptor.block_by_id(0);
@@ -41,10 +41,10 @@ fn gradients() {
     let descriptor = calculator.compute(&mut systems, options).expect("failed to run calculation");
 
     let keys_to_move = Labels::empty(vec!["center_type"]);
-    let descriptor = descriptor.keys_to_samples(&keys_to_move, metatensor::c_api::mts_array_t::from(Box::new(metatensor::EmptyArray::new(vec![1])) as Box<dyn metatensor::Array>), true).unwrap();
+    let descriptor = descriptor.keys_to_samples(&keys_to_move, metatensor::c_api::mts_array_t::from(Box::new(ndarray::ArcArray::from_elem(vec![1], 0.0)) as Box<dyn metatensor::Array>), true).unwrap();
 
     let keys_to_move = Labels::empty(vec!["neighbor_1_type", "neighbor_2_type"]);
-    let descriptor = descriptor.keys_to_properties(&keys_to_move, metatensor::c_api::mts_array_t::from(Box::new(metatensor::EmptyArray::new(vec![1])) as Box<dyn metatensor::Array>), true).unwrap();
+    let descriptor = descriptor.keys_to_properties(&keys_to_move, metatensor::c_api::mts_array_t::from(Box::new(ndarray::ArcArray::from_elem(vec![1], 0.0)) as Box<dyn metatensor::Array>), true).unwrap();
 
     assert_eq!(descriptor.blocks().len(), 1);
     let block = &descriptor.block_by_id(0);

@@ -208,7 +208,7 @@ mod tests {
 
         let keys_to_move = Labels::empty(vec!["center_type"]);
         let fill_value = metatensor::c_api::mts_array_t::from(
-            Box::new(metatensor::EmptyArray::new(vec![1])) as Box<dyn metatensor::Array>
+            Box::new(ndarray::ArcArray::from_elem(vec![1], 0.0)) as Box<dyn metatensor::Array>
         );
         let descriptor = descriptor.keys_to_samples(&keys_to_move, fill_value, true).unwrap();
 
