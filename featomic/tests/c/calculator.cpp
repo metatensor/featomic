@@ -574,7 +574,6 @@ TEST_CASE("Compute descriptor") {
 
         mts_block_t* blocks[2] = {nullptr, nullptr};
 
-        // mts_block takes ownership of labels
         auto* h_samples = create_labels(sample_names, h_sample_values, 1);
         REQUIRE(h_samples != nullptr);
         auto* h_properties = create_labels(property_names, h_property_values, 1);
@@ -582,6 +581,8 @@ TEST_CASE("Compute descriptor") {
 
         blocks[0] = mts_block(empty_array({1, 1}), h_samples, nullptr, 0, h_properties);
         REQUIRE(blocks[0] != nullptr);
+        mts_labels_free(h_samples);
+        mts_labels_free(h_properties);
 
         auto c_sample_values = std::vector<int32_t>{
             0, 0,
@@ -597,16 +598,18 @@ TEST_CASE("Compute descriptor") {
 
         blocks[1] = mts_block(empty_array({1, 1}), c_samples, nullptr, 0, c_properties);
         REQUIRE(blocks[1] != nullptr);
+        mts_labels_free(c_samples);
+        mts_labels_free(c_properties);
 
         auto keys_names = std::vector<const char*>{"center_type"};
         auto keys_values = std::vector<int32_t>{1, 6};
 
-        // mts_tensormap takes ownership of keys
         auto* tm_keys = create_labels(keys_names, keys_values, 2);
         REQUIRE(tm_keys != nullptr);
 
         auto* predefined = mts_tensormap(tm_keys, blocks, 2);
         REQUIRE(predefined != nullptr);
+        mts_labels_free(tm_keys);
 
         auto system = simple_system();
         featomic_calculation_options_t options = {};
