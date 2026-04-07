@@ -1,10 +1,39 @@
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <metatensor.h>
 #include <featomic.h>
 
 #include "common/systems.h"
+
+// Minimal scalar fill_value array
+static double SCALAR_FILL_DATA_P = 0.0;
+static uintptr_t SCALAR_FILL_SHAPE_P = 1;
+
+static mts_status_t fill_shape_p(const void* p, const uintptr_t** shape, uintptr_t* count) {
+    (void)p; *shape = &SCALAR_FILL_SHAPE_P; *count = 1; return MTS_SUCCESS;
+}
+static mts_status_t fill_origin_p(const void* p, mts_data_origin_t* o) {
+    (void)p; mts_register_data_origin("c-scalar-fill", o); return MTS_SUCCESS;
+}
+static mts_status_t fill_device_p(const void* p, DLDevice* d) {
+    (void)p; d->device_type = kDLCPU; d->device_id = 0; return MTS_SUCCESS;
+}
+static mts_status_t fill_dtype_p(const void* p, DLDataType* dt) {
+    (void)p; dt->code = kDLFloat; dt->bits = 64; dt->lanes = 1; return MTS_SUCCESS;
+}
+
+static mts_array_t scalar_fill_value(void) {
+    mts_array_t array;
+    memset(&array, 0, sizeof(array));
+    array.ptr = &SCALAR_FILL_DATA_P;
+    array.shape = fill_shape_p;
+    array.origin = fill_origin_p;
+    array.device = fill_device_p;
+    array.dtype = fill_dtype_p;
+    return array;
+}
 
 /// Compute SOAP power spectrum, this is the same code as the 'compute-soap'
 /// example
@@ -169,7 +198,7 @@ mts_tensormap_t* move_keys_to_samples(mts_tensormap_t* descriptor, const char* k
         return NULL;
     }
 
-    mts_array_t fill_value = {0};
+    mts_array_t fill_value = scalar_fill_value();
     moved_descriptor = mts_tensormap_keys_to_samples(descriptor, keys, fill_value, true);
     mts_labels_free(keys);
     mts_tensormap_free(descriptor);
@@ -188,7 +217,7 @@ mts_tensormap_t* move_keys_to_properties(mts_tensormap_t* descriptor, const char
         return NULL;
     }
 
-    mts_array_t fill_value = {0};
+    mts_array_t fill_value = scalar_fill_value();
     moved_descriptor = mts_tensormap_keys_to_properties(descriptor, keys, fill_value, true);
     mts_labels_free(keys);
     mts_tensormap_free(descriptor);

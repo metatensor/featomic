@@ -1,11 +1,41 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <featomic.h>
 #include <metatensor.h>
 
 #include "common/systems.h"
+
+// Minimal scalar fill_value array for keys_to_samples/keys_to_properties.
+static double SCALAR_FILL_DATA = 0.0;
+static uintptr_t SCALAR_FILL_SHAPE = 1;
+
+static mts_status_t fill_shape(const void* p, const uintptr_t** shape, uintptr_t* count) {
+    (void)p; *shape = &SCALAR_FILL_SHAPE; *count = 1; return MTS_SUCCESS;
+}
+static mts_status_t fill_origin(const void* p, mts_data_origin_t* o) {
+    (void)p; mts_register_data_origin("c-scalar-fill", o); return MTS_SUCCESS;
+}
+static mts_status_t fill_device(const void* p, DLDevice* d) {
+    (void)p; d->device_type = kDLCPU; d->device_id = 0; return MTS_SUCCESS;
+}
+static mts_status_t fill_dtype(const void* p, DLDataType* dt) {
+    (void)p; dt->code = kDLFloat; dt->bits = 64; dt->lanes = 1; return MTS_SUCCESS;
+}
+
+static mts_array_t scalar_fill_value(void) {
+    mts_array_t array;
+    memset(&array, 0, sizeof(array));
+    array.ptr = &SCALAR_FILL_DATA;
+    array.shape = fill_shape;
+    array.origin = fill_origin;
+    array.device = fill_device;
+    array.dtype = fill_dtype;
+    return array;
+}
 
 static mts_tensormap_t* move_keys_to_samples(mts_tensormap_t* descriptor, const char* keys_to_move[], size_t keys_to_move_len);
 static mts_tensormap_t* move_keys_to_properties(mts_tensormap_t* descriptor, const char* keys_to_move[], size_t keys_to_move_len);
@@ -159,7 +189,7 @@ mts_tensormap_t* move_keys_to_samples(mts_tensormap_t* descriptor, const char* k
     }
 
     // Create an empty fill_value array (not used when all blocks have same properties)
-    mts_array_t fill_value = {0};
+    mts_array_t fill_value = scalar_fill_value();
     moved_descriptor = mts_tensormap_keys_to_samples(descriptor, keys, fill_value, true);
     mts_labels_free(keys);
     mts_tensormap_free(descriptor);
@@ -181,7 +211,7 @@ mts_tensormap_t* move_keys_to_properties(mts_tensormap_t* descriptor, const char
     }
 
     // Create an empty fill_value array (not used when all blocks have same properties)
-    mts_array_t fill_value = {0};
+    mts_array_t fill_value = scalar_fill_value();
     moved_descriptor = mts_tensormap_keys_to_properties(descriptor, keys, fill_value, true);
     mts_labels_free(keys);
     mts_tensormap_free(descriptor);
