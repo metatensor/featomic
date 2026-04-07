@@ -114,7 +114,7 @@ int main(int argc, char* argv[]) {
     {
         DLManagedTensorVersioned* dl_managed = NULL;
         DLDevice cpu_device = {kDLCPU, 0};
-        DLPackVersion max_ver = {1, 0};
+        DLPackVersion max_ver = {DLPACK_MAJOR_VERSION, DLPACK_MINOR_VERSION};
         status = array.as_dlpack(array.ptr, &dl_managed, cpu_device, NULL, max_ver);
         if (status != MTS_SUCCESS) {
             printf("Error: %s\n", mts_last_error());

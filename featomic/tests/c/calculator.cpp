@@ -15,7 +15,7 @@
 static double* dlpack_data_ptr(mts_array_t& array) {
     DLManagedTensorVersioned* dl = nullptr;
     DLDevice cpu_device = {kDLCPU, 0};
-    DLPackVersion max_ver = {1, 0};
+    DLPackVersion max_ver = {DLPACK_MAJOR_VERSION, DLPACK_MINOR_VERSION};
     auto status = array.as_dlpack(array.ptr, &dl, cpu_device, nullptr, max_ver);
     if (status != MTS_SUCCESS || dl == nullptr) {
         return nullptr;
@@ -43,7 +43,7 @@ struct DLPackHandle {
 // The returned DLPackHandle must outlive the pointer.
 static int32_t* dlpack_i32_data_ptr(mts_array_t& array, DLPackHandle& handle) {
     DLDevice cpu_device = {kDLCPU, 0};
-    DLPackVersion max_ver = {1, 0};
+    DLPackVersion max_ver = {DLPACK_MAJOR_VERSION, DLPACK_MINOR_VERSION};
     auto status = array.as_dlpack(array.ptr, &handle.dl, cpu_device, nullptr, max_ver);
     if (status != MTS_SUCCESS || handle.dl == nullptr) {
         return nullptr;
@@ -161,24 +161,15 @@ static LabelsInfo query_labels(const mts_labels_t* labels) {
 
     if (shape_count >= 2) {
         info.count = shape[0];
-        // shape[1] should equal info.size
-    } else if (shape_count == 1) {
-        info.count = shape[0];
     }
 
     // Extract values via DLPack -- keep handle alive during copy
     DLPackHandle handle;
     DLDevice cpu_device = {kDLCPU, 0};
-    DLPackVersion max_ver = {1, 0};
-    if (values_array.as_dlpack == nullptr) {
-        fprintf(stderr, "query_labels: as_dlpack is NULL on values_array\n");
-    } else {
+    DLPackVersion max_ver = {DLPACK_MAJOR_VERSION, DLPACK_MINOR_VERSION};
+    if (values_array.as_dlpack != nullptr) {
         auto status = values_array.as_dlpack(values_array.ptr, &handle.dl, cpu_device, nullptr, max_ver);
-        if (status != MTS_SUCCESS) {
-            fprintf(stderr, "query_labels: as_dlpack failed with status %d: %s\n", status, mts_last_error());
-        } else if (handle.dl == nullptr) {
-            fprintf(stderr, "query_labels: as_dlpack returned null DL handle\n");
-        } else {
+        if (status == MTS_SUCCESS && handle.dl != nullptr) {
             auto* ptr = static_cast<int32_t*>(handle.dl->dl_tensor.data);
             info.values.assign(ptr, ptr + info.count * info.size);
         }
@@ -186,7 +177,6 @@ static LabelsInfo query_labels(const mts_labels_t* labels) {
 
     return info;
 }
-
 
 // ============================================================================
 // Forward declaration
