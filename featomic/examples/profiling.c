@@ -35,6 +35,25 @@ static mts_array_t scalar_fill_value(void) {
     return array;
 }
 
+// Empty i32 array with shape [0, size] for creating empty labels
+static uintptr_t EMPTY_LABELS_SHAPE_P[2] = {0, 0};
+
+static mts_status_t empty_labels_shape_p(const void* p, const uintptr_t** shape, uintptr_t* count) {
+    (void)p; *shape = EMPTY_LABELS_SHAPE_P; *count = 2; return MTS_SUCCESS;
+}
+
+static mts_array_t empty_labels_array(size_t n_dimensions) {
+    mts_array_t array;
+    memset(&array, 0, sizeof(array));
+    EMPTY_LABELS_SHAPE_P[0] = 0;
+    EMPTY_LABELS_SHAPE_P[1] = n_dimensions;
+    array.shape = empty_labels_shape_p;
+    array.origin = fill_origin_p;
+    array.device = fill_device_p;
+    array.dtype = fill_dtype_p;
+    return array;
+}
+
 /// Compute SOAP power spectrum, this is the same code as the 'compute-soap'
 /// example
 static mts_tensormap_t* compute_soap(const char* path);
@@ -191,7 +210,7 @@ cleanup:
 mts_tensormap_t* move_keys_to_samples(mts_tensormap_t* descriptor, const char* keys_to_move[], size_t keys_to_move_len) {
     mts_tensormap_t* moved_descriptor = NULL;
 
-    mts_array_t empty_values = {0};
+    mts_array_t empty_values = empty_labels_array(keys_to_move_len);
     mts_labels_t* keys = mts_labels_create(keys_to_move, keys_to_move_len, empty_values);
     if (keys == NULL) {
         mts_tensormap_free(descriptor);
@@ -210,7 +229,7 @@ mts_tensormap_t* move_keys_to_samples(mts_tensormap_t* descriptor, const char* k
 mts_tensormap_t* move_keys_to_properties(mts_tensormap_t* descriptor, const char* keys_to_move[], size_t keys_to_move_len) {
     mts_tensormap_t* moved_descriptor = NULL;
 
-    mts_array_t empty_values = {0};
+    mts_array_t empty_values = empty_labels_array(keys_to_move_len);
     mts_labels_t* keys = mts_labels_create(keys_to_move, keys_to_move_len, empty_values);
     if (keys == NULL) {
         mts_tensormap_free(descriptor);

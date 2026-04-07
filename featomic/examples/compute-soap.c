@@ -37,6 +37,34 @@ static mts_array_t scalar_fill_value(void) {
     return array;
 }
 
+// Empty i32 array with shape [0, size] for creating empty labels
+static uintptr_t EMPTY_LABELS_SHAPE[2] = {0, 0};
+
+static mts_status_t empty_labels_shape(const void* p, const uintptr_t** shape, uintptr_t* count) {
+    (void)p; *shape = EMPTY_LABELS_SHAPE; *count = 2; return MTS_SUCCESS;
+}
+static mts_status_t empty_labels_origin(const void* p, mts_data_origin_t* o) {
+    (void)p; mts_register_data_origin("c-empty-labels", o); return MTS_SUCCESS;
+}
+static mts_status_t empty_labels_device(const void* p, DLDevice* d) {
+    (void)p; d->device_type = kDLCPU; d->device_id = 0; return MTS_SUCCESS;
+}
+static mts_status_t empty_labels_dtype(const void* p, DLDataType* dt) {
+    (void)p; dt->code = kDLInt; dt->bits = 32; dt->lanes = 1; return MTS_SUCCESS;
+}
+
+static mts_array_t empty_labels_array(size_t n_dimensions) {
+    mts_array_t array;
+    memset(&array, 0, sizeof(array));
+    EMPTY_LABELS_SHAPE[0] = 0;
+    EMPTY_LABELS_SHAPE[1] = n_dimensions;
+    array.shape = empty_labels_shape;
+    array.origin = empty_labels_origin;
+    array.device = empty_labels_device;
+    array.dtype = empty_labels_dtype;
+    return array;
+}
+
 static mts_tensormap_t* move_keys_to_samples(mts_tensormap_t* descriptor, const char* keys_to_move[], size_t keys_to_move_len);
 static mts_tensormap_t* move_keys_to_properties(mts_tensormap_t* descriptor, const char* keys_to_move[], size_t keys_to_move_len);
 
@@ -180,7 +208,7 @@ mts_tensormap_t* move_keys_to_samples(mts_tensormap_t* descriptor, const char* k
     mts_tensormap_t* moved_descriptor = NULL;
 
     // Create empty labels with the given dimension names and an empty array
-    mts_array_t empty_values = {0};
+    mts_array_t empty_values = empty_labels_array(keys_to_move_len);
     mts_labels_t* keys = mts_labels_create(keys_to_move, keys_to_move_len, empty_values);
     if (keys == NULL) {
         printf("Error creating labels: %s\n", mts_last_error());
@@ -202,7 +230,7 @@ mts_tensormap_t* move_keys_to_properties(mts_tensormap_t* descriptor, const char
     mts_tensormap_t* moved_descriptor = NULL;
 
     // Create empty labels with the given dimension names and an empty array
-    mts_array_t empty_values = {0};
+    mts_array_t empty_values = empty_labels_array(keys_to_move_len);
     mts_labels_t* keys = mts_labels_create(keys_to_move, keys_to_move_len, empty_values);
     if (keys == NULL) {
         printf("Error creating labels: %s\n", mts_last_error());
