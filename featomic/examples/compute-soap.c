@@ -26,6 +26,28 @@ static mts_status_t fill_dtype(const void* p, DLDataType* dt) {
     (void)p; dt->code = kDLFloat; dt->bits = 64; dt->lanes = 1; return MTS_SUCCESS;
 }
 
+static int64_t FILL_DL_SHAPE = 1;
+
+static mts_status_t fill_as_dlpack(void* p, DLManagedTensorVersioned** out, DLDevice dev, const int64_t* stream, DLPackVersion ver) {
+    (void)stream; (void)ver;
+    DLManagedTensorVersioned* m = (DLManagedTensorVersioned*)calloc(1, sizeof(DLManagedTensorVersioned));
+    m->version.major = DLPACK_MAJOR_VERSION;
+    m->version.minor = DLPACK_MINOR_VERSION;
+    m->dl_tensor.data = p;
+    m->dl_tensor.device.device_type = kDLCPU;
+    m->dl_tensor.device.device_id = 0;
+    m->dl_tensor.ndim = 1;
+    m->dl_tensor.shape = &FILL_DL_SHAPE;
+    m->dl_tensor.strides = NULL;
+    m->dl_tensor.byte_offset = 0;
+    m->dl_tensor.dtype.code = kDLFloat;
+    m->dl_tensor.dtype.bits = 64;
+    m->dl_tensor.dtype.lanes = 1;
+    m->deleter = (void(*)(DLManagedTensorVersioned*))free;
+    *out = m;
+    return MTS_SUCCESS;
+}
+
 static mts_array_t scalar_fill_value(void) {
     mts_array_t array;
     memset(&array, 0, sizeof(array));
@@ -34,6 +56,7 @@ static mts_array_t scalar_fill_value(void) {
     array.origin = fill_origin;
     array.device = fill_device;
     array.dtype = fill_dtype;
+    array.as_dlpack = fill_as_dlpack;
     return array;
 }
 
