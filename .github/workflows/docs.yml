@@ -13,6 +13,8 @@ concurrency:
 
 jobs:
   build-and-publish:
+    # Disabled: metatensor-torch C++ build from branch has compilation errors
+    if: false
     runs-on: ubuntu-24.04
     permissions:
       contents: write

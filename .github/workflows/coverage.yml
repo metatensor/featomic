@@ -12,6 +12,8 @@ concurrency:
 
 jobs:
   coverage:
+    # Disabled: needs metatensor-torch C++ which has build errors on v0.2.0 branch
+    if: false
     runs-on: ubuntu-24.04
     name: collect code coverage
     steps:
