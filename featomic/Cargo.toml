@@ -26,7 +26,6 @@ all-features = true
 
 [dependencies]
 metatensor = {git = "https://github.com/HaoZeke/metatensor.git", branch = "labels-values-array-clean", features = ["rayon"]}
-dlpk = {git = "https://github.com/metatensor/dlpk", branch = "main"}
 
 ndarray = {version = "0.17", features = ["rayon", "serde", "approx"]}
 num-traits = "0.2"

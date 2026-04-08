@@ -65,20 +65,20 @@ impl metatensor::Array for UnsafeArrayViewMut {
         unimplemented!("invalid operation on UnsafeArrayViewMut");
     }
 
-    fn device(&self) -> dlpk::sys::DLDevice {
-        dlpk::sys::DLDevice { device_type: dlpk::sys::DLDeviceType::kDLCPU, device_id: 0 }
+    fn device(&self) -> metatensor::dlpk::sys::DLDevice {
+        metatensor::dlpk::sys::DLDevice { device_type: metatensor::dlpk::sys::DLDeviceType::kDLCPU, device_id: 0 }
     }
 
-    fn dtype(&self) -> dlpk::sys::DLDataType {
-        dlpk::sys::DLDataType { code: dlpk::sys::DLDataTypeCode::kDLFloat, bits: 64, lanes: 1 }
+    fn dtype(&self) -> metatensor::dlpk::sys::DLDataType {
+        metatensor::dlpk::sys::DLDataType { code: metatensor::dlpk::sys::DLDataTypeCode::kDLFloat, bits: 64, lanes: 1 }
     }
 
     fn as_dlpack(
         &self,
-        _: dlpk::sys::DLDevice,
+        _: metatensor::dlpk::sys::DLDevice,
         _: Option<i64>,
-        _: dlpk::sys::DLPackVersion,
-    ) -> Result<dlpk::DLPackTensor, metatensor::Error> {
+        _: metatensor::dlpk::sys::DLPackVersion,
+    ) -> Result<metatensor::dlpk::DLPackTensor, metatensor::Error> {
         unimplemented!("invalid operation on UnsafeArrayViewMut");
     }
 }
