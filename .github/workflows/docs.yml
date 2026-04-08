@@ -44,7 +44,6 @@ jobs:
           METATENSOR_NO_LOCAL_DEPS=1 pip install /tmp/metatensor-v020/python/metatensor_core
           METATENSOR_NO_LOCAL_DEPS=1 pip install /tmp/metatensor-v020/python/metatensor_operations
           METATENSOR_NO_LOCAL_DEPS=1 pip install /tmp/metatensor-v020/python/metatensor_learn
-          METATENSOR_NO_LOCAL_DEPS=1 pip install /tmp/metatensor-v020/python/metatensor_torch
         env:
           PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
 
