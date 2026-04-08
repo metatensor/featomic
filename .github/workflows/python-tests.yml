@@ -44,6 +44,15 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install tox
 
+      - name: install metatensor from labels-values-array-clean branch
+        run: |
+          git clone --depth 1 --branch labels-values-array-clean https://github.com/HaoZeke/metatensor.git /tmp/metatensor-v020
+          METATENSOR_NO_LOCAL_DEPS=1 pip install /tmp/metatensor-v020/python/metatensor_core
+          METATENSOR_NO_LOCAL_DEPS=1 pip install /tmp/metatensor-v020/python/metatensor_operations
+          METATENSOR_NO_LOCAL_DEPS=1 pip install /tmp/metatensor-v020/python/metatensor_learn
+        env:
+          PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
+
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
         with:

@@ -4,7 +4,8 @@ on:
   push:
     branches: [main]
     tags: ["*"]
-  pull_request:
+  # Disabled for test/metatensor-v0.2.0: packaging requires released metatensor
+  # pull_request:
     paths:
       # build wheels in PR if this file changed
       - '.github/workflows/build-wheels.yml'
