@@ -62,7 +62,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // descriptor now contains a single block, which can be used as the input
     // to standard ML algorithms
-    let values = descriptor.block_by_id(0).values().to_array();
+    let values = descriptor.block_by_id(0).values().to_ndarray();
     println!("SOAP representation shape: {:?}", values.shape());
 
     Ok(())
