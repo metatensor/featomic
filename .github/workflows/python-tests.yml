@@ -47,9 +47,10 @@ jobs:
       - name: install metatensor from labels-values-array-clean branch
         run: |
           git clone --depth 1 --branch labels-values-array-clean https://github.com/HaoZeke/metatensor.git ${{ runner.temp }}/metatensor-v020
-          METATENSOR_NO_LOCAL_DEPS=1 pip install ${{ runner.temp }}/metatensor-v020/python/metatensor_core
-          METATENSOR_NO_LOCAL_DEPS=1 pip install ${{ runner.temp }}/metatensor-v020/python/metatensor_operations
-          METATENSOR_NO_LOCAL_DEPS=1 pip install ${{ runner.temp }}/metatensor-v020/python/metatensor_learn
+          METATENSOR_NO_LOCAL_DEPS=1 pip install --no-build-isolation ${{ runner.temp }}/metatensor-v020/python/metatensor_core
+          METATENSOR_NO_LOCAL_DEPS=1 pip install --no-build-isolation ${{ runner.temp }}/metatensor-v020/python/metatensor_operations
+          METATENSOR_NO_LOCAL_DEPS=1 pip install --no-build-isolation ${{ runner.temp }}/metatensor-v020/python/metatensor_learn
+          METATENSOR_NO_LOCAL_DEPS=1 pip install --no-build-isolation ${{ runner.temp }}/metatensor-v020/python/metatensor_torch
         env:
           PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
 
@@ -71,9 +72,7 @@ jobs:
           # Use the CPU only version of torch when building/running the code
           PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
 
-  # Disabled for test/metatensor-v0.2.0: cargo package fails with git deps
   prevent-bitrot:
-    if: false
     runs-on: ${{ matrix.os }}
     name: Python ${{ matrix.python-version }} / check build
     strategy:

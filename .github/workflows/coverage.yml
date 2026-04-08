@@ -12,8 +12,6 @@ concurrency:
 
 jobs:
   coverage:
-    # Disabled: needs metatensor-torch C++ which has build errors on v0.2.0 branch
-    if: false
     runs-on: ubuntu-24.04
     name: collect code coverage
     steps:
@@ -45,9 +43,10 @@ jobs:
       - name: install metatensor from labels-values-array-clean branch
         run: |
           git clone --depth 1 --branch labels-values-array-clean https://github.com/HaoZeke/metatensor.git ${{ runner.temp }}/metatensor-v020
-          METATENSOR_NO_LOCAL_DEPS=1 pip install ${{ runner.temp }}/metatensor-v020/python/metatensor_core
-          METATENSOR_NO_LOCAL_DEPS=1 pip install ${{ runner.temp }}/metatensor-v020/python/metatensor_operations
-          METATENSOR_NO_LOCAL_DEPS=1 pip install ${{ runner.temp }}/metatensor-v020/python/metatensor_learn
+          METATENSOR_NO_LOCAL_DEPS=1 pip install --no-build-isolation ${{ runner.temp }}/metatensor-v020/python/metatensor_core
+          METATENSOR_NO_LOCAL_DEPS=1 pip install --no-build-isolation ${{ runner.temp }}/metatensor-v020/python/metatensor_operations
+          METATENSOR_NO_LOCAL_DEPS=1 pip install --no-build-isolation ${{ runner.temp }}/metatensor-v020/python/metatensor_learn
+          METATENSOR_NO_LOCAL_DEPS=1 pip install --no-build-isolation ${{ runner.temp }}/metatensor-v020/python/metatensor_torch
         env:
           PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
 
