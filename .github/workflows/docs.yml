@@ -40,6 +40,7 @@ jobs:
 
       - name: install metatensor from labels-values-array-clean branch
         run: |
+          pip install setuptools cmake packaging wheel
           git clone --depth 1 --branch labels-values-array-clean https://github.com/HaoZeke/metatensor.git ${{ runner.temp }}/metatensor-v020
           METATENSOR_NO_LOCAL_DEPS=1 pip install --no-build-isolation ${{ runner.temp }}/metatensor-v020/python/metatensor_core
           METATENSOR_NO_LOCAL_DEPS=1 pip install --no-build-isolation ${{ runner.temp }}/metatensor-v020/python/metatensor_operations

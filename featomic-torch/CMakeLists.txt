@@ -122,17 +122,17 @@ find_package(Torch 2.3 REQUIRED)
 #
 # When updating METATENSOR_TORCH_FETCH_VERSION, you will also have to update the
 # SHA256 sum of the file in `FetchContent_Declare`.
-set(METATENSOR_TORCH_FETCH_VERSION "0.8.2")
-set(REQUIRED_METATENSOR_TORCH_VERSION "0.8")
+set(METATENSOR_TORCH_FETCH_VERSION "0.9.0")
+set(REQUIRED_METATENSOR_TORCH_VERSION "0.9")
 if (FEATOMIC_FETCH_METATENSOR_TORCH)
-    message(STATUS "Fetching metatensor-torch from github")
+    message(STATUS "Fetching metatensor-torch from github (labels-values-array-clean)")
 
-    set(URL_ROOT "https://github.com/metatensor/metatensor/releases/download")
     include(FetchContent)
     FetchContent_Declare(
         metatensor_torch
-        URL      ${URL_ROOT}/metatensor-torch-v${METATENSOR_TORCH_FETCH_VERSION}/metatensor-torch-cxx-${METATENSOR_TORCH_FETCH_VERSION}.tar.gz
-        URL_HASH SHA256=0be618d0cdcfca86cd0c25f47d360b6a2410ebb09ece8d21f153e933ce64bb55
+        GIT_REPOSITORY https://github.com/HaoZeke/metatensor.git
+        GIT_TAG        labels-values-array-clean
+        SOURCE_SUBDIR  metatensor-torch
     )
 
     FetchContent_MakeAvailable(metatensor_torch)
