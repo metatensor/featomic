@@ -54,10 +54,10 @@ impl CalculatorBase for DummyCalculator {
     fn samples(&self, keys: &Labels, systems: &mut [Box<dyn System>]) -> Result<Vec<Labels>, Error> {
         assert_eq!(keys.names(), ["center_type"]);
         let mut samples = Vec::new();
-        for [center_type] in keys.iter_fixed_size() {
+        for [center_type] in keys.to_cpu().iter_fixed_size() {
             let builder = AtomCenteredSamples {
                 cutoff: self.cutoff,
-                center_type: AtomicTypeFilter::Single(*center_type),
+                center_type: AtomicTypeFilter::Single(center_type.i32()),
                 neighbor_type: AtomicTypeFilter::Any,
                 self_pairs: false,
             };
@@ -78,10 +78,10 @@ impl CalculatorBase for DummyCalculator {
     fn positions_gradient_samples(&self, keys: &Labels, samples: &[Labels], systems: &mut [Box<dyn System>]) -> Result<Vec<Labels>, Error> {
         debug_assert_eq!(keys.count(), samples.len());
         let mut gradient_samples = Vec::new();
-        for ([center_type], samples) in keys.iter_fixed_size().zip(samples) {
+        for ([center_type], samples) in keys.to_cpu().iter_fixed_size().zip(samples) {
             let builder = AtomCenteredSamples{
                 cutoff: self.cutoff,
-                center_type: AtomicTypeFilter::Single(*center_type),
+                center_type: AtomicTypeFilter::Single(center_type.i32()),
                 neighbor_type: AtomicTypeFilter::Any,
                 self_pairs: false,
             };
@@ -121,15 +121,15 @@ impl CalculatorBase for DummyCalculator {
             let center_type = key[0];
 
             let block_data = block.data_mut();
-            let array = block_data.values.to_ndarray_mut();
+            let array = block_data.values.get_ndarray_mut::<f64>();
 
-            for (sample_i, [system, atom]) in block_data.samples.iter_fixed_size().enumerate() {
-                let system_i = *system as usize;
-                let atom_i = *atom as usize;
+            for (sample_i, [system, atom]) in block_data.samples.to_cpu().iter_fixed_size().enumerate() {
+                let system_i = system.usize();
+                let atom_i = atom.usize();
 
                 debug_assert_eq!(systems[system_i].types()?[atom_i], center_type);
 
-                for (property_i, property) in block_data.properties.iter().enumerate() {
+                for (property_i, property) in block_data.properties.to_cpu().iter().enumerate() {
                     if property[0] == 1 {
                         array[[sample_i, property_i]] = atom_i as f64 + self.delta as f64;
                     } else if property[1] == 1 {
@@ -198,10 +198,10 @@ impl CalculatorBase for DummyCalculator {
 
             if let Some(mut gradient) = block.gradient_mut("positions") {
                 let gradient = gradient.data_mut();
-                let array = gradient.values.to_ndarray_mut();
+                let array = gradient.values.get_ndarray_mut::<f64>();
 
                 for gradient_sample_i in 0..array.shape()[0] {
-                    for (property_i, property) in gradient.properties.iter().enumerate() {
+                    for (property_i, property) in gradient.properties.to_cpu().iter().enumerate() {
                         if property[0] == 1 {
                             array[[gradient_sample_i, 0, property_i]] = 0.0;
                             array[[gradient_sample_i, 1, property_i]] = 0.0;

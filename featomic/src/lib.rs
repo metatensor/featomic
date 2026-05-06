@@ -33,6 +33,13 @@ pub use self::systems::{System, SimpleSystem};
 
 pub mod labels;
 
+#[macro_export]
+macro_rules! label_values {
+    ($($value:expr),* $(,)?) => {
+        [$(metatensor::LabelValue::from($value)),*]
+    };
+}
+
 mod calculator;
 pub use self::calculator::{Calculator, CalculationOptions, LabelsSelection};
 

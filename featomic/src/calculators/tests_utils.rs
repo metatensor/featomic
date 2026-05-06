@@ -285,7 +285,7 @@ pub fn finite_differences_positions(mut calculator: Calculator, system: &SimpleS
                 let block_pos = &updated_pos.block_by_id(block_i);
                 let block_neg = &updated_neg.block_by_id(block_i);
 
-                for (gradient_i, [sample_i, _, neighbor]) in gradients.samples().iter_fixed_size().enumerate() {
+                for (gradient_i, [sample_i, _, neighbor]) in gradients.samples().to_cpu().iter_fixed_size().enumerate() {
                     if *neighbor as usize != neighbor_i {
                         continue;
                     }
@@ -348,7 +348,7 @@ pub fn finite_differences_cell(mut calculator: Calculator, system: &SimpleSystem
                 let block_pos = &updated_pos.block_by_id(block_i);
                 let block_neg = &updated_neg.block_by_id(block_i);
 
-                for (gradient_i, [sample_i]) in gradients.samples().iter_fixed_size().enumerate() {
+                for (gradient_i, [sample_i]) in gradients.samples().to_cpu().iter_fixed_size().enumerate() {
                     let sample_i = *sample_i as usize;
                     let sample = &block.samples()[sample_i];
 
@@ -416,7 +416,7 @@ pub fn finite_differences_strain(mut calculator: Calculator, system: &SimpleSyst
                 let block_pos = &updated_pos.block_by_id(block_i);
                 let block_neg = &updated_neg.block_by_id(block_i);
 
-                for (gradient_i, [sample_i]) in gradients.samples().iter_fixed_size().enumerate() {
+                for (gradient_i, [sample_i]) in gradients.samples().to_cpu().iter_fixed_size().enumerate() {
                     let sample_i = *sample_i as usize;
                     let sample = &block.samples()[sample_i];
 

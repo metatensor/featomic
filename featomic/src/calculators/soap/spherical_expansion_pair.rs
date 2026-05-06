@@ -277,35 +277,35 @@ impl SphericalExpansionByPair {
             }
 
             let data = block.data_mut();
-            let array = data.values.to_ndarray_mut();
+            let array = data.values.get_ndarray_mut::<f64>();
 
             // loop over all samples in this block, find self pairs (`i == j`
             // and `shift == [0, 0, 0]`), and fill the data using
             // `self_contribution`
-            for (sample_i, &[system, atom_1, atom_2, cell_a, cell_b, cell_c]) in data.samples.iter_fixed_size().enumerate() {
+            for (sample_i, &[system, atom_1, atom_2, cell_a, cell_b, cell_c]) in data.samples.to_cpu().iter_fixed_size().enumerate() {
                 // it is possible that the samples from values.samples are not
                 // part of the systems (the user requested extra samples). In
                 // that case, we need to skip anything that does not exist, or
                 // with a different center atomic types
                 let is_self_pair = atom_1 == atom_2 && cell_a == 0 && cell_b == 0 && cell_c == 0;
-                if system as usize >= systems.len() || !is_self_pair {
+                if system.usize() >= systems.len() || !is_self_pair {
                     continue;
                 }
 
-                let system = &systems[system as usize];
+                let system = &systems[system.usize()];
                 let n_atoms = system.size()?;
                 let types = system.types()?;
 
-                if atom_1 as usize > n_atoms || atom_2 as usize > n_atoms {
+                if atom_1.usize() > n_atoms || atom_2.usize() > n_atoms {
                     continue;
                 }
 
-                if types[atom_1 as usize] != first_atom_type || types[atom_2 as usize] != second_atom_type {
+                if types[atom_1.usize()] != first_atom_type.i32() || types[atom_2.usize()] != second_atom_type.i32() {
                     continue;
                 }
 
-                for (property_i, &[n]) in data.properties.iter_fixed_size().enumerate() {
-                    array[[sample_i, 0, property_i]] = self_contribution[n as usize];
+                for (property_i, &[n]) in data.properties.to_cpu().iter_fixed_size().enumerate() {
+                    array[[sample_i, 0, property_i]] = self_contribution[n.usize()];
                 }
             }
         }
@@ -431,16 +431,16 @@ impl SphericalExpansionByPair {
         pair_vector: Vector3D,
     ) {
         let data = block.data_mut();
-        let array = data.values.to_ndarray_mut();
+        let array = data.values.get_ndarray_mut::<f64>();
 
         let contribution_values = contributions.values.get(&o3_lambda).expect("missing o3_lambda");
         let sample_i = data.samples.position(sample);
         if let Some(sample_i) = sample_i {
             for m in 0..(2 * o3_lambda + 1) {
-                for (property_i, [n]) in data.properties.iter_fixed_size().enumerate() {
+                for (property_i, [n]) in data.properties.to_cpu().iter_fixed_size().enumerate() {
                     unsafe {
                         let out = array.uget_mut([sample_i, m, property_i]);
-                        *out += *contribution_values.uget([m, *n as usize]);
+                        *out += *contribution_values.uget([m, n.usize()]);
                     }
                 }
             }
@@ -451,21 +451,21 @@ impl SphericalExpansionByPair {
                     let mut gradient = block.gradient_mut("positions").expect("missing positions gradients");
                     let gradient = gradient.data_mut();
 
-                    let array = gradient.values.to_ndarray_mut();
+                    let array = gradient.values.get_ndarray_mut::<f64>();
                     debug_assert_eq!(gradient.samples.names(), ["sample", "system", "atom"]);
 
                     // gradient of the pair contribution w.r.t. the position of
                     // the first atom
-                    let first_grad_sample_i = gradient.samples.position(&[
+                    let first_grad_sample_i = gradient.samples.position(&crate::label_values![
                         sample_i as i32, /* system */ sample[0], /* pair.first */ sample[1]
                     ]).expect("missing first gradient sample");
 
                     for xyz in 0..3 {
                         for m in 0..(2 * o3_lambda + 1) {
-                            for (property_i, [n]) in gradient.properties.iter_fixed_size().enumerate() {
+                            for (property_i, [n]) in gradient.properties.to_cpu().iter_fixed_size().enumerate() {
                                 unsafe {
                                     let out = array.uget_mut([first_grad_sample_i, xyz, m, property_i]);
-                                    *out -= contribution_gradients.uget([xyz, m, *n as usize]);
+                                    *out -= contribution_gradients.uget([xyz, m, n.usize()]);
                                 }
                             }
                         }
@@ -473,16 +473,16 @@ impl SphericalExpansionByPair {
 
                     // gradient of the pair contribution w.r.t. the position of
                     // the second atom
-                    let second_grad_sample_i = gradient.samples.position(&[
+                    let second_grad_sample_i = gradient.samples.position(&crate::label_values![
                         sample_i as i32, /* system */ sample[0], /* pair.second */ sample[2]
                     ]).expect("missing second gradient sample");
 
                     for xyz in 0..3 {
                         for m in 0..(2 * o3_lambda + 1) {
-                            for (property_i, [n]) in gradient.properties.iter_fixed_size().enumerate() {
+                            for (property_i, [n]) in gradient.properties.to_cpu().iter_fixed_size().enumerate() {
                                 unsafe {
                                     let out = array.uget_mut([second_grad_sample_i, xyz, m, property_i]);
-                                    *out += contribution_gradients.uget([xyz, m, *n as usize]);
+                                    *out += contribution_gradients.uget([xyz, m, n.usize()]);
                                 }
                             }
                         }
@@ -494,16 +494,16 @@ impl SphericalExpansionByPair {
                     let gradient = gradient.data_mut();
 
                     debug_assert_eq!(gradient.samples.names(), ["sample"]);
-                    assert_eq!(gradient.samples[sample_i][0] as usize, sample_i);
+                    assert_eq!(gradient.samples.to_cpu()[sample_i][0].usize(), sample_i);
 
-                    let array = gradient.values.to_ndarray_mut();
+                    let array = gradient.values.get_ndarray_mut::<f64>();
                     for xyz_1 in 0..3 {
                         for xyz_2 in 0..3 {
                             for m in 0..(2 * o3_lambda + 1) {
-                                for (property_i, [n]) in gradient.properties.iter_fixed_size().enumerate() {
+                                for (property_i, [n]) in gradient.properties.to_cpu().iter_fixed_size().enumerate() {
                                     unsafe {
                                         let out = array.uget_mut([sample_i, xyz_1, xyz_2, m, property_i]);
-                                        *out += pair_vector[xyz_1] * contribution_gradients.uget([xyz_2, m, *n as usize]);
+                                        *out += pair_vector[xyz_1] * contribution_gradients.uget([xyz_2, m, n.usize()]);
                                     }
                                 }
                             }
@@ -516,22 +516,22 @@ impl SphericalExpansionByPair {
                     let gradient = gradient.data_mut();
 
                     debug_assert_eq!(gradient.samples.names(), ["sample"]);
-                    assert_eq!(gradient.samples[sample_i][0] as usize, sample_i);
+                    assert_eq!(gradient.samples.to_cpu()[sample_i][0].usize(), sample_i);
 
                     let shifts = [
-                        sample[3] as f64,
-                        sample[4] as f64,
-                        sample[5] as f64,
+                        sample[3].i32() as f64,
+                        sample[4].i32() as f64,
+                        sample[5].i32() as f64,
                     ];
 
-                    let array = gradient.values.to_ndarray_mut();
+                    let array = gradient.values.get_ndarray_mut::<f64>();
                     for abc in 0..3 {
                         for xyz in 0..3 {
                             for m in 0..(2 * o3_lambda + 1) {
-                                for (property_i, [n]) in gradient.properties.iter_fixed_size().enumerate() {
+                                for (property_i, [n]) in gradient.properties.to_cpu().iter_fixed_size().enumerate() {
                                     unsafe {
                                         let out = array.uget_mut([sample_i, abc, xyz, m, property_i]);
-                                        *out += shifts[abc] * contribution_gradients.uget([xyz, m, *n as usize]);
+                                        *out += shifts[abc] * contribution_gradients.uget([xyz, m, n.usize()]);
                                     }
                                 }
                             }
@@ -572,9 +572,9 @@ impl CalculatorBase for SphericalExpansionByPair {
             "second_atom_type"
         ]);
 
-        for &[first_type, second_type] in full_neighbors_list_keys.iter_fixed_size() {
+        for &[first_type, second_type] in full_neighbors_list_keys.to_cpu().iter_fixed_size() {
             for o3_lambda in self.parameters.basis.angular_channels() {
-                keys.add(&[o3_lambda as i32, 1_i32, first_type, second_type]);
+                keys.add(&crate::label_values![o3_lambda, 1_i32, first_type, second_type]);
             }
         }
 
@@ -588,7 +588,7 @@ impl CalculatorBase for SphericalExpansionByPair {
     fn samples(&self, keys: &Labels, systems: &mut [Box<dyn System>]) -> Result<Vec<Labels>, Error> {
         // get all atomic types pairs in keys as a new set of Labels
         let mut types_keys = BTreeSet::new();
-        for &[_, _, first_type, second_type] in keys.iter_fixed_size() {
+        for &[_, _, first_type, second_type] in keys.to_cpu().iter_fixed_size() {
             types_keys.insert((first_type, second_type));
         }
         let mut builder = LabelsBuilder::new(vec!["first_atom_type", "second_atom_type"]);
@@ -605,7 +605,7 @@ impl CalculatorBase for SphericalExpansionByPair {
         }.samples(&types_keys, systems)?;
 
         debug_assert_eq!(types_keys.count(), full_neighbors_list_samples.len());
-        for (&[first_type, second_type], samples) in types_keys.iter_fixed_size().zip(full_neighbors_list_samples) {
+        for (&[first_type, second_type], samples) in types_keys.to_cpu().iter_fixed_size().zip(full_neighbors_list_samples) {
             samples_by_types_l0.insert((first_type, second_type), samples);
         }
 
@@ -620,12 +620,12 @@ impl CalculatorBase for SphericalExpansionByPair {
         }.samples(&types_keys, systems)?;
 
         debug_assert_eq!(types_keys.count(), full_neighbors_list_samples.len());
-        for (&[first_type, second_type], samples) in types_keys.iter_fixed_size().zip(full_neighbors_list_samples) {
+        for (&[first_type, second_type], samples) in types_keys.to_cpu().iter_fixed_size().zip(full_neighbors_list_samples) {
             samples_by_types.insert((first_type, second_type), samples);
         }
 
         let mut result = Vec::new();
-        for &[l, _, first_type, second_type] in keys.iter_fixed_size() {
+        for &[l, _, first_type, second_type] in keys.to_cpu().iter_fixed_size() {
             let samples = if l == 0 {
                 samples_by_types_l0.get(&(first_type, second_type)).expect("missing samples for one pair of types")
             } else {
@@ -650,14 +650,14 @@ impl CalculatorBase for SphericalExpansionByPair {
 
         for block_samples in samples {
             let mut builder = LabelsBuilder::new(vec!["sample", "system", "atom"]);
-            for (sample_i, &[system_i, first, second, cell_a, cell_b, cell_c]) in block_samples.iter_fixed_size().enumerate() {
+            for (sample_i, &[system_i, first, second, cell_a, cell_b, cell_c]) in block_samples.to_cpu().iter_fixed_size().enumerate() {
                 // self pairs do not contribute to gradients
                 if first == second && cell_a == 0 && cell_b == 0 && cell_c == 0 {
                     continue;
                 }
-                builder.add(&[sample_i as i32, system_i, first]);
+                builder.add(&crate::label_values![sample_i, system_i, first]);
                 if first != second {
-                    builder.add(&[sample_i as i32, system_i, second]);
+                    builder.add(&crate::label_values![sample_i, system_i, second]);
                 }
             }
 
@@ -675,13 +675,13 @@ impl CalculatorBase for SphericalExpansionByPair {
         // only compute the components once for each `o3_lambda`,
         // and re-use the results across the other keys.
         let mut cache: BTreeMap<_, Vec<Labels>> = BTreeMap::new();
-        for &[o3_lambda, _, _, _] in keys.iter_fixed_size() {
+        for &[o3_lambda, _, _, _] in keys.to_cpu().iter_fixed_size() {
             let components = match cache.entry(o3_lambda) {
                 Entry::Occupied(entry) => entry.get().clone(),
                 Entry::Vacant(entry) => {
                     let mut component = LabelsBuilder::new(vec!["o3_mu"]);
-                    for m in -o3_lambda..=o3_lambda {
-                        component.add(&[(m as i32)]);
+                    for m in -o3_lambda.isize()..=o3_lambda.isize() {
+                        component.add(&[m]);
                     }
 
                     let components = vec![component.finish_assume_unique()];
@@ -713,10 +713,10 @@ impl CalculatorBase for SphericalExpansionByPair {
             }
             SphericalExpansionBasis::Explicit(ref basis) => {
                 let mut result = Vec::new();
-                for [o3_lambda, _, _, _] in keys.iter_fixed_size() {
+                for [o3_lambda, _, _, _] in keys.to_cpu().iter_fixed_size() {
                     let mut properties = LabelsBuilder::new(self.property_names());
 
-                    let radial = basis.by_angular.get(&(*o3_lambda as usize)).expect("missing o3_lambda");
+                    let radial = basis.by_angular.get(&o3_lambda.usize()).expect("missing o3_lambda");
                     for n in 0..radial.size() {
                         properties.add(&[n as i32]);
                     }
@@ -773,18 +773,18 @@ impl CalculatorBase for SphericalExpansionByPair {
                 let first_type = types[pair.first];
                 let second_type = types[pair.second];
                 for o3_lambda in self.parameters.basis.angular_channels() {
-                    let block_i = keys.position(&[
+                    let block_i = keys.position(&crate::label_values![
                         o3_lambda as i32,
                         1_i32,
-                        first_type.into(),
-                        second_type.into(),
+                        first_type,
+                        second_type,
                     ]);
 
                     if let Some(block_i) = block_i {
-                        let sample = &[
-                            system_i as i32,
-                            pair.first as i32,
-                            pair.second as i32,
+                        let sample = crate::label_values![
+                            system_i,
+                            pair.first,
+                            pair.second,
                             cell_shift_a,
                             cell_shift_b,
                             cell_shift_c,
@@ -793,7 +793,7 @@ impl CalculatorBase for SphericalExpansionByPair {
                         SphericalExpansionByPair::accumulate_in_block(
                             o3_lambda,
                             descriptor.block_mut_by_id(block_i),
-                            sample,
+                            &sample,
                             &contribution,
                             do_gradients,
                             pair.vector,
@@ -805,27 +805,27 @@ impl CalculatorBase for SphericalExpansionByPair {
                 contribution.inverse_pair(&self.m_1_pow_l);
 
                 for o3_lambda in self.parameters.basis.angular_channels() {
-                    let block_i = keys.position(&[
+                    let block_i = keys.position(&crate::label_values![
                         o3_lambda as i32,
                         1_i32,
-                        second_type.into(),
-                        first_type.into(),
+                        second_type,
+                        first_type,
                     ]);
 
                     if let Some(block_i) = block_i {
-                        let sample = &[
-                            system_i as i32,
-                            pair.second as i32,
-                            pair.first as i32,
-                            LabelValue::from(-cell_shift_a),
-                            LabelValue::from(-cell_shift_b),
-                            LabelValue::from(-cell_shift_c),
+                        let sample = crate::label_values![
+                            system_i,
+                            pair.second,
+                            pair.first,
+                            -cell_shift_a,
+                            -cell_shift_b,
+                            -cell_shift_c,
                         ];
 
                         SphericalExpansionByPair::accumulate_in_block(
                             o3_lambda,
                             descriptor.block_mut_by_id(block_i),
-                            sample,
+                            &sample,
                             &contribution,
                             do_gradients,
                             -pair.vector,
@@ -1009,7 +1009,7 @@ mod tests {
             for (spx_sample, expected) in spx.samples.iter().zip(spx_values.axis_iter(Axis(0))) {
                 let mut sum = ndarray::Array::zeros(expected.raw_dim());
 
-                for (sample_i, &[system, atom, _, _, _, _]) in block.samples.iter_fixed_size().enumerate() {
+                for (sample_i, &[system, atom, _, _, _, _]) in block.samples.to_cpu().iter_fixed_size().enumerate() {
                     if spx_sample[0] == system && spx_sample[1] == atom {
                         sum += &values.slice(s![sample_i, .., ..]);
                     }

@@ -114,13 +114,13 @@ impl CalculatorBase for NeighborList {
 
         for block_samples in samples {
             let mut builder = LabelsBuilder::new(vec!["sample", "system", "atom"]);
-            for (sample_i, &[system_i, first, second, cell_a, cell_b, cell_c]) in block_samples.iter_fixed_size().enumerate() {
+            for (sample_i, &[system_i, first, second, cell_a, cell_b, cell_c]) in block_samples.to_cpu().iter_fixed_size().enumerate() {
                 // self pairs do not contribute to gradients
                 if first == second && cell_a == 0 && cell_b == 0 && cell_c == 0 {
                     continue;
                 }
-                builder.add(&[sample_i as i32, system_i, first]);
-                builder.add(&[sample_i as i32, system_i, second]);
+                builder.add(&crate::label_values![sample_i, system_i, first]);
+                builder.add(&crate::label_values![sample_i, system_i, second]);
             }
 
             results.push(builder.finish_assume_unique());
@@ -202,7 +202,7 @@ impl HalfNeighborList {
     fn samples(&self, keys: &Labels, systems: &mut [Box<dyn System>]) -> Result<Vec<Labels>, Error> {
         let mut results = Vec::new();
 
-        for [first_atom_type, second_atom_type] in keys.iter_fixed_size() {
+        for [first_atom_type, second_atom_type] in keys.to_cpu().iter_fixed_size() {
             let mut builder = LabelsBuilder::new(vec![
                 "system",
                 "first_atom",
@@ -302,15 +302,15 @@ impl HalfNeighborList {
                     (pair.first, pair.second)
                 };
 
-                let block_i = descriptor.keys().position(&[
-                    type_i.into(), type_j.into()
+                let block_i = descriptor.keys().position(&crate::label_values![
+                    type_i, type_j
                 ]);
 
                 if let Some(block_i) = block_i {
                     let mut block = descriptor.block_mut_by_id(block_i);
                     let block_data = block.data_mut();
 
-                    let sample_i = block_data.samples.position(&[
+                    let sample_i = block_data.samples.position(&crate::label_values![
                         system_i as i32,
                         atom_i as i32,
                         atom_j as i32,
@@ -320,8 +320,8 @@ impl HalfNeighborList {
                     ]);
 
                     if let Some(sample_i) = sample_i {
-                        let array = block_data.values.to_ndarray_mut();
-                        for (property_i, &[distance]) in block_data.properties.iter_fixed_size().enumerate() {
+                        let array = block_data.values.get_ndarray_mut::<f64>();
+                        for (property_i, &[distance]) in block_data.properties.to_cpu().iter_fixed_size().enumerate() {
                             if distance == 0 {
                                 array[[sample_i, 0, property_i]] = pair_vector[0];
                                 array[[sample_i, 1, property_i]] = pair_vector[1];
@@ -332,16 +332,16 @@ impl HalfNeighborList {
                         if let Some(mut gradient) = block.gradient_mut("positions") {
                             let gradient = gradient.data_mut();
 
-                            let first_grad_sample_i = gradient.samples.position(&[
+                            let first_grad_sample_i = gradient.samples.position(&crate::label_values![
                                 sample_i as i32, system_i as i32, atom_i as i32
                             ]).expect("missing gradient sample");
-                            let second_grad_sample_i = gradient.samples.position(&[
+                            let second_grad_sample_i = gradient.samples.position(&crate::label_values![
                                 sample_i as i32, system_i as i32, atom_j as i32
                             ]).expect("missing gradient sample");
 
-                            let array = gradient.values.to_ndarray_mut();
+                            let array = gradient.values.get_ndarray_mut::<f64>();
 
-                            for (property_i, &[distance]) in gradient.properties.iter_fixed_size().enumerate() {
+                            for (property_i, &[distance]) in gradient.properties.to_cpu().iter_fixed_size().enumerate() {
                                 if distance == 0 {
                                     array[[first_grad_sample_i, 0, 0, property_i]] = -1.0;
                                     array[[first_grad_sample_i, 1, 1, property_i]] = -1.0;
@@ -403,7 +403,7 @@ impl FullNeighborList {
     pub(crate) fn samples(&self, keys: &Labels, systems: &mut [Box<dyn System>]) -> Result<Vec<Labels>, Error> {
         let mut results = Vec::new();
 
-        for &[first_atom_type, second_atom_type] in keys.iter_fixed_size() {
+        for &[first_atom_type, second_atom_type] in keys.to_cpu().iter_fixed_size() {
             let mut builder = LabelsBuilder::new(vec![
                 "system",
                 "first_atom",
@@ -503,12 +503,12 @@ impl FullNeighborList {
                     assert_ne!(pair.cell_shift_indices, [0, 0, 0]);
                 }
 
-                let first_block_i = descriptor.keys().position(&[
-                    types[pair.first].into(), types[pair.second].into()
+                let first_block_i = descriptor.keys().position(&crate::label_values![
+                    types[pair.first], types[pair.second]
                 ]);
 
-                let second_block_i = descriptor.keys().position(&[
-                    types[pair.second].into(), types[pair.first].into()
+                let second_block_i = descriptor.keys().position(&crate::label_values![
+                    types[pair.second], types[pair.first]
                 ]);
 
                 let cell_a = pair.cell_shift_indices[0];
@@ -520,7 +520,7 @@ impl FullNeighborList {
                     let mut block = descriptor.block_mut_by_id(first_block_i);
                     let block_data = block.data_mut();
 
-                    let sample_i = block_data.samples.position(&[
+                    let sample_i = block_data.samples.position(&crate::label_values![
                         system_i as i32,
                         pair.first as i32,
                         pair.second as i32,
@@ -530,9 +530,9 @@ impl FullNeighborList {
                     ]);
 
                     if let Some(sample_i) = sample_i {
-                        let array = block_data.values.to_ndarray_mut();
+                        let array = block_data.values.get_ndarray_mut::<f64>();
 
-                        for (property_i, &[distance]) in block_data.properties.iter_fixed_size().enumerate() {
+                        for (property_i, &[distance]) in block_data.properties.to_cpu().iter_fixed_size().enumerate() {
                             if distance == 0 {
                                 array[[sample_i, 0, property_i]] = pair.vector[0];
                                 array[[sample_i, 1, property_i]] = pair.vector[1];
@@ -543,16 +543,16 @@ impl FullNeighborList {
                         if let Some(mut gradient) = block.gradient_mut("positions") {
                             let gradient = gradient.data_mut();
 
-                            let first_grad_sample_i = gradient.samples.position(&[
+                            let first_grad_sample_i = gradient.samples.position(&crate::label_values![
                                 sample_i as i32, system_i as i32, pair.first as i32
                             ]).expect("missing gradient sample");
-                            let second_grad_sample_i = gradient.samples.position(&[
+                            let second_grad_sample_i = gradient.samples.position(&crate::label_values![
                                 sample_i as i32, system_i as i32, pair.second as i32
                             ]).expect("missing gradient sample");
 
-                            let array = gradient.values.to_ndarray_mut();
+                            let array = gradient.values.get_ndarray_mut::<f64>();
 
-                            for (property_i, &[distance]) in gradient.properties.iter_fixed_size().enumerate() {
+                            for (property_i, &[distance]) in gradient.properties.to_cpu().iter_fixed_size().enumerate() {
                                 if distance == 0 {
                                     array[[first_grad_sample_i, 0, 0, property_i]] = -1.0;
                                     array[[first_grad_sample_i, 1, 1, property_i]] = -1.0;
@@ -572,7 +572,7 @@ impl FullNeighborList {
                     let mut block = descriptor.block_mut_by_id(second_block_i);
 
                     let block_data = block.data_mut();
-                    let sample_i = block_data.samples.position(&[
+                    let sample_i = block_data.samples.position(&crate::label_values![
                         system_i as i32,
                         pair.second as i32,
                         pair.first as i32,
@@ -582,8 +582,8 @@ impl FullNeighborList {
                     ]);
 
                     if let Some(sample_i) = sample_i {
-                        let array = block_data.values.to_ndarray_mut();
-                        for (property_i, &[distance]) in block_data.properties.iter_fixed_size().enumerate() {
+                        let array = block_data.values.get_ndarray_mut::<f64>();
+                        for (property_i, &[distance]) in block_data.properties.to_cpu().iter_fixed_size().enumerate() {
                             if distance == 0 {
                                 array[[sample_i, 0, property_i]] = -pair.vector[0];
                                 array[[sample_i, 1, property_i]] = -pair.vector[1];
@@ -594,16 +594,16 @@ impl FullNeighborList {
                         if let Some(mut gradient) = block.gradient_mut("positions") {
                             let gradient = gradient.data_mut();
 
-                            let first_grad_sample_i = gradient.samples.position(&[
+                            let first_grad_sample_i = gradient.samples.position(&crate::label_values![
                                 sample_i as i32, system_i as i32, pair.second as i32
                             ]).expect("missing gradient sample");
-                            let second_grad_sample_i = gradient.samples.position(&[
+                            let second_grad_sample_i = gradient.samples.position(&crate::label_values![
                                 sample_i as i32, system_i as i32, pair.first as i32
                             ]).expect("missing gradient sample");
 
-                            let array = gradient.values.to_ndarray_mut();
+                            let array = gradient.values.get_ndarray_mut::<f64>();
 
-                            for (property_i, &[distance]) in gradient.properties.iter_fixed_size().enumerate() {
+                            for (property_i, &[distance]) in gradient.properties.to_cpu().iter_fixed_size().enumerate() {
                                 if distance == 0 {
                                     array[[first_grad_sample_i, 0, 0, property_i]] = -1.0;
                                     array[[first_grad_sample_i, 1, 1, property_i]] = -1.0;

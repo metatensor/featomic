@@ -245,7 +245,8 @@ std::vector<torch::Tensor> PositionsGrad<scalar_t>::forward(
     auto systems_start = systems_start_ivalue.toIntList();
 
     auto samples = dX_dr->samples();
-    const auto* sample_ptr = samples->as_metatensor().values().data();
+    auto sample_values = samples->as_metatensor().values();
+    const auto* sample_ptr = sample_values.data();
 
     always_assert(samples->names().size() == 3);
     always_assert(samples->names()[0] == "sample");
@@ -331,7 +332,8 @@ std::vector<torch::Tensor> PositionsGrad<scalar_t>::backward(
     auto dB_d_dA_dr = grad_outputs[0]; // gradient of B w.r.t. dA/dr (output of forward)
 
     auto samples = dX_dr->samples();
-    const auto* sample_ptr = samples->as_metatensor().values().data();
+    auto sample_values = samples->as_metatensor().values();
+    const auto* sample_ptr = sample_values.data();
 
     always_assert(samples->names().size() == 3);
     always_assert(samples->names()[0] == "sample");
@@ -436,7 +438,8 @@ std::vector<torch::Tensor> CellGrad<scalar_t>::forward(
     always_assert(all_cells.requires_grad());
 
     auto samples = dX_dH->samples();
-    const auto* sample_ptr = samples->as_metatensor().values().data();
+    auto sample_values = samples->as_metatensor().values();
+    const auto* sample_ptr = sample_values.data();
 
     always_assert(samples->names().size() == 1);
     always_assert(samples->names()[0] == "sample");
@@ -517,7 +520,8 @@ std::vector<torch::Tensor> CellGrad<scalar_t>::backward(
     auto dB_d_dA_dH = grad_outputs[0]; // gradient of B w.r.t. dA/dH (output of forward)
 
     auto samples = dX_dH->samples();
-    const auto* sample_ptr = samples->as_metatensor().values().data();
+    auto sample_values = samples->as_metatensor().values();
+    const auto* sample_ptr = sample_values.data();
     always_assert(samples->names().size() == 1);
     always_assert(samples->names()[0] == "sample");
 

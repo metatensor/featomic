@@ -17,6 +17,8 @@ use crate::labels::AtomCenteredSamples;
 use crate::labels::{KeysBuilder, CenterTwoNeighborsTypesKeys};
 
 
+type ArrayLock = std::sync::Arc<std::sync::RwLock<ndarray::ArrayD<f64>>>;
+
 /// Parameters for SOAP power spectrum calculator.
 ///
 /// In the SOAP power spectrum, each sample represents rotationally-averaged
@@ -86,17 +88,17 @@ impl SoapPowerSpectrum {
         // depending on the neighbor_type
         let mut requested_by_key = HashMap::new();
         let mut requested_o3_lambda = BTreeSet::new();
-        for (&[center, neighbor_1, neighbor_2], block) in descriptor.keys().iter_fixed_size().zip(descriptor.blocks()) {
-            for &[l, n1, n2] in block.properties().iter_fixed_size() {
-                requested_o3_lambda.insert(l as usize);
+        for (&[center, neighbor_1, neighbor_2], block) in descriptor.keys().to_cpu().iter_fixed_size().zip(descriptor.blocks()) {
+            for &[l, n1, n2] in block.properties().to_cpu().iter_fixed_size() {
+                requested_o3_lambda.insert(l.usize());
 
                 let (_, properties) = requested_by_key
-                    .entry([l, 1_i32, center, neighbor_1])
+                    .entry(crate::label_values![l, 1_i32, center, neighbor_1])
                     .or_insert_with(|| (BTreeSet::new(), BTreeSet::new()));
                 properties.insert([n1]);
 
                 let (_, properties) = requested_by_key
-                    .entry([l, 1_i32, center, neighbor_2])
+                    .entry(crate::label_values![l, 1_i32, center, neighbor_2])
                     .or_insert_with(|| (BTreeSet::new(), BTreeSet::new()));
                 properties.insert([n2]);
             }
@@ -105,14 +107,14 @@ impl SoapPowerSpectrum {
         // make sure all the expected blocks are there, even if the power
         // spectrum does not contain e.g. l=3 at all. The corresponding blocks
         // will have an empty set of properties
-        for &[center, neighbor_1, neighbor_2] in descriptor.keys().iter_fixed_size() {
+        for &[center, neighbor_1, neighbor_2] in descriptor.keys().to_cpu().iter_fixed_size() {
             for &l in &requested_o3_lambda {
                 requested_by_key
-                    .entry([l as i32, 1_i32, center, neighbor_1])
+                    .entry(crate::label_values![l, 1_i32, center, neighbor_1])
                     .or_insert_with(|| (BTreeSet::new(), BTreeSet::new()));
 
                 requested_by_key
-                    .entry([l as i32, 1_i32, center, neighbor_2])
+                    .entry(crate::label_values![l, 1_i32, center, neighbor_2])
                     .or_insert_with(|| (BTreeSet::new(), BTreeSet::new()));
             }
         }
@@ -133,7 +135,8 @@ impl SoapPowerSpectrum {
                     continue;
                 }
 
-                for &sample in block.samples().iter_fixed_size::<2>() {
+                let block_samples = block.samples();
+                for &sample in block_samples.to_cpu().iter_fixed_size::<2>() {
                     samples.insert(sample);
                 }
             }
@@ -168,11 +171,11 @@ impl SoapPowerSpectrum {
         // empty blocks for the corresponding keys in the spherical expansion
         // selection
         let mut missing_keys = BTreeSet::new();
-        for &[center, neighbor_1, neighbor_2] in descriptor.keys().iter_fixed_size() {
+        for &[center, neighbor_1, neighbor_2] in descriptor.keys().to_cpu().iter_fixed_size() {
             for o3_lambda in self.parameters.basis.angular_channels() {
                 if !requested_o3_lambda.contains(&o3_lambda) {
-                    missing_keys.insert([o3_lambda as i32, 1_i32, center, neighbor_1]);
-                    missing_keys.insert([o3_lambda as i32, 1_i32, center, neighbor_2]);
+                    missing_keys.insert(crate::label_values![o3_lambda, 1_i32, center, neighbor_1]);
+                    missing_keys.insert(crate::label_values![o3_lambda, 1_i32, center, neighbor_2]);
                 }
             }
         }
@@ -242,22 +245,24 @@ impl SoapPowerSpectrum {
             // the spherical expansion samples are the same for all
             // `o3_lambda` values, so we only need to compute it for
             // the first one.
-            let first_l = block_data.properties[0][0];
+            let properties_cpu = block_data.properties.to_cpu();
+            let first_l = properties_cpu[0][0];
 
-            let block_id_1 = spherical_expansion.keys().position(&[
+            let block_id_1 = spherical_expansion.keys().position(&crate::label_values![
                 first_l, 1_i32, center_type, neighbor_1_type
             ]).expect("missing block in spherical expansion");
             let spx_block_1 = &spherical_expansion.block_by_id(block_id_1);
             let spx_samples_1 = spx_block_1.samples();
 
-            let block_id_2 = spherical_expansion.keys().position(&[
+            let block_id_2 = spherical_expansion.keys().position(&crate::label_values![
                 first_l, 1_i32, center_type, neighbor_2_type
             ]).expect("missing block in spherical expansion");
             let spx_block_2 = &spherical_expansion.block_by_id(block_id_2);
             let spx_samples_2 = spx_block_2.samples();
 
             values_mapping.reserve(block_data.samples.count());
-            for sample in &*block_data.samples {
+            let block_samples = block_data.samples.to_cpu();
+            for sample in block_samples.iter() {
                 let sample_1 = spx_samples_1.position(sample).expect("missing spherical expansion sample");
                 let sample_2 = spx_samples_2.position(sample).expect("missing spherical expansion sample");
                 values_mapping.push((sample_1, sample_2));
@@ -274,20 +279,20 @@ impl SoapPowerSpectrum {
                 let spx_gradient_1_samples = spx_gradient_1.samples();
                 let spx_gradient_2_samples = spx_gradient_2.samples();
 
-                for &[sample, system, atom] in gradient_samples.iter_fixed_size() {
+                for &[sample, system, atom] in gradient_samples.to_cpu().iter_fixed_size() {
                     // The "sample" dimension in the power spectrum gradient
                     // samples do not necessarily matches the "sample" dimension
                     // in the spherical expansion gradient samples. We use the
                     // sample mapping for the values to create what would be the
                     // right gradient sample for spx, and then lookup its
                     // position in the spx gradient samples
-                    let (spx_1_sample, spx_2_sample) = values_mapping[sample as usize];
+                    let (spx_1_sample, spx_2_sample) = values_mapping[sample.usize()];
 
                     let mapping_1 = spx_gradient_1_samples.position(
-                        &[spx_1_sample as i32, system, atom]
+                        &crate::label_values![spx_1_sample, system, atom]
                     );
                     let mapping_2 = spx_gradient_2_samples.position(
-                        &[spx_2_sample as i32, system, atom]
+                        &crate::label_values![spx_2_sample, system, atom]
                     );
 
                     // at least one of the spx block should contribute to the
@@ -318,26 +323,29 @@ impl SoapPowerSpectrum {
         let neighbor_1_type = key[1];
         let neighbor_2_type = key[2];
 
+        let properties = properties.to_cpu();
         return properties.par_iter().map(|property| {
             let l = property[0];
             let n1 = property[1];
             let n2 = property[2];
 
-            let key_1: &[_] = &[l, 1_i32, center_type, neighbor_1_type];
-            let block_1 = spherical_expansion.get(&key_1)
+            let key_1 = crate::label_values![l, 1_i32, center_type, neighbor_1_type];
+            let block_1 = spherical_expansion.get(&key_1[..])
             .expect("missing first neighbor type block in spherical expansion");
 
-            let key_2: &[_] = &[l, 1_i32, center_type, neighbor_2_type];
-            let block_2 = spherical_expansion.get(&key_2)
+            let key_2 = crate::label_values![l, 1_i32, center_type, neighbor_2_type];
+            let block_2 = spherical_expansion.get(&key_2[..])
                 .expect("missing first neighbor type block in spherical expansion");
 
             // both blocks should had the same number of m components
-            debug_assert_eq!(block_1.values.shape()[1], block_2.values.shape()[1]);
+            let block_1_values = block_1.values.read().expect("array lock was poisoned");
+            let block_2_values = block_2.values.read().expect("array lock was poisoned");
+            debug_assert_eq!(block_1_values.shape()[1], block_2_values.shape()[1]);
 
-            let property_1 = block_1.properties.position(&[n1]).expect("missing n1");
-            let property_2 = block_2.properties.position(&[n2]).expect("missing n2");
+            let property_1 = block_1.properties.position(&crate::label_values![n1]).expect("missing n1");
+            let property_2 = block_2.properties.position(&crate::label_values![n2]).expect("missing n2");
 
-            let o3_lambda = l as usize;
+            let o3_lambda = l.usize();
 
             // For consistency with a full Clebsch-Gordan product we need to add
             // a `-1^l / sqrt(2 l + 1)` factor to the power spectrum invariants
@@ -382,13 +390,13 @@ struct SpxPropertiesToCombine<'a> {
 struct SphericalExpansionBlock<'a> {
     properties: Labels,
     /// spherical expansion values
-    values: &'a ndarray::ArcArray<f64, ndarray::IxDyn>,
+    values: &'a ArrayLock,
     /// spherical expansion position gradients
-    positions_gradients: Option<&'a ndarray::ArcArray<f64, ndarray::IxDyn>>,
+    positions_gradients: Option<&'a ArrayLock>,
     /// spherical expansion cell gradients
-    cell_gradients: Option<&'a ndarray::ArcArray<f64, ndarray::IxDyn>>,
+    cell_gradients: Option<&'a ArrayLock>,
     /// spherical expansion strain gradients
-    strain_gradients: Option<&'a ndarray::ArcArray<f64, ndarray::IxDyn>>,
+    strain_gradients: Option<&'a ArrayLock>,
 }
 
 /// Indexes of the spherical expansion samples/rows corresponding to each power
@@ -436,16 +444,16 @@ impl CalculatorBase for SoapPowerSpectrum {
     fn samples(&self, keys: &metatensor::Labels, systems: &mut [Box<dyn System>]) -> Result<Vec<Labels>, Error> {
         assert_eq!(keys.names(), ["center_type", "neighbor_1_type", "neighbor_2_type"]);
         let mut result = Vec::new();
-        for [center_type, neighbor_1_type, neighbor_2_type] in keys.iter_fixed_size() {
+        for [center_type, neighbor_1_type, neighbor_2_type] in keys.to_cpu().iter_fixed_size() {
 
             let builder = AtomCenteredSamples {
                 cutoff: self.parameters.cutoff.radius,
-                center_type: AtomicTypeFilter::Single(*center_type),
+                center_type: AtomicTypeFilter::Single(center_type.i32()),
                 // we only want center with both neighbor types present
                 neighbor_type: AtomicTypeFilter::AllOf(
                     [
-                        *neighbor_1_type,
-                        *neighbor_2_type
+                        neighbor_1_type.i32(),
+                        neighbor_2_type.i32()
                     ].iter().copied().collect()
                 ),
                 self_pairs: true,
@@ -462,14 +470,14 @@ impl CalculatorBase for SoapPowerSpectrum {
         assert_eq!(keys.count(), samples.len());
 
         let mut gradient_samples = Vec::new();
-        for ([center_type, neighbor_1_type, neighbor_2_type], samples) in keys.iter_fixed_size().zip(samples) {
+        for ([center_type, neighbor_1_type, neighbor_2_type], samples) in keys.to_cpu().iter_fixed_size().zip(samples) {
             let builder = AtomCenteredSamples {
                 cutoff: self.parameters.cutoff.radius,
-                center_type: AtomicTypeFilter::Single(*center_type),
+                center_type: AtomicTypeFilter::Single(center_type.i32()),
                 // gradients samples should contain either neighbor types
                 neighbor_type: AtomicTypeFilter::OneOf(vec![
-                    *neighbor_1_type,
-                    *neighbor_2_type
+                    neighbor_1_type.i32(),
+                    neighbor_2_type.i32()
                 ]),
                 self_pairs: true,
             };
@@ -559,10 +567,10 @@ impl CalculatorBase for SoapPowerSpectrum {
         let spherical_expansion = spherical_expansion.iter().map(|(key, block)| {
             let spx_block = SphericalExpansionBlock {
                 properties: block.properties(),
-                values: block.values().to_ndarray(),
-                positions_gradients: block.gradient("positions").map(|g| g.values().to_ndarray()),
-                cell_gradients: block.gradient("cell").map(|g| g.values().to_ndarray()),
-                strain_gradients: block.gradient("strain").map(|g| g.values().to_ndarray()),
+                values: block.values().to_ndarray_lock::<f64>(),
+                positions_gradients: block.gradient("positions").map(|g| g.values().to_ndarray_lock::<f64>()),
+                cell_gradients: block.gradient("cell").map(|g| g.values().to_ndarray_lock::<f64>()),
+                strain_gradients: block.gradient("strain").map(|g| g.values().to_ndarray_lock::<f64>()),
             };
 
             (key, spx_block)
@@ -581,13 +589,15 @@ impl CalculatorBase for SoapPowerSpectrum {
 
             let mapping = samples_mapping.get(key).expect("missing sample mapping");
 
-            block_data.values.as_ndarray_mut()
+            block_data.values.get_ndarray_mut::<f64>()
                 .axis_iter_mut(ndarray::Axis(0))
                 .into_par_iter()
                 .zip_eq(&mapping.values)
                 .for_each(|(mut values, &(spx_sample_1, spx_sample_2))| {
                     for (property_i, spx) in properties_to_combine.iter().enumerate() {
                         let SpxPropertiesToCombine { spx_1, spx_2, ..} = spx;
+                        let spx_1_values = spx_1.values.read().expect("array lock was poisoned");
+                        let spx_2_values = spx_2.values.read().expect("array lock was poisoned");
 
                         let mut sum = 0.0;
 
@@ -596,8 +606,8 @@ impl CalculatorBase for SoapPowerSpectrum {
                             // in release mode (`uget` still checks bounds in
                             // debug mode)
                             unsafe {
-                                sum += spx_1.values.uget([spx_sample_1, m, spx.property_1])
-                                     * spx_2.values.uget([spx_sample_2, m, spx.property_2]);
+                                sum += spx_1_values.uget([spx_sample_1, m, spx.property_1])
+                                     * spx_2_values.uget([spx_sample_2, m, spx.property_2]);
                             }
                         }
 
@@ -618,22 +628,25 @@ impl CalculatorBase for SoapPowerSpectrum {
                 });
 
             // gradients with respect to the atomic positions
-            if let Some(mut gradient) = block.gradient_mut("positions") {
-                let gradient = gradient.data_mut();
+                if let Some(mut gradient) = block.gradient_mut("positions") {
+                    let gradient = gradient.data_mut();
+                    let gradient_samples = gradient.samples.to_cpu();
 
-                gradient.values.to_ndarray_mut()
-                    .axis_iter_mut(ndarray::Axis(0))
-                    .into_par_iter()
-                    .zip_eq(gradient.samples.par_iter())
+                    gradient.values.get_ndarray_mut::<f64>()
+                        .axis_iter_mut(ndarray::Axis(0))
+                        .into_par_iter()
+                    .zip_eq(gradient_samples.par_iter())
                     .zip_eq(&mapping.gradients)
                     .for_each(|((mut values, gradient_sample), &(spx_grad_sample_1, spx_grad_sample_2))| {
                         for (property_i, spx) in properties_to_combine.iter().enumerate() {
                             let SpxPropertiesToCombine { spx_1, spx_2, ..} = spx;
+                            let spx_1_values = spx_1.values.read().expect("array lock was poisoned");
+                            let spx_2_values = spx_2.values.read().expect("array lock was poisoned");
 
-                            let spx_1_gradient = spx_1.positions_gradients.expect("missing spherical expansion gradients");
-                            let spx_2_gradient = spx_2.positions_gradients.expect("missing spherical expansion gradients");
+                            let spx_1_gradient = spx_1.positions_gradients.as_ref().expect("missing spherical expansion gradients").read().expect("array lock was poisoned");
+                            let spx_2_gradient = spx_2.positions_gradients.as_ref().expect("missing spherical expansion gradients").read().expect("array lock was poisoned");
 
-                            let sample_i = gradient_sample[0] as usize;
+                            let sample_i = gradient_sample[0].usize();
                             let (spx_sample_1, spx_sample_2) = mapping.values[sample_i];
 
                             let mut sum = [0.0, 0.0, 0.0];
@@ -641,7 +654,7 @@ impl CalculatorBase for SoapPowerSpectrum {
                                 for m in 0..(2 * spx.o3_lambda + 1) {
                                     // SAFETY: see same loop for values
                                     unsafe {
-                                        let value_2 = spx_2.values.uget([spx_sample_2, m, spx.property_2]);
+                                        let value_2 = spx_2_values.uget([spx_sample_2, m, spx.property_2]);
                                         for d in 0..3 {
                                             sum[d] += value_2 * spx_1_gradient.uget([grad_sample_1, d, m, spx.property_1]);
                                         }
@@ -653,7 +666,7 @@ impl CalculatorBase for SoapPowerSpectrum {
                                 for m in 0..(2 * spx.o3_lambda + 1) {
                                     // SAFETY: see same loop for values
                                     unsafe {
-                                        let value_1 = spx_1.values.uget([spx_sample_1, m, spx.property_1]);
+                                        let value_1 = spx_1_values.uget([spx_sample_1, m, spx.property_1]);
                                         for d in 0..3 {
                                             sum[d] += value_1 * spx_2_gradient.uget([grad_sample_2, d, m, spx.property_2]);
                                         }
@@ -681,23 +694,24 @@ impl CalculatorBase for SoapPowerSpectrum {
             for parameter in ["cell", "strain"] {
                 if let Some(mut gradient) = block.gradient_mut(parameter) {
                     let gradient = gradient.data_mut();
+                    let gradient_samples = gradient.samples.to_cpu();
 
-                    gradient.values.to_ndarray_mut()
+                    gradient.values.get_ndarray_mut::<f64>()
                         .axis_iter_mut(ndarray::Axis(0))
                         .into_par_iter()
-                        .zip_eq(gradient.samples.par_iter())
+                        .zip_eq(gradient_samples.par_iter())
                         .for_each(|(mut values, gradient_sample)| {
                             for (property_i, spx) in properties_to_combine.iter().enumerate() {
                                 let SpxPropertiesToCombine { spx_1, spx_2, ..} = spx;
 
                                 let (spx_1_gradient, spx_2_gradient) = if parameter == "cell" {
-                                    let spx_1_gradient = spx_1.cell_gradients.expect("missing spherical expansion gradients");
-                                    let spx_2_gradient = spx_2.cell_gradients.expect("missing spherical expansion gradients");
+                                    let spx_1_gradient = spx_1.cell_gradients.as_ref().expect("missing spherical expansion gradients").read().expect("array lock was poisoned");
+                                    let spx_2_gradient = spx_2.cell_gradients.as_ref().expect("missing spherical expansion gradients").read().expect("array lock was poisoned");
 
                                     (spx_1_gradient, spx_2_gradient)
                                 } else if parameter == "strain" {
-                                    let spx_1_gradient = spx_1.strain_gradients.expect("missing spherical expansion gradients");
-                                    let spx_2_gradient = spx_2.strain_gradients.expect("missing spherical expansion gradients");
+                                    let spx_1_gradient = spx_1.strain_gradients.as_ref().expect("missing spherical expansion gradients").read().expect("array lock was poisoned");
+                                    let spx_2_gradient = spx_2.strain_gradients.as_ref().expect("missing spherical expansion gradients").read().expect("array lock was poisoned");
 
                                     (spx_1_gradient, spx_2_gradient)
                                 } else {
@@ -705,7 +719,7 @@ impl CalculatorBase for SoapPowerSpectrum {
                                 };
 
 
-                                let sample_i = gradient_sample[0] as usize;
+                                let sample_i = gradient_sample[0].usize();
                                 let (spx_sample_1, spx_sample_2) = mapping.values[sample_i];
 
                                 let mut sum = [
@@ -718,7 +732,8 @@ impl CalculatorBase for SoapPowerSpectrum {
                                 for m in 0..(2 * spx.o3_lambda + 1) {
                                     // SAFETY: see same loop for values
                                     unsafe {
-                                        let value_2 = spx_2.values.uget([spx_sample_2, m, spx.property_2]);
+                                        let spx_2_values = spx_2.values.read().expect("array lock was poisoned");
+                                        let value_2 = spx_2_values.uget([spx_sample_2, m, spx.property_2]);
                                         for xyz_1 in 0..3 {
                                             for xyz_2 in 0..3 {
                                                 sum[xyz_1][xyz_2] += value_2 * spx_1_gradient.uget([spx_sample_1, xyz_1, xyz_2, m, spx.property_1]);
@@ -731,7 +746,8 @@ impl CalculatorBase for SoapPowerSpectrum {
                                 for m in 0..(2 * spx.o3_lambda + 1) {
                                     // SAFETY: see same loop for values
                                     unsafe {
-                                        let value_1 = spx_1.values.uget([spx_sample_1, m, spx.property_1]);
+                                        let spx_1_values = spx_1.values.read().expect("array lock was poisoned");
+                                        let value_1 = spx_1_values.uget([spx_sample_1, m, spx.property_1]);
                                         for xyz_1 in 0..3 {
                                             for xyz_2 in 0..3 {
                                                 sum[xyz_1][xyz_2] += value_1 * spx_2_gradient.uget([spx_sample_2, xyz_1, xyz_2, m, spx.property_2]);

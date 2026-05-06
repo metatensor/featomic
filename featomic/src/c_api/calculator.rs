@@ -217,12 +217,21 @@ fn c_labels_clone(labels: *const mts_labels_t) -> Result<*mut mts_labels_t, Erro
     let cloned = unsafe { metatensor::c_api::mts_labels_clone(labels) };
     if cloned.is_null() {
         let msg = unsafe {
-            let ptr = metatensor::c_api::mts_last_error();
-            std::ffi::CStr::from_ptr(ptr).to_str().unwrap_or("unknown error")
+            let mut message = std::ptr::null();
+            let mut origin = std::ptr::null();
+            let mut data = std::ptr::null_mut();
+            let status = metatensor::c_api::mts_last_error(&mut message, &mut origin, &mut data);
+            if status == metatensor::c_api::MTS_SUCCESS && !message.is_null() {
+                std::ffi::CStr::from_ptr(message)
+                    .to_str()
+                    .unwrap_or("unknown error")
+            } else {
+                "unknown error"
+            }
         };
         return Err(Error::External { status: -1, message: msg.to_string() });
     }
-    Ok(cloned)
+    Ok(cloned as *mut mts_labels_t)
 }
 
 fn convert_labels_selection<'a>(

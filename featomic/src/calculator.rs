@@ -100,8 +100,9 @@ impl LabelsSelection<'_> {
                     let matches = labels.select(selection)
                         .map_err(map_selection_error(&default_names, &selection.names(), label_kind))?;
 
+                    let labels_cpu = labels.to_cpu();
                     for entry in matches {
-                        builder.add(&labels[entry as usize]);
+                        builder.add(&labels_cpu[entry as usize]);
                     }
 
                     // the labels entries are unique because they are a
@@ -120,7 +121,7 @@ impl LabelsSelection<'_> {
                         tensor.keys().names().join(", ")
                     )));
                 }
-                for key in keys {
+                for key in keys.to_cpu().iter() {
                     if !tensor.keys().contains(key) {
                         let key_print = keys.names().iter()
                             .zip(key)
@@ -137,7 +138,7 @@ impl LabelsSelection<'_> {
                 let default_names = get_default_names();
 
                 let mut results = Vec::new();
-                for key in keys {
+                for key in keys.to_cpu().iter() {
                     let mut selection = LabelsBuilder::new(keys.names());
                     selection.add(key);
                     let block = tensor.block(&selection.finish()).expect("could not find a block in predefined selection");
@@ -301,8 +302,9 @@ impl Calculator {
                     let mut builder = LabelsBuilder::new(default_keys.names());
                     let matches = default_keys.select(selection)
                         .map_err(map_selection_error(&default_keys.names(), &selection.names(), "keys"))?;
+                    let default_keys_cpu = default_keys.to_cpu();
                     for entry in matches {
-                        builder.add(&default_keys[entry as usize]);
+                        builder.add(&default_keys_cpu[entry as usize]);
                     }
                     builder.finish_assume_unique()
                 }
@@ -420,7 +422,7 @@ impl Calculator {
                 &samples, &components, &properties
             );
             let mut new_block = TensorBlock::new(
-                ArrayD::from_elem(shape, 0.0).into_shared(),
+                ArrayD::from_elem(shape, 0.0),
                 &samples,
                 &components,
                 &properties,
@@ -440,7 +442,7 @@ impl Calculator {
                 new_block.add_gradient(
                     "positions",
                     TensorBlock::new(
-                        ArrayD::from_elem(shape, 0.0).into_shared(),
+                        ArrayD::from_elem(shape, 0.0),
                         gradient_samples,
                         &components,
                         &properties
@@ -462,7 +464,7 @@ impl Calculator {
                 new_block.add_gradient(
                     "cell",
                     TensorBlock::new(
-                        ArrayD::from_elem(shape, 0.0).into_shared(),
+                        ArrayD::from_elem(shape, 0.0),
                         gradient_samples,
                         &components,
                         &properties
@@ -484,7 +486,7 @@ impl Calculator {
                 new_block.add_gradient(
                     "strain",
                     TensorBlock::new(
-                        ArrayD::from_elem(shape, 0.0).into_shared(),
+                        ArrayD::from_elem(shape, 0.0),
                         gradient_samples,
                         &components,
                         &properties

@@ -61,11 +61,11 @@ impl CalculatorBase for SortedDistances {
         let mut samples = Vec::new();
         if self.separate_neighbor_types {
             assert_eq!(keys.names(), ["center_type", "neighbor_type"]);
-            for [center_type, neighbor_type] in keys.iter_fixed_size() {
+            for [center_type, neighbor_type] in keys.to_cpu().iter_fixed_size() {
                 let builder = AtomCenteredSamples {
                     cutoff: self.cutoff,
-                    center_type: AtomicTypeFilter::Single(*center_type),
-                    neighbor_type: AtomicTypeFilter::Single(*neighbor_type),
+                    center_type: AtomicTypeFilter::Single(center_type.i32()),
+                    neighbor_type: AtomicTypeFilter::Single(neighbor_type.i32()),
                     self_pairs: false,
                 };
 
@@ -73,10 +73,10 @@ impl CalculatorBase for SortedDistances {
             }
         } else {
             assert_eq!(keys.names(), ["center_type"]);
-            for [center_type] in keys.iter_fixed_size() {
+            for [center_type] in keys.to_cpu().iter_fixed_size() {
                 let builder = AtomCenteredSamples {
                     cutoff: self.cutoff,
-                    center_type: AtomicTypeFilter::Single(*center_type),
+                    center_type: AtomicTypeFilter::Single(center_type.i32()),
                     neighbor_type: AtomicTypeFilter::Any,
                     self_pairs: false,
                 };
@@ -130,12 +130,12 @@ impl CalculatorBase for SortedDistances {
             };
 
             let block_data = block.data_mut();
-            let array = block_data.values.to_ndarray_mut();
+            let array = block_data.values.get_ndarray_mut::<f64>();
 
-            for (sample_i, [system_i, center_i]) in block_data.samples.iter_fixed_size().enumerate() {
-                let center_i = *center_i as usize;
+            for (sample_i, [system_i, center_i]) in block_data.samples.to_cpu().iter_fixed_size().enumerate() {
+                let center_i = center_i.usize();
 
-                let system = &mut systems[*system_i as usize];
+                let system = &mut systems[system_i.usize()];
                 system.compute_neighbors(self.cutoff)?;
                 let types = system.types()?;
 
@@ -149,7 +149,7 @@ impl CalculatorBase for SortedDistances {
                             pair.first
                         };
 
-                        if types[neighbor_i] == neighbor_type {
+                        if types[neighbor_i] == neighbor_type.i32() {
                             distances.push(pair.distance);
                         }
                     } else {
@@ -162,8 +162,8 @@ impl CalculatorBase for SortedDistances {
                 distances.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
                 distances.resize(self.max_neighbors, self.cutoff);
 
-                for (property_i, [neighbor]) in block_data.properties.iter_fixed_size().enumerate() {
-                    array[[sample_i, property_i]] = distances[*neighbor as usize];
+                for (property_i, [neighbor]) in block_data.properties.to_cpu().iter_fixed_size().enumerate() {
+                    array[[sample_i, property_i]] = distances[neighbor.usize()];
                 }
             }
         }
