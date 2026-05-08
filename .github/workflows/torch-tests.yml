@@ -58,7 +58,7 @@ jobs:
           apt install -y cmake make gcc g++ git curl python3.10 python3.10-venv
           update-alternatives --install /usr/local/bin/python python /usr/bin/python3.10 1
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -74,7 +74,7 @@ jobs:
       # we get torch from pip to run the C++ test
       - name: setup Python
         if: matrix.container != 'ubuntu:22.04'
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
 

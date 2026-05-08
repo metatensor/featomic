@@ -21,7 +21,7 @@ jobs:
       - name: free disk space
         run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android || true
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: setup rust
         uses: dtolnay/rust-toolchain@master
@@ -29,7 +29,7 @@ jobs:
           toolchain: stable
 
       - name: setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.13"
 
@@ -45,7 +45,7 @@ jobs:
           PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
 
       - name: store documentation as github artifact to be downloaded by users
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: docs
           path: docs/build/html/*
