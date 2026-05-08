@@ -65,7 +65,7 @@ impl SphericalExpansion {
             }
 
             let block = block.data_mut();
-            let array = block.values.to_array_mut();
+            let array = block.values.get_ndarray_mut::<f64>();
 
             // Add the center contribution to relevant elements of array.
             for (sample_i, &[system_i, atom_i]) in block.samples.iter_fixed_size().enumerate() {
@@ -931,7 +931,7 @@ mod tests {
                     ]);
                     assert!(block_i.is_some());
                     let block = &descriptor.block_by_id(block_i.unwrap());
-                    let array = block.values().to_array();
+                    let array = block.values().to_ndarray_lock::<f64>().read().unwrap();
                     assert_eq!(array.shape().len(), 3);
                     assert_eq!(array.shape()[1], 2 * l + 1);
                 }
@@ -1077,7 +1077,7 @@ mod tests {
 
         // entries centered on H atoms should be zero
         assert_eq!(*block.samples, Labels::new(["system", "atom"], &[[0, 0], [0, 1], [0, 2]]));
-        let array = block.values.as_array();
+        let array = block.values.to_ndarray_lock::<f64>().read().unwrap();
         assert_eq!(array.index_axis(ndarray::Axis(0), 1), ArrayD::from_elem(vec![1, 6], 0.0));
         assert_eq!(array.index_axis(ndarray::Axis(0), 2), ArrayD::from_elem(vec![1, 6], 0.0));
 
@@ -1090,7 +1090,7 @@ mod tests {
 
         // entries centered on O atoms should be zero
         assert_eq!(*block.samples, Labels::new(["system", "atom"], &[[0, 0], [0, 1], [0, 2]]));
-        let array = block.values.as_array();
+        let array = block.values.to_ndarray_lock::<f64>().read().unwrap();
         assert_eq!(array.index_axis(ndarray::Axis(0), 0), ArrayD::from_elem(vec![1, 6], 0.0));
     }
 

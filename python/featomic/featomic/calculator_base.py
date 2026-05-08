@@ -78,8 +78,7 @@ def _options_to_c(
         # nothing to do, all pointers are already NULL
         pass
     elif isinstance(selected_samples, Labels):
-        selected_samples = selected_samples._as_mts_labels_t()
-        c_options.selected_samples.subset = ctypes.pointer(selected_samples)
+        c_options.selected_samples.subset = selected_samples._as_mts_labels_t()
         c_options.__keepalive["selected_samples"] = selected_samples
     elif isinstance(selected_samples, TensorMap):
         c_options.selected_samples.predefined = selected_samples._ptr
@@ -94,8 +93,7 @@ def _options_to_c(
         # nothing to do, all pointers are already NULL
         pass
     elif isinstance(selected_properties, Labels):
-        selected_properties = selected_properties._as_mts_labels_t()
-        c_options.selected_properties.subset = ctypes.pointer(selected_properties)
+        c_options.selected_properties.subset = selected_properties._as_mts_labels_t()
         c_options.__keepalive["selected_properties"] = selected_properties
     elif isinstance(selected_properties, TensorMap):
         c_options.selected_properties.predefined = selected_properties._ptr
@@ -110,8 +108,7 @@ def _options_to_c(
         # nothing to do, all pointers are already NULL
         pass
     elif isinstance(selected_keys, Labels):
-        selected_keys = selected_keys._as_mts_labels_t()
-        c_options.selected_keys = ctypes.pointer(selected_keys)
+        c_options.selected_keys = selected_keys._as_mts_labels_t()
         c_options.__keepalive["selected_keys"] = selected_keys
     return c_options
 

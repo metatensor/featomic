@@ -328,7 +328,7 @@ TEST_CASE("Compute descriptor") {
 
         blocks.emplace_back(
             metatensor::TensorBlock(
-                std::unique_ptr<metatensor::SimpleDataArray>(new metatensor::SimpleDataArray({1, 1})),
+                std::make_unique<metatensor::SimpleDataArray<double>>(std::vector<uintptr_t>{1, 1}),
                 metatensor::Labels({"system", "atom"}, {{0, 3}}),
                 {},
                 metatensor::Labels({"index_delta", "x_y_z"}, {{0, 1}})
@@ -337,7 +337,7 @@ TEST_CASE("Compute descriptor") {
 
         blocks.emplace_back(
             metatensor::TensorBlock(
-                std::unique_ptr<metatensor::SimpleDataArray>(new metatensor::SimpleDataArray({1, 1})),
+                std::make_unique<metatensor::SimpleDataArray<double>>(std::vector<uintptr_t>{1, 1}),
                 metatensor::Labels({"system", "atom"}, {{0, 0}}),
                 {},
                 metatensor::Labels({"index_delta", "x_y_z"}, {{1, 0}})

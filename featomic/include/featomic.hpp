@@ -380,10 +380,6 @@ public:
             this->predefined_ = std::nullopt;
         }
 
-        if (this->subset_) {
-            this->raw_subset_ = subset_->as_mts_labels_t();
-        }
-
         return *this;
     }
 
@@ -396,13 +392,9 @@ public:
     LabelsSelection& operator=(LabelsSelection&& other) noexcept {
         this->subset_ = std::move(other.subset_);
         this->predefined_ = std::move(other.predefined_);
-        if (this->subset_) {
-            this->raw_subset_ = subset_->as_mts_labels_t();
-        }
 
         other.subset_ = std::nullopt;
         other.predefined_ = std::nullopt;
-        std::memset(&other.raw_subset_, 0, sizeof(mts_labels_t));
 
         return *this;
     }
@@ -413,11 +405,11 @@ public:
         std::memset(&selection, 0, sizeof(featomic_labels_selection_t));
 
         if (subset_) {
-            selection.subset = &raw_subset_;
+            selection.subset = subset_->as_mts_labels_t();
         }
 
         if (predefined_) {
-            selection.predefined = predefined_.value().as_mts_tensormap_t();
+            selection.predefined = predefined_->as_mts_tensormap_t();
         }
 
         return selection;
@@ -425,16 +417,10 @@ public:
 
 private:
     LabelsSelection(std::optional<metatensor::Labels> subset, std::optional<metatensor::TensorMap> predefined):
-        subset_(std::move(subset)), raw_subset_(), predefined_(std::move(predefined))
-    {
-        std::memset(&raw_subset_, 0, sizeof(mts_labels_t));
-        if (subset_) {
-            raw_subset_ = subset_->as_mts_labels_t();
-        }
-    }
+        subset_(std::move(subset)), predefined_(std::move(predefined))
+    {}
 
     std::optional<metatensor::Labels> subset_;
-    mts_labels_t raw_subset_;
     std::optional<metatensor::TensorMap> predefined_;
 };
 
@@ -529,17 +515,11 @@ public:
         options.selected_properties = this->selected_properties.as_featomic_labels_selection_t();
 
         if (this->selected_keys) {
-            // store the raw mts_labels_t in a class variable to make sure
-            // it lives longer than this function
-            this->raw_selected_keys_ = this->selected_keys->as_mts_labels_t();
-            options.selected_keys = &this->raw_selected_keys_;
+            options.selected_keys = this->selected_keys->as_mts_labels_t();
         }
 
         return options;
     }
-
-private:
-    mts_labels_t raw_selected_keys_;
 };
 
 

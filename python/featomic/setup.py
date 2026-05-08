@@ -229,8 +229,8 @@ def git_version_info():
             )
         elif output.stderr:
             print(output.stderr, file=sys.stderr)
-            n_commits = 0
-            git_hash = ""
+            n_commits = 1
+            git_hash = "no-git-hash"
         else:
             lines = output.stdout.splitlines()
             n_commits = int(lines[0].strip())
@@ -253,13 +253,10 @@ def create_version_number(version):
             pre = ("rc", version.pre[1] + 1)
             release = version.release
         else:
-            major, minor, patch = version.release
+            major, minor, _ = version.release
             release = (major, minor + 1, 0)
             pre = None
 
-        # this is using a private API which is intended to become public soon:
-        # https://github.com/pypa/packaging/pull/698. In the mean time we'll
-        # use this
         version = version.__replace__(
             release=release,
             pre=pre,

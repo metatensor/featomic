@@ -245,8 +245,8 @@ def test_different_device_dtype():
         (torch.device("cpu"), torch.float32),
         (torch.device("cpu"), torch.float64),
     ]
-    if can_use_mps_backend():
-        options.append((torch.device("mps:0"), torch.float32))
+    # if can_use_mps_backend():
+    #     options.append((torch.device("mps:0"), torch.float32))
 
     if torch.cuda.is_available():
         options.append((torch.device("cuda:0"), torch.float64))

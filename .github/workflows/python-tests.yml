@@ -72,6 +72,8 @@ jobs:
         os: [ubuntu-24.04]
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # we need the full history to get the git version info
 
       - name: set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6

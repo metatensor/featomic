@@ -3,8 +3,20 @@
 #include <cstring>
 
 #include "featomic.h"
+#include "metatensor.hpp"
 #include "catch.hpp"
 #include "helpers.hpp"
+
+static void check_labels(
+    const mts_labels_t* labels,
+    const std::vector<std::string>& expected_names,
+    const std::vector<int32_t>& expected_values
+);
+
+static const mts_labels_t* create_labels(
+    std::vector<const char*> names,
+    std::vector<int32_t> values
+);
 
 static void check_block(
     mts_tensormap_t* descriptor,
@@ -153,18 +165,11 @@ TEST_CASE("Compute descriptor") {
         );
         CHECK_SUCCESS(status);
 
-        mts_labels_t keys;
-        std::memset(&keys, 0, sizeof(mts_labels_t));
 
-        status = mts_tensormap_keys(descriptor, &keys);
-        CHECK_SUCCESS(status);
-
-        CHECK(keys.size == 1);
-        CHECK(keys.names[0] == std::string("center_type"));
-        CHECK(keys.count == 2);
-        CHECK(keys.values[0] == 1);
-        CHECK(keys.values[1] == 6);
-        mts_labels_free(&keys);
+        const mts_labels_t* keys = mts_tensormap_keys(descriptor);
+        REQUIRE(keys != nullptr);
+        check_labels(keys, {"center_type"}, {{1, 6}});
+        mts_labels_free(keys);
 
         auto samples = std::vector<int32_t>{
             0, 1, /**/ 0, 2, /**/ 0, 3,
@@ -216,20 +221,11 @@ TEST_CASE("Compute descriptor") {
     }
 
     SECTION("Partial compute -- samples") {
-        auto selected_sample_values = std::vector<int32_t>{
-            0, 1, /**/ 0, 3,
-        };
-        auto selected_sample_names = std::vector<const char*>{
-            "system", "atom"
-        };
-
-        mts_labels_t selected_samples;
-        std::memset(&selected_samples, 0, sizeof(mts_labels_t));
-
-        selected_samples.names = selected_sample_names.data();
-        selected_samples.values = selected_sample_values.data();
-        selected_samples.count = 2;
-        selected_samples.size = 2;
+        const mts_labels_t* selected_samples = create_labels(
+            {"system", "atom"},
+            {0, 1, /**/ 0, 3,}
+        );
+        REQUIRE(selected_samples != nullptr);
 
         auto system = simple_system();
 
@@ -239,7 +235,7 @@ TEST_CASE("Compute descriptor") {
         const char* gradients_list[] = {"positions"};
         options.gradients = gradients_list;
         options.gradients_count = 1;
-        options.selected_samples.subset = &selected_samples;
+        options.selected_samples.subset = selected_samples;
         auto* calculator = featomic_calculator("dummy_calculator", HYPERS_JSON);
         REQUIRE(calculator != nullptr);
 
@@ -250,18 +246,10 @@ TEST_CASE("Compute descriptor") {
 
         CHECK_SUCCESS(status);
 
-        mts_labels_t keys;
-        std::memset(&keys, 0, sizeof(mts_labels_t));
-
-        status = mts_tensormap_keys(descriptor, &keys);
-        CHECK_SUCCESS(status);
-
-        CHECK(keys.size == 1);
-        CHECK(keys.names[0] == std::string("center_type"));
-        CHECK(keys.count == 2);
-        CHECK(keys.values[0] == 1);
-        CHECK(keys.values[1] == 6);
-        mts_labels_free(&keys);
+        const mts_labels_t* keys = mts_tensormap_keys(descriptor);
+        REQUIRE(keys != nullptr);
+        check_labels(keys, {"center_type"}, {{1, 6}});
+        mts_labels_free(keys);
 
         auto samples = std::vector<int32_t>{
             0, 1, /**/ 0, 3,
@@ -296,24 +284,16 @@ TEST_CASE("Compute descriptor") {
         check_block(descriptor, 1, samples, properties, values, gradient_samples, gradients);
 
         mts_tensormap_free(descriptor);
+        mts_labels_free(selected_samples);
         featomic_calculator_free(calculator);
     }
 
     SECTION("Partial compute -- features") {
-        auto selected_property_values = std::vector<int32_t>{
-            0, 1,
-        };
-        auto selected_property_names = std::vector<const char*>{
-            "index_delta", "x_y_z"
-        };
-
-        mts_labels_t selected_properties;
-        std::memset(&selected_properties, 0, sizeof(mts_labels_t));
-
-        selected_properties.names = selected_property_names.data();
-        selected_properties.values = selected_property_values.data();
-        selected_properties.count = 1;
-        selected_properties.size = 2;
+        const mts_labels_t* selected_properties = create_labels(
+            {"index_delta", "x_y_z"},
+            {0, 1}
+        );
+        REQUIRE(selected_properties != nullptr);
 
         auto system = simple_system();
 
@@ -323,7 +303,7 @@ TEST_CASE("Compute descriptor") {
         const char* gradients_list[] = {"positions"};
         options.gradients = gradients_list;
         options.gradients_count = 1;
-        options.selected_properties.subset = &selected_properties;
+        options.selected_properties.subset = selected_properties;
         auto* calculator = featomic_calculator("dummy_calculator", HYPERS_JSON);
         REQUIRE(calculator != nullptr);
 
@@ -333,16 +313,10 @@ TEST_CASE("Compute descriptor") {
         );
         CHECK_SUCCESS(status);
 
-        mts_labels_t keys = {};
-        status = mts_tensormap_keys(descriptor, &keys);
-        CHECK_SUCCESS(status);
-
-        CHECK(keys.size == 1);
-        CHECK(keys.names[0] == std::string("center_type"));
-        CHECK(keys.count == 2);
-        CHECK(keys.values[0] == 1);
-        CHECK(keys.values[1] == 6);
-        mts_labels_free(&keys);
+        const mts_labels_t* keys = mts_tensormap_keys(descriptor);
+        REQUIRE(keys != nullptr);
+        check_labels(keys, {"center_type"}, {{1, 6}});
+        mts_labels_free(keys);
 
         auto samples = std::vector<int32_t>{
             0, 1, /**/ 0, 2, /**/ 0, 3,
@@ -390,37 +364,23 @@ TEST_CASE("Compute descriptor") {
         check_block(descriptor, 1, samples, properties, values, gradient_samples, gradients);
 
         mts_tensormap_free(descriptor);
+        mts_labels_free(selected_properties);
         featomic_calculator_free(calculator);
     }
 
     SECTION("Partial compute -- preselected") {
-        auto sample_names = std::vector<const char*>{
-            "system", "atom"
-        };
-        auto property_names = std::vector<const char*>{
-            "index_delta", "x_y_z"
-        };
-
-        auto h_sample_values = std::vector<int32_t>{
-            0, 3,
-        };
-        auto h_property_values = std::vector<int32_t>{
-            0, 1,
-        };
-
         mts_block_t* blocks[2] = {nullptr, nullptr};
 
-        mts_labels_t h_samples = {};
-        h_samples.size = 2;
-        h_samples.names = sample_names.data();
-        h_samples.count = 1;
-        h_samples.values = h_sample_values.data();
+        const mts_labels_t* h_samples = create_labels(
+            {"system", "atom"},
+            {0, 3}
+        );
 
-        mts_labels_t h_properties = {};
-        h_properties.size = 2;
-        h_properties.names = property_names.data();
-        h_properties.count = 1;
-        h_properties.values = h_property_values.data();
+        const mts_labels_t* h_properties = create_labels(
+            {"index_delta", "x_y_z"},
+            {0, 1}
+        );
+
         blocks[0] = mts_block(empty_array({1, 1}), h_samples, nullptr, 0, h_properties);
         REQUIRE(blocks[0] != nullptr);
 
@@ -432,31 +392,33 @@ TEST_CASE("Compute descriptor") {
             1, 0,
         };
 
-        mts_labels_t c_samples = {};
-        c_samples.size = 2;
-        c_samples.names = sample_names.data();
-        c_samples.count = 1;
-        c_samples.values = c_sample_values.data();
+        const mts_labels_t* c_samples = create_labels(
+            {"system", "atom"},
+            {0, 0}
+        );
 
-        mts_labels_t c_properties = {};
-        c_properties.size = 2;
-        c_properties.names = property_names.data();
-        c_properties.count = 1;
-        c_properties.values = c_property_values.data();
+        const mts_labels_t* c_properties = create_labels(
+            {"index_delta", "x_y_z"},
+            {1, 0}
+        );
+
         blocks[1] = mts_block(empty_array({1, 1}), c_samples, nullptr, 0, c_properties);
         REQUIRE(blocks[1] != nullptr);
 
-        auto keys_names = std::vector<const char*>{"center_type"};
-        auto keys_values = std::vector<int32_t>{1, 6};
-
-        mts_labels_t keys = {};
-        keys.size = 1;
-        keys.names = keys_names.data();
-        keys.count = 2;
-        keys.values = keys_values.data();
+        const mts_labels_t* keys = create_labels(
+            {"center_type"},
+            {1, 6}
+        );
+        REQUIRE(keys != nullptr);
 
         auto* predefined = mts_tensormap(keys, blocks, 2);
         REQUIRE(predefined != nullptr);
+        mts_labels_free(keys);
+
+        mts_labels_free(h_samples);
+        mts_labels_free(h_properties);
+        mts_labels_free(c_samples);
+        mts_labels_free(c_properties);
 
         auto system = simple_system();
         featomic_calculation_options_t options = {};
@@ -474,15 +436,11 @@ TEST_CASE("Compute descriptor") {
         );
         CHECK_SUCCESS(status);
 
-        status = mts_tensormap_keys(descriptor, &keys);
-        CHECK_SUCCESS(status);
+        keys = mts_tensormap_keys(descriptor);
+        REQUIRE(keys != nullptr);
 
-        CHECK(keys.size == 1);
-        CHECK(keys.names[0] == std::string("center_type"));
-        CHECK(keys.count == 2);
-        CHECK(keys.values[0] == 1);
-        CHECK(keys.values[1] == 6);
-        mts_labels_free(&keys);
+        check_labels(keys, {"center_type"}, {{1, 6}});
+        mts_labels_free(keys);
 
         auto samples = std::vector<int32_t>{
             0, 3,
@@ -534,14 +492,11 @@ TEST_CASE("Compute descriptor") {
         // existing one (1) from the default set of keys. We also put the keys
         // in a different order than what would be the default (6, 12).
 
-        mts_labels_t selected_keys = {};
-        const char* sample_names[] = {"center_type"};
-        selected_keys.names = sample_names;
-        selected_keys.size = 1;
-
-        int32_t sample_values[] = {12, 6};
-        selected_keys.values = sample_values;
-        selected_keys.count = 2;
+        const mts_labels_t* selected_keys = create_labels(
+            {"center_type"},
+            {12, 6}
+        );
+        REQUIRE(selected_keys != nullptr);
 
         auto system = simple_system();
 
@@ -549,7 +504,7 @@ TEST_CASE("Compute descriptor") {
         const char* gradients_list[] = {"positions"};
         options.gradients = gradients_list;
         options.gradients_count = 1;
-        options.selected_keys = &selected_keys;
+        options.selected_keys = selected_keys;
 
         auto* calculator = featomic_calculator("dummy_calculator", HYPERS_JSON);
         REQUIRE(calculator != nullptr);
@@ -560,16 +515,11 @@ TEST_CASE("Compute descriptor") {
         );
         CHECK_SUCCESS(status);
 
-        mts_labels_t keys = {};
-        status = mts_tensormap_keys(descriptor, &keys);
-        CHECK_SUCCESS(status);
+        const mts_labels_t* keys = mts_tensormap_keys(descriptor);
+        REQUIRE(keys != nullptr);
 
-        CHECK(keys.size == 1);
-        CHECK(keys.names[0] == std::string("center_type"));
-        CHECK(keys.count == 2);
-        CHECK(keys.values[0] == 12);
-        CHECK(keys.values[1] == 6);
-        mts_labels_free(&keys);
+        check_labels(keys, {"center_type"}, {{12, 6}});
+        mts_labels_free(keys);
 
         auto samples = std::vector<int32_t>{};
         auto properties = std::vector<int32_t>{
@@ -603,6 +553,7 @@ TEST_CASE("Compute descriptor") {
         check_block(descriptor, 1, samples, properties, values, gradient_samples, gradients);
 
         mts_tensormap_free(descriptor);
+        mts_labels_free(selected_keys);
         featomic_calculator_free(calculator);
     }
 }
@@ -622,79 +573,68 @@ void check_block(
     CHECK_SUCCESS(status);
 
     /**************************************************************************/
-    mts_labels_t labels = {};
-    status = mts_block_labels(block, 0, &labels);
-    CHECK_SUCCESS(status);
+    const mts_labels_t* labels = mts_block_labels(block, 0);
+    REQUIRE(labels != nullptr);
 
-    CHECK(labels.size == 2);
-    CHECK(labels.names[0] == std::string("system"));
-    CHECK(labels.names[1] == std::string("atom"));
-    auto n_samples = labels.count;
+    check_labels(labels, {"system", "atom"}, samples);
+    mts_labels_free(labels);
 
-    auto label_values = std::vector<int32_t>(
-        labels.values, labels.values + labels.count * labels.size
-    );
-    CHECK(label_values == samples);
-    mts_labels_free(&labels);
+    auto n_samples = samples.size() / 2;
 
     /**************************************************************************/
-    status = mts_block_labels(block, 1, &labels);
-    CHECK_SUCCESS(status);
+    labels = mts_block_labels(block, 1);
+    REQUIRE(labels != nullptr);
 
-    CHECK(labels.size == 2);
-    CHECK(labels.names[0] == std::string("index_delta"));
-    CHECK(labels.names[1] == std::string("x_y_z"));
-    auto n_properties = labels.count;
+    check_labels(labels, {"index_delta", "x_y_z"}, properties);
+    mts_labels_free(labels);
 
-    label_values = std::vector<int32_t>(
-        labels.values, labels.values + labels.count * labels.size
-    );
-    CHECK(label_values == properties);
-    mts_labels_free(&labels);
+    auto n_properties = properties.size() / 2;
 
     /**************************************************************************/
     mts_array_t array = {};
     status = mts_block_data(block, &array);
     CHECK_SUCCESS(status);
 
-
     const uintptr_t* shape = nullptr;
     uintptr_t shape_count = 0;
     status = array.shape(array.ptr, &shape, &shape_count);
-    CHECK_SUCCESS(status);
-
-    double* values_ptr = nullptr;
-    status = array.data(array.ptr, &values_ptr);
     CHECK_SUCCESS(status);
 
     CHECK(shape_count == 2);
     CHECK(shape[0] == n_samples);
     CHECK(shape[1] == n_properties);
 
+    DLManagedTensorVersioned* dl_tensor = nullptr;
+    status = array.as_dlpack(
+        array.ptr,
+        &dl_tensor,
+        DLDevice { kDLCPU, 0 },
+        nullptr,
+        DLPackVersion{ DLPACK_MAJOR_VERSION, DLPACK_MINOR_VERSION }
+    );
+    CHECK_SUCCESS(status);
+
+    auto* values_ptr = static_cast<double*>(dl_tensor->dl_tensor.data) + dl_tensor->dl_tensor.byte_offset / sizeof(double);
     auto actual_values = std::vector<double>(
         values_ptr, values_ptr + n_samples * n_properties
     );
     CHECK(actual_values == values);
+
+    if (dl_tensor != nullptr && dl_tensor->deleter != nullptr) {
+        dl_tensor->deleter(dl_tensor);
+    }
 
     /**************************************************************************/
     mts_block_t* gradients_block = nullptr;
     status = mts_block_gradient(block, "positions", &gradients_block);
     CHECK_SUCCESS(status);
 
-    status = mts_block_labels(gradients_block, 0, &labels);
-    CHECK_SUCCESS(status);
+    labels = mts_block_labels(gradients_block, 0);
+    REQUIRE(labels != nullptr);
+    check_labels(labels, {"sample", "system", "atom"}, gradient_samples);
+    mts_labels_free(labels);
 
-    CHECK(labels.size == 3);
-    CHECK(labels.names[0] == std::string("sample"));
-    CHECK(labels.names[1] == std::string("system"));
-    CHECK(labels.names[2] == std::string("atom"));
-    auto n_gradient_samples = labels.count;
-
-    label_values = std::vector<int32_t>(
-        labels.values, labels.values + labels.count * labels.size
-    );
-    CHECK(label_values == gradient_samples);
-    mts_labels_free(&labels);
+    auto n_gradient_samples = gradient_samples.size() / 3;
 
     /**************************************************************************/
     status = mts_block_data(gradients_block, &array);
@@ -702,16 +642,78 @@ void check_block(
 
     status = array.shape(array.ptr, &shape, &shape_count);
     CHECK_SUCCESS(status);
-    status = array.data(array.ptr, &values_ptr);
-    CHECK_SUCCESS(status);
 
     CHECK(shape_count == 3);
     CHECK(shape[0] == n_gradient_samples);
     CHECK(shape[1] == 3);
     CHECK(shape[2] == n_properties);
 
+    dl_tensor = nullptr;
+    status = array.as_dlpack(
+        array.ptr,
+        &dl_tensor,
+        DLDevice { kDLCPU, 0 },
+        nullptr,
+        DLPackVersion{ DLPACK_MAJOR_VERSION, DLPACK_MINOR_VERSION }
+    );
+    CHECK_SUCCESS(status);
+
+    values_ptr = static_cast<double*>(dl_tensor->dl_tensor.data) + dl_tensor->dl_tensor.byte_offset / sizeof(double);
     auto actual_gradients = std::vector<double>(
         values_ptr, values_ptr + n_gradient_samples * 3 * n_properties
     );
     CHECK(actual_gradients == gradients);
+
+    if (dl_tensor != nullptr && dl_tensor->deleter != nullptr) {
+        dl_tensor->deleter(dl_tensor);
+    }
+}
+
+void check_labels(
+    const mts_labels_t* labels,
+    const std::vector<std::string>& expected_names,
+    const std::vector<int32_t>& expected_values
+) {
+    const char* const* names = nullptr;
+    size_t size = 0;
+    mts_status_t status = mts_labels_dimensions(labels, &names, &size);
+    REQUIRE(status == MTS_SUCCESS);
+
+    CHECK(size == expected_names.size());
+    for (size_t i = 0; i < size; ++i) {
+        CHECK(names[i] == expected_names[i]);
+    }
+
+    int32_t const* keys_values = nullptr;
+    size_t count = 0;
+    status = mts_labels_values_cpu(labels, &keys_values, &count, &size);
+    REQUIRE(status == MTS_SUCCESS);
+
+    CHECK(size == expected_names.size());
+    CHECK(count == expected_values.size() / size);
+    for (size_t i = 0; i < count; ++i) {
+        for (size_t j = 0; j < size; ++j) {
+            CHECK(keys_values[i * size + j] == expected_values[i * size + j]);
+        }
+    }
+}
+
+const mts_labels_t* create_labels(
+    std::vector<const char*> names,
+    std::vector<int32_t> values
+) {
+    REQUIRE(values.size() % names.size() == 0);
+
+    auto shape = std::vector<uintptr_t>{values.size() / names.size(), names.size()};
+    auto array = std::make_unique<metatensor::SimpleDataArray<int32_t>>(
+        metatensor::SimpleDataArray<int32_t>(std::move(shape), std::move(values))
+    );
+
+    auto mts_array = metatensor::DataArrayBase::to_mts_array(std::move(array));
+
+    return mts_labels(
+        names.data(),
+        names.size(),
+        std::move(mts_array).release()
+    );
 }

@@ -79,7 +79,7 @@ impl CalculatorBase for GeometricMoments {
                     let block_id = first_block_id.expect("we have a sample in this block");
                     let mut block = descriptor.block_mut_by_id(block_id);
                     let block = block.data_mut();
-                    let array = block.values.to_array_mut();
+                    let array = block.values.get_ndarray_mut::<f64>();
 
                     for (property_i, [k]) in block.properties.iter_fixed_size().enumerate() {
                         let value = f64::powi(pair.distance, k.i32()) / n_neighbors_first;
@@ -91,7 +91,7 @@ impl CalculatorBase for GeometricMoments {
                     let block_id = second_block_id.expect("we have a sample in this block");
                     let mut block = descriptor.block_mut_by_id(block_id);
                     let block = block.data_mut();
-                    let array = block.values.to_array_mut();
+                    let array = block.values.get_ndarray_mut::<f64>();
 
                     for (property_i, [k]) in block.properties.iter_fixed_size().enumerate() {
                         let value = f64::powi(pair.distance, k.i32()) / n_neighbors_second;

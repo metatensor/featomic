@@ -101,7 +101,7 @@ impl LabelsSelection<'_> {
                         .map_err(map_selection_error(&default_names, &selection.names(), label_kind))?;
 
                     for entry in matches {
-                        builder.add(&labels[entry as usize]);
+                        builder.add(&labels[entry]);
                     }
 
                     // the labels entries are unique because they are a
@@ -302,7 +302,7 @@ impl Calculator {
                     let matches = default_keys.select(selection)
                         .map_err(map_selection_error(&default_keys.names(), &selection.names(), "keys"))?;
                     for entry in matches {
-                        builder.add(&default_keys[entry as usize]);
+                        builder.add(&default_keys[entry]);
                     }
                     builder.finish_assume_unique()
                 }

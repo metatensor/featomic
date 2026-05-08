@@ -71,8 +71,8 @@ fn lode_vs_soap() {
 
     for (soap, lode) in lode_descriptor.blocks().iter().zip(soap_descriptor.blocks()) {
         assert_relative_eq!(
-            lode.values().to_array(),
-            soap.values().to_array(),
+            *lode.values().to_ndarray_lock::<f64>().read().unwrap(),
+            *soap.values().to_ndarray_lock::<f64>().read().unwrap(),
             max_relative=1e-4
         );
     }
