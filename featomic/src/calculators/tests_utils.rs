@@ -75,9 +75,9 @@ fn check_compute_partial_keys(
             assert_eq!(full.components(), partial.components());
             assert_eq!(full.properties(), partial.properties());
 
-            let full_values = full.values().to_array();
-            let partial_values = partial.values().to_array();
-            assert_ulps_eq!(full_values, partial_values);
+            let full_values = full.values().to_ndarray_lock::<f64>().read().unwrap();
+            let partial_values = partial.values().to_ndarray_lock::<f64>().read().unwrap();
+            assert_ulps_eq!(*full_values, *partial_values);
         }
     }
 }
@@ -102,8 +102,8 @@ fn check_compute_partial_properties(
         assert_eq!(full.components(), partial.components());
         assert_eq!(partial.properties(), *properties);
 
-        let full_values = full.values().to_array();
-        let partial_values = partial.values().to_array();
+        let full_values = full.values().to_ndarray_lock::<f64>().read().unwrap();
+        let partial_values = partial.values().to_ndarray_lock::<f64>().read().unwrap();
 
         let property_axis = Axis(full_values.shape().len() - 1);
 
@@ -115,8 +115,8 @@ fn check_compute_partial_properties(
             );
 
             if let Some(full_gradient) = full.gradient("positions") {
-                let full_gradient_data = full_gradient.values().to_array();
-                let partial_gradient_data = partial.gradient("positions").unwrap().values().to_array();
+                let full_gradient_data = full_gradient.values().to_ndarray_lock::<f64>().read().unwrap();
+                let partial_gradient_data = partial.gradient("positions").unwrap().values().to_ndarray_lock::<f64>().read().unwrap();
 
                 let property_axis = Axis(full_gradient_data.shape().len() - 1);
                 assert_ulps_eq!(
@@ -147,8 +147,8 @@ fn check_compute_partial_samples(
         assert_eq!(full.components(), partial.components());
         assert_eq!(full.properties(), partial.properties());
 
-        let full_values = full.values().to_array();
-        let partial_values = partial.values().to_array();
+        let full_values = full.values().to_ndarray_lock::<f64>().read().unwrap();
+        let partial_values = partial.values().to_ndarray_lock::<f64>().read().unwrap();
 
         for (partial_i, sample) in partial.samples().iter().enumerate() {
             let sample_i = full.samples().position(sample).unwrap();
@@ -161,8 +161,8 @@ fn check_compute_partial_samples(
         if let Some(full_gradient) = full.gradient("positions") {
             let partial_gradient = partial.gradient("positions").unwrap();
 
-            let full_gradient_data = full_gradient.values().to_array();
-            let partial_gradient_data = partial_gradient.values().to_array();
+            let full_gradient_data = full_gradient.values().to_ndarray_lock::<f64>().read().unwrap();
+            let partial_gradient_data = partial_gradient.values().to_ndarray_lock::<f64>().read().unwrap();
 
             for (grad_sample_i, grad_sample) in partial_gradient.samples().iter().enumerate() {
                 let sample = &partial.samples()[grad_sample[0].usize()];
@@ -200,8 +200,8 @@ fn check_compute_partial_both(
     for (full, partial) in full.blocks().iter().zip(partial.blocks()) {
         assert_eq!(full.components(), partial.components());
 
-        let full_values = full.values().to_array();
-        let partial_values = partial.values().to_array();
+        let full_values = full.values().to_ndarray_lock::<f64>().read().unwrap();
+        let partial_values = partial.values().to_ndarray_lock::<f64>().read().unwrap();
         let property_axis = Axis(full_values.shape().len() - 2);
 
         for (sample_i, sample) in partial.samples().iter().enumerate() {
@@ -219,8 +219,8 @@ fn check_compute_partial_both(
         if let Some(full_gradient) = full.gradient("positions") {
             let partial_gradient = partial.gradient("positions").unwrap();
 
-            let full_gradient_data = full_gradient.values().to_array();
-            let partial_gradient_data = partial_gradient.values().to_array();
+            let full_gradient_data = full_gradient.values().to_ndarray_lock::<f64>().read().unwrap();
+            let partial_gradient_data = partial_gradient.values().to_ndarray_lock::<f64>().read().unwrap();
 
             let property_axis = Axis(full_gradient_data.shape().len() - 2);
 
@@ -297,9 +297,12 @@ pub fn finite_differences_positions(mut calculator: Calculator, system: &SimpleS
                     let sample_pos_i = block_pos.samples().position(sample).expect("missing sample in pos");
                     let sample_neg_i = block_neg.samples().position(sample).expect("missing sample in neg");
 
-                    let value_pos = block_pos.values().to_array().index_axis(Axis(0), sample_pos_i);
-                    let value_neg = block_neg.values().to_array().index_axis(Axis(0), sample_neg_i);
-                    let gradient = gradients.values().to_array().index_axis(Axis(0), gradient_i);
+                    let value_pos_lock = block_pos.values().to_ndarray_lock::<f64>().read().unwrap();
+                    let value_pos = value_pos_lock.index_axis(Axis(0), sample_pos_i);
+                    let value_neg_lock = block_neg.values().to_ndarray_lock::<f64>().read().unwrap();
+                    let value_neg = value_neg_lock.index_axis(Axis(0), sample_neg_i);
+                    let gradient_lock = gradients.values().to_ndarray_lock::<f64>().read().unwrap();
+                    let gradient = gradient_lock.index_axis(Axis(0), gradient_i);
                     let gradient = gradient.index_axis(Axis(0), xyz);
 
                     assert_eq!(value_pos.shape(), gradient.shape());
@@ -356,9 +359,12 @@ pub fn finite_differences_cell(mut calculator: Calculator, system: &SimpleSystem
                     let sample_pos_i = block_pos.samples().position(sample).expect("missing sample in pos");
                     let sample_neg_i = block_neg.samples().position(sample).expect("missing sample in neg");
 
-                    let value_pos = block_pos.values().to_array().index_axis(Axis(0), sample_pos_i);
-                    let value_neg = block_neg.values().to_array().index_axis(Axis(0), sample_neg_i);
-                    let gradient = gradients.values().to_array().index_axis(Axis(0), gradient_i);
+                    let value_pos_lock = block_pos.values().to_ndarray_lock::<f64>().read().unwrap();
+                    let value_pos = value_pos_lock.index_axis(Axis(0), sample_pos_i);
+                    let value_neg_lock = block_neg.values().to_ndarray_lock::<f64>().read().unwrap();
+                    let value_neg = value_neg_lock.index_axis(Axis(0), sample_neg_i);
+                    let gradient_lock = gradients.values().to_ndarray_lock::<f64>().read().unwrap();
+                    let gradient = gradient_lock.index_axis(Axis(0), gradient_i);
                     let gradient = gradient.index_axis(Axis(0), abc);
                     let gradient = gradient.index_axis(Axis(0), xyz);
 
@@ -424,9 +430,12 @@ pub fn finite_differences_strain(mut calculator: Calculator, system: &SimpleSyst
                     let sample_pos_i = block_pos.samples().position(sample).expect("missing sample in pos");
                     let sample_neg_i = block_neg.samples().position(sample).expect("missing sample in neg");
 
-                    let value_pos = block_pos.values().to_array().index_axis(Axis(0), sample_pos_i);
-                    let value_neg = block_neg.values().to_array().index_axis(Axis(0), sample_neg_i);
-                    let gradient = gradients.values().to_array().index_axis(Axis(0), gradient_i);
+                    let value_pos_lock = block_pos.values().to_ndarray_lock::<f64>().read().unwrap();
+                    let value_pos = value_pos_lock.index_axis(Axis(0), sample_pos_i);
+                    let value_neg_lock = block_neg.values().to_ndarray_lock::<f64>().read().unwrap();
+                    let value_neg = value_neg_lock.index_axis(Axis(0), sample_neg_i);
+                    let gradient_lock = gradients.values().to_ndarray_lock::<f64>().read().unwrap();
+                    let gradient = gradient_lock.index_axis(Axis(0), gradient_i);
                     let gradient = gradient.index_axis(Axis(0), xyz_1);
                     let gradient = gradient.index_axis(Axis(0), xyz_2);
 

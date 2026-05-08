@@ -6,16 +6,27 @@
 #include <metatensor.h>
 
 #include "common/systems.h"
+#include "common/utils.h"
 
 static mts_tensormap_t* move_keys_to_samples(mts_tensormap_t* descriptor, const char* keys_to_move[], size_t keys_to_move_len);
 static mts_tensormap_t* move_keys_to_properties(mts_tensormap_t* descriptor, const char* keys_to_move[], size_t keys_to_move_len);
+
+static const char* get_mts_last_error() {
+    const char* error = NULL;
+    mts_status_t status = mts_last_error(&error, NULL, NULL);
+
+    if (status != MTS_SUCCESS) {
+        return "Unknown error";
+    } else {
+        return error;
+    }
+}
 
 int main(int argc, char* argv[]) {
     int status = FEATOMIC_SUCCESS;
     featomic_calculator_t* calculator = NULL;
     featomic_system_t* systems = NULL;
     uintptr_t n_systems = 0;
-    double* values = NULL;
     const uintptr_t* shape = NULL;
     uintptr_t shape_count = 0;
     bool got_error = true;
@@ -32,6 +43,10 @@ int main(int argc, char* argv[]) {
     mts_tensormap_t* descriptor = NULL;
     mts_block_t* block = NULL;
     mts_array_t array = {0};
+
+    DLManagedTensorVersioned* dlpack_tensor = NULL;
+    DLDevice dl_device = {kDLCPU, 0};
+    DLPackVersion dl_version = {DLPACK_MAJOR_VERSION, DLPACK_MINOR_VERSION};
 
     // hyper-parameters for the calculation as JSON
     const char* parameters = "{\n"
@@ -81,50 +96,39 @@ int main(int argc, char* argv[]) {
     // with one sample for each atom-centered environment.
     descriptor = move_keys_to_samples(descriptor, keys_to_samples, 1);
     if (descriptor == NULL) {
-        printf("Error: %s\n", mts_last_error());
+        printf("Error: %s\n", get_mts_last_error());
         goto cleanup;
     }
 
     descriptor = move_keys_to_properties(descriptor, keys_to_properties, 2);
     if (descriptor == NULL) {
-        printf("Error: %s\n", mts_last_error());
+        printf("Error: %s\n", get_mts_last_error());
         goto cleanup;
     }
 
     // extract the unique block and corresponding values from the descriptor
     status = mts_tensormap_block_by_id(descriptor, &block, 0);
     if (status != MTS_SUCCESS) {
-        printf("Error: %s\n", mts_last_error());
+        printf("Error: %s\n", get_mts_last_error());
         goto cleanup;
     }
 
     status = mts_block_data(block, &array);
     if (status != MTS_SUCCESS) {
-        printf("Error: %s\n", mts_last_error());
+        printf("Error: %s\n", get_mts_last_error());
         goto cleanup;
     }
 
-    // callback the functions on the mts_array_t to extract the shape/data pointer
-    status = array.shape(array.ptr, &shape, &shape_count);
+    // Call the function to get the data as a dlpack array.
+    status = array.as_dlpack(array.ptr, &dlpack_tensor, dl_device, NULL, dl_version);
     if (status != MTS_SUCCESS) {
-        printf("Error: %s\n", mts_last_error());
+        printf("Error: %s\n", get_mts_last_error());
         goto cleanup;
     }
 
-    status = array.data(array.ptr, &values);
-    if (status != MTS_SUCCESS) {
-        printf("Error: %s\n", mts_last_error());
-        goto cleanup;
-    }
-
-    if (status != MTS_SUCCESS) {
-        printf("Error: %s\n", mts_last_error());
-        goto cleanup;
-    }
-    assert(shape_count == 2);
-
-    // you can now use `values` as the input of a machine learning algorithm
-    printf("the value array shape is %lu x %lu\n", shape[0], shape[1]);
+    assert(dlpack_tensor->dl_tensor.ndim == 2);
+    // you can now use `dlpack_tensor` as the input of a machine learning algorithm
+    printf("the value array shape is %lld x %lld\n", dlpack_tensor->dl_tensor.shape[0], dlpack_tensor->dl_tensor.shape[1]);
 
     got_error = false;
 cleanup:
@@ -132,6 +136,9 @@ cleanup:
     featomic_calculator_free(calculator);
 
     free_systems_example(systems, n_systems);
+    if (dlpack_tensor != NULL && dlpack_tensor->deleter != NULL) {
+        dlpack_tensor->deleter(dlpack_tensor);
+    }
 
     if (got_error) {
         return 1;
@@ -140,36 +147,42 @@ cleanup:
     }
 }
 
-
 mts_tensormap_t* move_keys_to_samples(mts_tensormap_t* descriptor, const char* keys_to_move[], size_t keys_to_move_len) {
-    mts_labels_t keys = {0};
+    const mts_labels_t* keys = NULL;
     mts_tensormap_t* moved_descriptor = NULL;
+    mts_array_t fill_value;
+    mts_array_t empty_values;
 
-    keys.names = keys_to_move;
-    keys.size = keys_to_move_len;
-    keys.values = NULL;
-    keys.count = 0;
+    empty_values = create_empty_array(keys_to_move_len);
+    keys = mts_labels(keys_to_move, keys_to_move_len, empty_values);
 
-    moved_descriptor = mts_tensormap_keys_to_samples(descriptor, keys, true);
+    fill_value = create_fill_value(0.0);
+
+    moved_descriptor = mts_tensormap_keys_to_samples(descriptor, keys, fill_value, true);
     mts_tensormap_free(descriptor);
+    mts_labels_free(keys);
 
     return moved_descriptor;
 }
 
 
 mts_tensormap_t* move_keys_to_properties(mts_tensormap_t* descriptor, const char* keys_to_move[], size_t keys_to_move_len) {
-    mts_labels_t keys = {0};
+    const mts_labels_t* keys = NULL;
     mts_tensormap_t* moved_descriptor = NULL;
+    mts_array_t fill_value;
+    mts_array_t empty_values;
 
-    keys.names = keys_to_move;
-    keys.size = keys_to_move_len;
-    keys.values = NULL;
-    keys.count = 0;
+    empty_values = create_empty_array(keys_to_move_len);
+    keys = mts_labels(keys_to_move, keys_to_move_len, empty_values);
 
-    moved_descriptor = mts_tensormap_keys_to_properties(descriptor, keys, true);
+    fill_value = create_fill_value(0.0);
+
+    moved_descriptor = mts_tensormap_keys_to_properties(descriptor, keys, fill_value, true);
     mts_tensormap_free(descriptor);
+    mts_labels_free(keys);
 
     return moved_descriptor;
 }
 
 #include "common/systems.c"
+#include "common/utils.c"

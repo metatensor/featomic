@@ -50,7 +50,7 @@ static metatensor_torch::TensorBlock block_to_torch(
     }
 
     auto torch_values = torch::from_blob(
-        values.data(),
+        const_cast<double*>(values.data()),
         sizes,
         [tensor](void*) mutable {
             // this function holds a copy of `tensor`, which will make sure that

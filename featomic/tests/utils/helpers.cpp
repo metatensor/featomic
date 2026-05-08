@@ -1,3 +1,4 @@
+#include <cassert>
 #include <cstring>
 
 #include "helpers.hpp"
@@ -102,6 +103,7 @@ featomic_system_t simple_system() {
 
 mts_array_t empty_array(std::vector<size_t> array_shape) {
     mts_array_t array = {};
+    std::memset(&array, 0, sizeof(mts_array_t));
 
     array.ptr = new std::vector<size_t>(std::move(array_shape));
     array.origin = [](const void *array, mts_data_origin_t *origin){
@@ -118,9 +120,24 @@ mts_array_t empty_array(std::vector<size_t> array_shape) {
         auto* array_shape = static_cast<std::vector<size_t>*>(array);
         delete array_shape;
     };
-    array.copy = [](const void *array, mts_array_t* new_array){
+
+    array.copy = [](const void *array, DLDevice device,mts_array_t* new_array){
+        assert(device.device_type == kDLCPU);
         const auto* array_shape = static_cast<const std::vector<size_t>*>(array);
         *new_array = empty_array(*array_shape);
+        return MTS_SUCCESS;
+    };
+
+    array.device = [](const void *array, DLDevice* device){
+        device->device_type = kDLCPU;
+        device->device_id = 0;
+        return MTS_SUCCESS;
+    };
+
+    array.dtype = [](const void *array, DLDataType* dtype){
+        dtype->code = kDLFloat;
+        dtype->bits = 64;
+        dtype->lanes = 1;
         return MTS_SUCCESS;
     };
 

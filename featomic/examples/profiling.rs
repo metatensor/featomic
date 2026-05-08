@@ -1,4 +1,4 @@
-use metatensor::{TensorMap, Labels};
+use metatensor::{TensorMap, Labels, MtsArray};
 use featomic::{Calculator, System, CalculationOptions};
 use chemfiles::{Trajectory, Frame};
 
@@ -73,10 +73,12 @@ fn compute_soap(path: &str) -> Result<TensorMap, Box<dyn std::error::Error>> {
     });
 
     let keys_to_move = Labels::empty(vec!["center_type"]);
-    let descriptor = descriptor.keys_to_samples(&keys_to_move, /* sort_samples */ true)?;
+    let fill_value = MtsArray::from(ndarray::Array::from_elem(vec![], 0.0));
+    let descriptor = descriptor.keys_to_samples(&keys_to_move, /* fill_value */fill_value, /* sort_samples */ true)?;
 
     let keys_to_move = Labels::empty(vec!["neighbor_1_type", "neighbor_2_type"]);
-    let descriptor = descriptor.keys_to_properties(&keys_to_move, /* sort_samples */ true)?;
+    let fill_value = MtsArray::from(ndarray::Array::from_elem(vec![], 0.0));
+    let descriptor = descriptor.keys_to_properties(&keys_to_move, /* fill_value */fill_value, /* sort_samples */ true)?;
 
     Ok(descriptor)
 }

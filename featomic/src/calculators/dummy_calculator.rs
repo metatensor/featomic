@@ -121,7 +121,7 @@ impl CalculatorBase for DummyCalculator {
             let center_type = key[0].i32();
 
             let block_data = block.data_mut();
-            let array = block_data.values.to_array_mut();
+            let array = block_data.values.get_ndarray_mut();
 
             for (sample_i, [system, atom]) in block_data.samples.iter_fixed_size().enumerate() {
                 let system_i = system.usize();
@@ -198,7 +198,7 @@ impl CalculatorBase for DummyCalculator {
 
             if let Some(mut gradient) = block.gradient_mut("positions") {
                 let gradient = gradient.data_mut();
-                let array = gradient.values.to_array_mut();
+                let array = gradient.values.get_ndarray_mut();
 
                 for gradient_sample_i in 0..array.shape()[0] {
                     for (property_i, property) in gradient.properties.iter().enumerate() {
@@ -269,12 +269,12 @@ mod tests {
         assert_eq!(keys[1], [1]);
 
         let o_block = &descriptor.block_by_id(0);
-        let values = o_block.values().to_array();
+        let values = o_block.values().to_ndarray_lock::<f64>().read().unwrap();
         assert_eq!(values.shape(), [1, 2]);
         assert_eq!(values.slice(s![0, ..]), aview1(&[9.0, -1.1778999999999997]));
 
         let h_block = &descriptor.block_by_id(1);
-        let values = h_block.values().to_array();
+        let values = h_block.values().to_ndarray_lock::<f64>().read().unwrap();
         assert_eq!(values.shape(), [2, 2]);
         assert_eq!(values.slice(s![0, ..]), aview1(&[10.0, 0.16649999999999998]));
         assert_eq!(values.slice(s![1, ..]), aview1(&[11.0, -1.3443999999999998]));

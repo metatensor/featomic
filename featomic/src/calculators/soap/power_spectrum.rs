@@ -1,8 +1,14 @@
+#![allow(clippy::too_many_arguments)]
+#![allow(clippy::await_holding_lock)]
+
 use std::collections::{BTreeSet, HashMap};
+use std::sync::{Arc, RwLock, RwLockReadGuard};
 
 use ndarray::parallel::prelude::*;
 
-use metatensor::{TensorMap, TensorBlock, EmptyArray};
+use ouroboros::self_referencing;
+
+use metatensor::{EmptyArray, TensorBlock, TensorMap};
 use metatensor::{LabelsBuilder, Labels, LabelValue};
 
 use crate::calculators::CalculatorBase;
@@ -309,16 +315,16 @@ impl SoapPowerSpectrum {
 
     /// Get the list of spherical expansion to combine when computing a single
     /// block (associated with the given key) of the power spectrum.
-    fn spx_properties_to_combine<'a>(
+    fn spx_properties_to_combine(
         key: &[LabelValue],
         properties: &Labels,
-        spherical_expansion: &HashMap<&[LabelValue], SphericalExpansionBlock<'a>>,
-    ) -> Vec<SpxPropertiesToCombine<'a>> {
+        spherical_expansion: &HashMap<&[LabelValue], SphericalExpansionBlockHeads>,
+    ) -> Vec<SpxPropertiesToCombine> {
         let center_type = key[0];
         let neighbor_1_type = key[1];
         let neighbor_2_type = key[2];
 
-        return properties.par_iter().map(|property| {
+        return properties.iter().map(|property| {
             let l = property[0];
             let n1 = property[1];
             let n2 = property[2];
@@ -332,7 +338,10 @@ impl SoapPowerSpectrum {
                 .expect("missing first neighbor type block in spherical expansion");
 
             // both blocks should had the same number of m components
-            debug_assert_eq!(block_1.values.shape()[1], block_2.values.shape()[1]);
+            debug_assert_eq!(
+                block_1.values_lock.read().expect("lock was poisoned").shape()[1],
+                block_2.values_lock.read().expect("lock was poisoned").shape()[1]
+            );
 
             let property_1 = block_1.properties.position(&[n1]).expect("missing n1");
             let property_2 = block_2.properties.position(&[n2]).expect("missing n2");
@@ -352,8 +361,28 @@ impl SoapPowerSpectrum {
                 normalization,
                 property_1,
                 property_2,
-                spx_1: block_1.clone(),
-                spx_2: block_2.clone(),
+                spx_1: SphericalExpansionBlock::new(
+                    /*properties*/ block_1.properties.clone(),
+                    /*values_lock*/ Arc::clone(&block_1.values_lock),
+                    /*values_builder*/ |v| v.read().expect("lock was poisoned"),
+                    /*positions_gradients_lock*/ block_1.positions_gradients_lock.clone(),
+                    /*positions_gradients_builder*/ |g| g.as_ref().map(|g| g.read().expect("lock was poisoned")),
+                    /*cell_gradients_lock*/ block_1.cell_gradients_lock.clone(),
+                    /*cell_gradients_builder*/ |g| g.as_ref().map(|g| g.read().expect("lock was poisoned")),
+                    /*strain_gradients_lock*/ block_1.strain_gradients_lock.clone(),
+                    /*strain_gradients_builder*/ |g| g.as_ref().map(|g| g.read().expect("lock was poisoned")),
+                ),
+                spx_2: SphericalExpansionBlock::new(
+                    /*properties*/ block_2.properties.clone(),
+                    /*values_lock*/ Arc::clone(&block_2.values_lock),
+                    /*values_builder*/ |v| v.read().expect("lock was poisoned"),
+                    /*positions_gradients_lock*/ block_2.positions_gradients_lock.clone(),
+                    /*positions_gradients_builder*/ |g| g.as_ref().map(|g| g.read().expect("lock was poisoned")),
+                    /*cell_gradients_lock*/ block_2.cell_gradients_lock.clone(),
+                    /*cell_gradients_builder*/ |g| g.as_ref().map(|g| g.read().expect("lock was poisoned")),
+                    /*strain_gradients_lock*/ block_2.strain_gradients_lock.clone(),
+                    /*strain_gradients_builder*/ |g| g.as_ref().map(|g| g.read().expect("lock was poisoned")),
+                ),
             }
         }).collect();
     }
@@ -362,7 +391,7 @@ impl SoapPowerSpectrum {
 
 /// Data about the two spherical expansion block that will get combined to
 /// produce a single (l, n1, n2) property in a single power spectrum block
-struct SpxPropertiesToCombine<'a> {
+struct SpxPropertiesToCombine {
     /// value of l
     o3_lambda: usize,
     /// normalization factor $-1^l * \sqrt{2 l + 1}$
@@ -372,24 +401,40 @@ struct SpxPropertiesToCombine<'a> {
     /// position of n2 in the second spherical expansion properties
     property_2: usize,
     /// first spherical expansion block
-    spx_1: SphericalExpansionBlock<'a>,
+    spx_1: SphericalExpansionBlock,
     /// second spherical expansion block
-    spx_2: SphericalExpansionBlock<'a>,
+    spx_2: SphericalExpansionBlock,
 }
 
-/// Data from a single spherical expansion block
-#[derive(Debug, Clone)]
-struct SphericalExpansionBlock<'a> {
+/// Data from a single spherical expansion block.
+///
+/// TODO: explain the self-referencing part
+#[self_referencing]
+struct SphericalExpansionBlock {
     properties: Labels,
     /// spherical expansion values
-    values: &'a ndarray::ArrayD<f64>,
+    values_lock: Arc<RwLock<ndarray::ArrayD<f64>>>,
+    #[borrows(values_lock)]
+    #[covariant]
+    values: RwLockReadGuard<'this, ndarray::ArrayD<f64>>,
     /// spherical expansion position gradients
-    positions_gradients: Option<&'a ndarray::ArrayD<f64>>,
+    positions_gradients_lock: Option<Arc<RwLock<ndarray::ArrayD<f64>>>>,
+    #[borrows(positions_gradients_lock)]
+    #[covariant]
+    positions_gradients: Option<RwLockReadGuard<'this, ndarray::ArrayD<f64>>>,
     /// spherical expansion cell gradients
-    cell_gradients: Option<&'a ndarray::ArrayD<f64>>,
+    cell_gradients_lock: Option<Arc<RwLock<ndarray::ArrayD<f64>>>>,
+    #[borrows(cell_gradients_lock)]
+    #[covariant]
+    cell_gradients: Option<RwLockReadGuard<'this, ndarray::ArrayD<f64>>>,
     /// spherical expansion strain gradients
-    strain_gradients: Option<&'a ndarray::ArrayD<f64>>,
+    strain_gradients_lock: Option<Arc<RwLock<ndarray::ArrayD<f64>>>>,
+    #[borrows(strain_gradients_lock)]
+    #[covariant]
+    strain_gradients: Option<RwLockReadGuard<'this, ndarray::ArrayD<f64>>>,
 }
+
+type SphericalExpansionBlockHeads = ouroboros_impl_spherical_expansion_block::Heads;
 
 /// Indexes of the spherical expansion samples/rows corresponding to each power
 /// spectrum row.
@@ -557,12 +602,15 @@ impl CalculatorBase for SoapPowerSpectrum {
         let samples_mapping = SoapPowerSpectrum::samples_mapping(descriptor, &spherical_expansion);
 
         let spherical_expansion = spherical_expansion.iter().map(|(key, block)| {
-            let spx_block = SphericalExpansionBlock {
+            let spx_block = SphericalExpansionBlockHeads {
                 properties: block.properties(),
-                values: block.values().to_array(),
-                positions_gradients: block.gradient("positions").map(|g| g.values().to_array()),
-                cell_gradients: block.gradient("cell").map(|g| g.values().to_array()),
-                strain_gradients: block.gradient("strain").map(|g| g.values().to_array()),
+                values_lock: Arc::clone(block.values().to_ndarray_lock::<f64>()),
+                positions_gradients_lock: block.gradient("positions")
+                    .map(|g| Arc::clone(g.values().to_ndarray_lock::<f64>())),
+                cell_gradients_lock: block.gradient("cell")
+                    .map(|g| Arc::clone(g.values().to_ndarray_lock::<f64>())),
+                strain_gradients_lock: block.gradient("strain")
+                    .map(|g| Arc::clone(g.values().to_ndarray_lock::<f64>())),
             };
 
             (key, spx_block)
@@ -572,7 +620,7 @@ impl CalculatorBase for SoapPowerSpectrum {
             let neighbor_1_type = key[1];
             let neighbor_2_type = key[2];
 
-            let mut block_data = block.data_mut();
+            let block_data = block.data_mut();
             let properties_to_combine = SoapPowerSpectrum::spx_properties_to_combine(
                 key,
                 &block_data.properties,
@@ -581,7 +629,7 @@ impl CalculatorBase for SoapPowerSpectrum {
 
             let mapping = samples_mapping.get(key).expect("missing sample mapping");
 
-            block_data.values.as_array_mut()
+            block_data.values.get_ndarray_mut::<f64>()
                 .axis_iter_mut(ndarray::Axis(0))
                 .into_par_iter()
                 .zip_eq(&mapping.values)
@@ -596,8 +644,8 @@ impl CalculatorBase for SoapPowerSpectrum {
                             // in release mode (`uget` still checks bounds in
                             // debug mode)
                             unsafe {
-                                sum += spx_1.values.uget([spx_sample_1, m, spx.property_1])
-                                     * spx_2.values.uget([spx_sample_2, m, spx.property_2]);
+                                sum += spx_1.borrow_values().uget([spx_sample_1, m, spx.property_1])
+                                     * spx_2.borrow_values().uget([spx_sample_2, m, spx.property_2]);
                             }
                         }
 
@@ -621,7 +669,7 @@ impl CalculatorBase for SoapPowerSpectrum {
             if let Some(mut gradient) = block.gradient_mut("positions") {
                 let gradient = gradient.data_mut();
 
-                gradient.values.to_array_mut()
+                gradient.values.get_ndarray_mut::<f64>()
                     .axis_iter_mut(ndarray::Axis(0))
                     .into_par_iter()
                     .zip_eq(gradient.samples.par_iter())
@@ -630,8 +678,8 @@ impl CalculatorBase for SoapPowerSpectrum {
                         for (property_i, spx) in properties_to_combine.iter().enumerate() {
                             let SpxPropertiesToCombine { spx_1, spx_2, ..} = spx;
 
-                            let spx_1_gradient = spx_1.positions_gradients.expect("missing spherical expansion gradients");
-                            let spx_2_gradient = spx_2.positions_gradients.expect("missing spherical expansion gradients");
+                            let spx_1_gradient = spx_1.borrow_positions_gradients().as_ref().expect("missing spherical expansion gradients");
+                            let spx_2_gradient = spx_2.borrow_positions_gradients().as_ref().expect("missing spherical expansion gradients");
 
                             let sample_i = gradient_sample[0].usize();
                             let (spx_sample_1, spx_sample_2) = mapping.values[sample_i];
@@ -641,7 +689,7 @@ impl CalculatorBase for SoapPowerSpectrum {
                                 for m in 0..(2 * spx.o3_lambda + 1) {
                                     // SAFETY: see same loop for values
                                     unsafe {
-                                        let value_2 = spx_2.values.uget([spx_sample_2, m, spx.property_2]);
+                                        let value_2 = spx_2.borrow_values().uget([spx_sample_2, m, spx.property_2]);
                                         for d in 0..3 {
                                             sum[d] += value_2 * spx_1_gradient.uget([grad_sample_1, d, m, spx.property_1]);
                                         }
@@ -653,7 +701,7 @@ impl CalculatorBase for SoapPowerSpectrum {
                                 for m in 0..(2 * spx.o3_lambda + 1) {
                                     // SAFETY: see same loop for values
                                     unsafe {
-                                        let value_1 = spx_1.values.uget([spx_sample_1, m, spx.property_1]);
+                                        let value_1 = spx_1.borrow_values().uget([spx_sample_1, m, spx.property_1]);
                                         for d in 0..3 {
                                             sum[d] += value_1 * spx_2_gradient.uget([grad_sample_2, d, m, spx.property_2]);
                                         }
@@ -682,7 +730,7 @@ impl CalculatorBase for SoapPowerSpectrum {
                 if let Some(mut gradient) = block.gradient_mut(parameter) {
                     let gradient = gradient.data_mut();
 
-                    gradient.values.to_array_mut()
+                    gradient.values.get_ndarray_mut::<f64>()
                         .axis_iter_mut(ndarray::Axis(0))
                         .into_par_iter()
                         .zip_eq(gradient.samples.par_iter())
@@ -691,13 +739,13 @@ impl CalculatorBase for SoapPowerSpectrum {
                                 let SpxPropertiesToCombine { spx_1, spx_2, ..} = spx;
 
                                 let (spx_1_gradient, spx_2_gradient) = if parameter == "cell" {
-                                    let spx_1_gradient = spx_1.cell_gradients.expect("missing spherical expansion gradients");
-                                    let spx_2_gradient = spx_2.cell_gradients.expect("missing spherical expansion gradients");
+                                    let spx_1_gradient = spx_1.borrow_cell_gradients().as_ref().expect("missing spherical expansion gradients");
+                                    let spx_2_gradient = spx_2.borrow_cell_gradients().as_ref().expect("missing spherical expansion gradients");
 
                                     (spx_1_gradient, spx_2_gradient)
                                 } else if parameter == "strain" {
-                                    let spx_1_gradient = spx_1.strain_gradients.expect("missing spherical expansion gradients");
-                                    let spx_2_gradient = spx_2.strain_gradients.expect("missing spherical expansion gradients");
+                                    let spx_1_gradient = spx_1.borrow_strain_gradients().as_ref().expect("missing spherical expansion gradients");
+                                    let spx_2_gradient = spx_2.borrow_strain_gradients().as_ref().expect("missing spherical expansion gradients");
 
                                     (spx_1_gradient, spx_2_gradient)
                                 } else {
@@ -718,7 +766,7 @@ impl CalculatorBase for SoapPowerSpectrum {
                                 for m in 0..(2 * spx.o3_lambda + 1) {
                                     // SAFETY: see same loop for values
                                     unsafe {
-                                        let value_2 = spx_2.values.uget([spx_sample_2, m, spx.property_2]);
+                                        let value_2 = spx_2.borrow_values().uget([spx_sample_2, m, spx.property_2]);
                                         for xyz_1 in 0..3 {
                                             for xyz_2 in 0..3 {
                                                 sum[xyz_1][xyz_2] += value_2 * spx_1_gradient.uget([spx_sample_1, xyz_1, xyz_2, m, spx.property_1]);
@@ -731,7 +779,7 @@ impl CalculatorBase for SoapPowerSpectrum {
                                 for m in 0..(2 * spx.o3_lambda + 1) {
                                     // SAFETY: see same loop for values
                                     unsafe {
-                                        let value_1 = spx_1.values.uget([spx_sample_1, m, spx.property_1]);
+                                        let value_1 = spx_1.borrow_values().uget([spx_sample_1, m, spx.property_1]);
                                         for xyz_1 in 0..3 {
                                             for xyz_2 in 0..3 {
                                                 sum[xyz_1][xyz_2] += value_1 * spx_2_gradient.uget([spx_sample_2, xyz_1, xyz_2, m, spx.property_2]);
@@ -981,12 +1029,12 @@ mod tests {
 
         assert_eq!(descriptor.keys(), selection.keys());
 
-        assert_eq!(descriptor.block_by_id(0).values().as_array().shape(), [4, 1]);
-        assert_eq!(descriptor.block_by_id(1).values().as_array().shape(), [4, 0]);
-        assert_eq!(descriptor.block_by_id(2).values().as_array().shape(), [4, 0]);
-        assert_eq!(descriptor.block_by_id(3).values().as_array().shape(), [1, 0]);
-        assert_eq!(descriptor.block_by_id(4).values().as_array().shape(), [1, 1]);
-        assert_eq!(descriptor.block_by_id(5).values().as_array().shape(), [1, 0]);
+        assert_eq!(descriptor.block_by_id(0).values().shape().unwrap(), [4, 1]);
+        assert_eq!(descriptor.block_by_id(1).values().shape().unwrap(), [4, 0]);
+        assert_eq!(descriptor.block_by_id(2).values().shape().unwrap(), [4, 0]);
+        assert_eq!(descriptor.block_by_id(3).values().shape().unwrap(), [1, 0]);
+        assert_eq!(descriptor.block_by_id(4).values().shape().unwrap(), [1, 1]);
+        assert_eq!(descriptor.block_by_id(5).values().shape().unwrap(), [1, 0]);
     }
 
     #[test]
@@ -1024,7 +1072,9 @@ mod tests {
         let descriptor_scaled = calculator.compute(system, Default::default()).unwrap();
 
         for (block, block_scaled) in descriptor.blocks().iter().zip(descriptor_scaled.blocks()) {
-            assert_eq!(block.values().as_array(), 4.0 * block_scaled.values().as_array());
+            let values = block.values().to_ndarray_lock::<f64>().read().unwrap();
+            let values_scaled = block_scaled.values().to_ndarray_lock::<f64>().read().unwrap();
+            assert_eq!(*values, 4.0 * values_scaled.clone());
         }
     }
 }

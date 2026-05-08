@@ -245,7 +245,8 @@ std::vector<torch::Tensor> PositionsGrad<scalar_t>::forward(
     auto systems_start = systems_start_ivalue.toIntList();
 
     auto samples = dX_dr->samples();
-    const auto* sample_ptr = samples->as_metatensor().values().data();
+    const auto sample_values = samples->as_metatensor().values_cpu();
+    const auto* sample_ptr = sample_values.data();
 
     always_assert(samples->names().size() == 3);
     always_assert(samples->names()[0] == "sample");
@@ -331,7 +332,8 @@ std::vector<torch::Tensor> PositionsGrad<scalar_t>::backward(
     auto dB_d_dA_dr = grad_outputs[0]; // gradient of B w.r.t. dA/dr (output of forward)
 
     auto samples = dX_dr->samples();
-    const auto* sample_ptr = samples->as_metatensor().values().data();
+    const auto sample_values = samples->as_metatensor().values_cpu();
+    const auto* sample_ptr = sample_values.data();
 
     always_assert(samples->names().size() == 3);
     always_assert(samples->names()[0] == "sample");
@@ -436,7 +438,8 @@ std::vector<torch::Tensor> CellGrad<scalar_t>::forward(
     always_assert(all_cells.requires_grad());
 
     auto samples = dX_dH->samples();
-    const auto* sample_ptr = samples->as_metatensor().values().data();
+    const auto sample_values = samples->as_metatensor().values_cpu();
+    const auto* sample_ptr = sample_values.data();
 
     always_assert(samples->names().size() == 1);
     always_assert(samples->names()[0] == "sample");
@@ -517,9 +520,10 @@ std::vector<torch::Tensor> CellGrad<scalar_t>::backward(
     auto dB_d_dA_dH = grad_outputs[0]; // gradient of B w.r.t. dA/dH (output of forward)
 
     auto samples = dX_dH->samples();
-    const auto* sample_ptr = samples->as_metatensor().values().data();
     always_assert(samples->names().size() == 1);
     always_assert(samples->names()[0] == "sample");
+    const auto samples_values = samples->as_metatensor().values_cpu();
+    const auto* samples_ptr = samples_values.data();
 
     // ========================= extract pointers =========================== //
     // TODO: remove all CPU <=> device data movement by rewriting the VJP
@@ -571,7 +575,7 @@ std::vector<torch::Tensor> CellGrad<scalar_t>::backward(
             // dB_d_dA_dX.shape == [samples, features...]
             #pragma omp for
             for (int64_t grad_sample_i=0; grad_sample_i<samples->count(); grad_sample_i++) {
-                auto sample_i = sample_ptr[grad_sample_i];
+                auto sample_i = samples_ptr[grad_sample_i];
                 auto system_i = static_cast<int64_t>(systems[sample_i].item<int32_t>());
 
                 for (int64_t i=0; i<n_features; i++) {

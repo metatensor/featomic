@@ -1,4 +1,4 @@
-use metatensor::Labels;
+use metatensor::{Labels, MtsArray};
 use featomic::{Calculator, System, CalculationOptions};
 use chemfiles::{Trajectory, Frame};
 
@@ -55,14 +55,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // each atom-centered environment, and the neighbor atomic types part of the
     // properties
     let keys_to_move = Labels::empty(vec!["center_type"]);
-    let descriptor = descriptor.keys_to_samples(&keys_to_move, /* sort_samples */ true)?;
+    let fill_value = MtsArray::from(ndarray::Array::from_elem(vec![], 0.0));
+    let descriptor = descriptor.keys_to_samples(&keys_to_move, /* fill_value */fill_value, /* sort_samples */ true)?;
 
     let keys_to_move = Labels::empty(vec!["neighbor_1_type", "neighbor_2_type"]);
-    let descriptor = descriptor.keys_to_properties(&keys_to_move, /* sort_samples */ true)?;
+    let fill_value = MtsArray::from(ndarray::Array::from_elem(vec![], 0.0));
+    let descriptor = descriptor.keys_to_properties(&keys_to_move, /* fill_value */fill_value, /* sort_samples */ true)?;
 
     // descriptor now contains a single block, which can be used as the input
     // to standard ML algorithms
-    let values = descriptor.block_by_id(0).values().to_array();
+    let values = descriptor.block_by_id(0).values().to_ndarray_lock::<f64>().read().expect("lock was poisonned");
     println!("SOAP representation shape: {:?}", values.shape());
 
     Ok(())

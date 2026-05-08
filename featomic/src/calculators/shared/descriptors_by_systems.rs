@@ -4,8 +4,10 @@ use rayon::prelude::*;
 
 use ndarray::ArrayViewMutD;
 
-use metatensor::{TensorMap, TensorBlock};
+use metatensor::{MtsArray, TensorBlock, TensorMap};
 use metatensor::{LabelsBuilder, LabelValue};
+
+use metatensor::data::{DLDataType, DLDevice, DLPackTensor, DLPackVersion};
 
 
 /// Implementation of `metatensor::Array` storing a view inside another array
@@ -37,20 +39,16 @@ impl metatensor::Array for UnsafeArrayViewMut {
         self
     }
 
-    fn create(&self, _: &[usize]) -> Box<dyn metatensor::Array> {
+    fn create(&self, _: &[usize], _: MtsArray) -> Box<dyn metatensor::Array> {
         unimplemented!("invalid operation on UnsafeArrayViewMut");
     }
 
-    fn copy(&self) -> Box<dyn metatensor::Array> {
+    fn copy(&self, _: DLDevice) -> Box<dyn metatensor::Array> {
         unimplemented!("invalid operation on UnsafeArrayViewMut");
     }
 
-    fn data(&mut self) -> &mut [f64] {
-        unimplemented!("invalid operation on UnsafeArrayViewMut");
-    }
-
-    fn shape(&self) -> &[usize] {
-        &self.shape
+    fn shape(&self) -> Vec<usize> {
+        self.shape.clone()
     }
 
     fn reshape(&mut self, _: &[usize]) {
@@ -61,12 +59,36 @@ impl metatensor::Array for UnsafeArrayViewMut {
         unimplemented!("invalid operation on UnsafeArrayViewMut");
     }
 
-    fn move_samples_from(
+    fn move_data(
         &mut self,
         _: &dyn metatensor::Array,
-        _: &[metatensor::c_api::mts_sample_mapping_t],
-        _: std::ops::Range<usize>,
+        _: &[metatensor::data::mts_data_movement_t],
     ) {
+        unimplemented!("invalid operation on UnsafeArrayViewMut");
+    }
+
+    fn device(&self) -> DLDevice {
+        DLDevice::cpu()
+    }
+
+    fn dtype(&self) -> DLDataType {
+        DLDataType {
+            code: metatensor::data::DLDataTypeCode::kDLFloat,
+            bits: 64,
+            lanes: 1,
+        }
+    }
+
+    fn as_dlpack(
+        &self,
+        _: DLDevice,
+        _: Option<i64>,
+        _: DLPackVersion
+    ) -> Result<DLPackTensor, metatensor::Error> {
+        unimplemented!("invalid operation on UnsafeArrayViewMut");
+    }
+
+    fn from_dlpack(&self, _: DLPackTensor) -> Result<Box<dyn metatensor::Array>, metatensor::Error> {
         unimplemented!("invalid operation on UnsafeArrayViewMut");
     }
 }
@@ -125,7 +147,7 @@ pub fn split_tensor_map_by_system(descriptor: &mut TensorMap, n_systems: usize) 
             .zip_eq(&mut values_end)
             .zip_eq(&mut gradients_end)
             .map(|(((_, mut block), system_end), system_end_grad)| {
-                let mut block_data = block.data_mut();
+                let block_data = block.data_mut();
 
                 let mut samples = LabelsBuilder::new(block_data.samples.names());
                 let mut samples_mapping = BTreeMap::new();
@@ -170,7 +192,7 @@ pub fn split_tensor_map_by_system(descriptor: &mut TensorMap, n_systems: usize) 
                     //
                     // `per_sample_size * system_start` skips all the data
                     // associated with the previous systems.
-                    block_data.values.as_array_mut().as_mut_ptr().add(per_sample_size * system_start)
+                    block_data.values.get_ndarray_mut::<f64>().as_mut_ptr().add(per_sample_size * system_start)
                 };
 
                 let values = UnsafeArrayViewMut {
@@ -230,7 +252,7 @@ pub fn split_tensor_map_by_system(descriptor: &mut TensorMap, n_systems: usize) 
                     let data_ptr = unsafe {
                         // SAFETY: same as the values above, this is creating
                         // multiple non-overlapping regions in memory
-                        gradient.values.to_array_mut().as_mut_ptr().add(per_sample_size * system_start_grad)
+                        gradient.values.get_ndarray_mut::<f64>().as_mut_ptr().add(per_sample_size * system_start_grad)
                     };
 
                     let values = UnsafeArrayViewMut {

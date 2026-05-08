@@ -213,34 +213,6 @@ pub struct featomic_labels_selection_t {
     predefined: *const mts_tensormap_t,
 }
 
-fn c_labels_to_rust(mut labels: mts_labels_t) -> Result<mts_labels_t, Error> {
-    if labels.internal_ptr_.is_null() {
-        // create new metatensor-core labels
-        unsafe {
-            metatensor::errors::check_status(
-                metatensor::c_api::mts_labels_create(&mut labels)
-            )?;
-        }
-
-        return Ok(labels);
-    }
-
-    // increment reference count
-    let mut clone = mts_labels_t {
-        internal_ptr_: std::ptr::null_mut(),
-        names: std::ptr::null(),
-        values: std::ptr::null(),
-        size: 0,
-        count: 0
-    };
-    unsafe {
-        metatensor::errors::check_status(
-            metatensor::c_api::mts_labels_clone(labels, &mut clone)
-        )?;
-    }
-    return Ok(clone);
-}
-
 fn convert_labels_selection<'a>(
     selection: &'a featomic_labels_selection_t,
     labels: &'a mut Option<Labels>,
@@ -250,8 +222,8 @@ fn convert_labels_selection<'a>(
         (true, true) => Ok(LabelsSelection::All),
         (false, true) => {
             *labels = unsafe {
-                let raw_labels = c_labels_to_rust(*selection.subset)?;
-                Some(Labels::from_raw(raw_labels))
+                let copy = metatensor::c_api::mts_labels_clone(selection.subset);
+                Some(Labels::from_raw(copy))
             };
 
             Ok(LabelsSelection::Subset(labels.as_ref().expect("just created it")))
@@ -282,19 +254,6 @@ fn convert_labels_selection<'a>(
             ))
         }
     }
-}
-
-fn key_selection(value: *const mts_labels_t, labels: &'_ mut Option<Labels>) -> Result<Option<&'_ Labels>, Error> {
-    if value.is_null() {
-        return Ok(None);
-    }
-
-    unsafe {
-        let raw_labels = c_labels_to_rust(*value)?;
-        *labels = Some(Labels::from_raw(raw_labels));
-    }
-
-    return Ok(labels.as_ref());
 }
 
 /// Options that can be set to change how a calculator operates.
@@ -442,15 +401,21 @@ pub unsafe extern "C" fn featomic_calculator_compute(
             &mut predefined_properties
         )?;
 
-        let mut selected_keys = None;
-        let selected_keys = key_selection(options.selected_keys, &mut selected_keys)?;
+        let selected_keys = if options.selected_keys.is_null() {
+            None
+        } else {
+            unsafe {
+                let copy = metatensor::c_api::mts_labels_clone(options.selected_keys);
+                Some(Labels::from_raw(copy))
+            }
+        };
 
         let rust_options = CalculationOptions {
             gradients: &gradients,
             use_native_system: options.use_native_system,
             selected_samples,
             selected_properties,
-            selected_keys,
+            selected_keys: selected_keys.as_ref(),
         };
 
         let tensor = (*calculator).compute(&mut systems, rust_options)?;
