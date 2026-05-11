@@ -22,7 +22,7 @@ elif not FEATOMIC_NO_LOCAL_DEPS and os.path.exists(FEATOMIC_SRC):
     FEATOMIC_DEP = f"featomic @ file://{FEATOMIC_SRC}"
 else:
     # we are building from a sdist
-    FEATOMIC_DEP = "featomic >=0.6.0,<0.7"
+    FEATOMIC_DEP = "featomic >=0.6.6rc1,<0.7"
 
 FORCED_TORCH_VERSION = os.environ.get("FEATOMIC_TORCH_BUILD_WITH_TORCH_VERSION")
 if FORCED_TORCH_VERSION is not None:
@@ -42,7 +42,7 @@ def get_requires_for_build_wheel(config_settings=None):
     return defaults + [
         "cmake",
         TORCH_DEP,
-        "metatensor-torch >=0.9.0-rc6,<0.10",
-        "metatomic-torch >=0.1.12-rc2,<0.2",
+        "metatensor-torch >=0.9.0rc6,<0.10",
+        "metatomic-torch >=0.1.12rc2,<0.2",
         FEATOMIC_DEP,
     ]
