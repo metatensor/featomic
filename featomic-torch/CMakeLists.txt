@@ -81,7 +81,7 @@ function(check_compatible_versions _dependency_ _actual_ _requested_)
 endfunction()
 
 
-set(REQUIRED_FEATOMIC_VERSION "0.6.6-rc1")
+set(REQUIRED_FEATOMIC_VERSION "0.6.6")
 if (NOT "$ENV{FEATOMIC_NO_LOCAL_DEPS}" STREQUAL "1")
     # If building a dev version, we also need to update the
     # REQUIRED_FEATOMIC_VERSION in the same way we update the
@@ -122,7 +122,7 @@ find_package(Torch 2.3 REQUIRED)
 #
 # When updating METATENSOR_TORCH_FETCH_VERSION, you will also have to update the
 # SHA256 sum of the file in `FetchContent_Declare`.
-set(METATENSOR_TORCH_FETCH_VERSION "0.9.0-rc6")
+set(METATENSOR_TORCH_FETCH_VERSION "0.9.0")
 set(REQUIRED_METATENSOR_TORCH_VERSION "0.9")
 if (FEATOMIC_FETCH_METATENSOR_TORCH)
     message(STATUS "Fetching metatensor-torch from github")
@@ -132,7 +132,7 @@ if (FEATOMIC_FETCH_METATENSOR_TORCH)
     FetchContent_Declare(
         metatensor_torch
         URL      ${URL_ROOT}/metatensor-torch-v${METATENSOR_TORCH_FETCH_VERSION}/metatensor-torch-cxx-${METATENSOR_TORCH_FETCH_VERSION}.tar.gz
-        URL_HASH SHA256=73afb6795a04e6e31a993d11e35183d3aa3e97b2d30e14b1a4a04c45263a13bc
+        URL_HASH SHA256=4e31c235447b6bc14c7703c640e2f35409813c2f159a32b8d23386ad4a5abd57
     )
 
     FetchContent_MakeAvailable(metatensor_torch)
@@ -150,7 +150,7 @@ endif()
 #
 # When updating METATOMIC_TORCH_FETCH_VERSION, you will also have to update the
 # SHA256 sum of the file in `FetchContent_Declare`.
-set(METATOMIC_TORCH_FETCH_VERSION "0.1.12-rc2")
+set(METATOMIC_TORCH_FETCH_VERSION "0.1.12")
 set(REQUIRED_METATOMIC_TORCH_VERSION "0.1")
 if (FEATOMIC_FETCH_METATENSOR_TORCH)
     message(STATUS "Fetching metatomic-torch from github")
@@ -160,7 +160,7 @@ if (FEATOMIC_FETCH_METATENSOR_TORCH)
     FetchContent_Declare(
         metatomic_torch
         URL      ${URL_ROOT}/metatomic-torch-v${METATOMIC_TORCH_FETCH_VERSION}/metatomic-torch-cxx-${METATOMIC_TORCH_FETCH_VERSION}.tar.gz
-        URL_HASH SHA256=38a0de4d9320487405b13ed208013895b829ab74cf9bb774e88c5b628368fc49
+        URL_HASH SHA256=d9e587c7ce3d9d6338ed5f6da119e2a3b29698381886f36a53603523c0499542
     )
 
     FetchContent_MakeAvailable(metatomic_torch)

@@ -17,6 +17,12 @@ a changelog](https://keepachangelog.com/en/1.1.0/) format. This project follows
 ### Removed
 -->
 
+## [Version 0.6.6](https://github.com/metatensor/featomic/releases/tag/featomic-v0.6.6) - 2026-05-15
+
+### Changed
+
+- The code is now compatible with metatensor v0.2.0
+
 ## [Version 0.6.5](https://github.com/metatensor/featomic/releases/tag/featomic-v0.6.5) - 2026-03-31
 
 ### Fixed
