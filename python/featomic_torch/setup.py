@@ -346,8 +346,8 @@ if __name__ == "__main__":
 
     install_requires = [
         f"torch {torch_version}",
-        "metatensor-torch >=0.9.0-rc6,<0.10",
-        "metatomic-torch >=0.1.12-rc2,<0.2",
+        "metatensor-torch >=0.9.0,<0.10",
+        "metatomic-torch >=0.1.12,<0.2",
     ]
 
     # when packaging a sdist for release, we should never use local dependencies
@@ -357,7 +357,7 @@ if __name__ == "__main__":
         install_requires.append(f"featomic @ {FEATOMIC_PYTHON_SRC.as_uri()}")
     else:
         # we are building from a sdist/installing from a wheel
-        install_requires.append("featomic >=0.6.6rc1,<0.7")
+        install_requires.append("featomic >=0.6.6,<0.7")
 
     setup(
         version=version,
