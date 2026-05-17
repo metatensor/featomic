@@ -1,5 +1,6 @@
 import glob
 import os
+import pathlib
 import subprocess
 import sys
 
@@ -11,8 +12,8 @@ from setuptools.command.build_ext import build_ext
 from setuptools.command.sdist import sdist
 
 
-ROOT = os.path.realpath(os.path.dirname(__file__))
-FEATOMIC_SRC = os.path.realpath(os.path.join(ROOT, "..", "..", "featomic"))
+ROOT = pathlib.Path(__file__).parent.resolve()
+FEATOMIC_SRC = (ROOT / ".." / ".." / "featomic").resolve()
 
 FEATOMIC_BUILD_TYPE = os.environ.get("FEATOMIC_BUILD_TYPE", "release")
 if FEATOMIC_BUILD_TYPE not in ["debug", "release"]:
@@ -21,9 +22,7 @@ if FEATOMIC_BUILD_TYPE not in ["debug", "release"]:
         "expected 'debug' or 'release'"
     )
 
-# The code for featomic-torch needs to live in `featomic_torch` directory until
-# https://github.com/pypa/pip/issues/13093 is fixed.
-FEATOMIC_TORCH_SRC = os.path.realpath(os.path.join(ROOT, "..", "featomic_torch"))
+FEATOMIC_TORCH_SRC = (ROOT / ".." / "featomic_torch").resolve()
 
 
 class universal_wheel(bdist_wheel):
@@ -47,8 +46,8 @@ class cmake_ext(build_ext):
         import metatensor
 
         source_dir = FEATOMIC_SRC
-        build_dir = os.path.join(ROOT, "build", "cmake-build")
-        install_dir = os.path.join(os.path.realpath(self.build_lib), "featomic")
+        build_dir = ROOT / "build" / "cmake-build"
+        install_dir = pathlib.Path(self.build_lib).resolve() / "featomic"
 
         try:
             os.mkdir(build_dir)
@@ -154,8 +153,8 @@ class sdist_generate_data(sdist):
 
 
 def generate_cxx_tar():
-    script = os.path.join(ROOT, "..", "..", "scripts", "package-featomic.sh")
-    assert os.path.exists(script)
+    script = ROOT / ".." / ".." / "scripts" / "package-featomic.sh"
+    assert script.exists()
 
     try:
         output = subprocess.run(
@@ -184,7 +183,7 @@ def generate_cxx_tar():
 
 def get_rust_version():
     # read version from Cargo.toml
-    with open(os.path.join(FEATOMIC_SRC, "Cargo.toml")) as fd:
+    with open(FEATOMIC_SRC / "Cargo.toml") as fd:
         for line in fd:
             if line.startswith("version"):
                 _, version = line.split(" = ")
@@ -204,15 +203,15 @@ def git_version_info():
     """
     TAG_PREFIX = "featomic-v"
 
-    if os.path.exists("git_version_info"):
+    if (ROOT / "git_version_info").exists():
         # we are building from a sdist, without git available, but the git
         # version was recorded in the `git_version_info` file
-        with open("git_version_info") as fd:
+        with open(ROOT / "git_version_info") as fd:
             n_commits = int(fd.readline().strip())
             git_hash = fd.readline().strip()
     else:
-        script = os.path.join(ROOT, "..", "..", "scripts", "git-version-info.py")
-        assert os.path.exists(script)
+        script = ROOT / ".." / ".." / "scripts" / "git-version-info.py"
+        assert script.exists()
 
         output = subprocess.run(
             [sys.executable, script, TAG_PREFIX],
@@ -268,10 +267,10 @@ def create_version_number(version):
 
 
 if __name__ == "__main__":
-    if not os.path.exists(FEATOMIC_SRC):
+    if not FEATOMIC_SRC.exists():
         # we are building from a sdist, which should include featomic Rust
         # sources as a tarball
-        tarballs = glob.glob(os.path.join(ROOT, "featomic-*.tar.gz"))
+        tarballs = glob.glob("featomic-*.tar.gz", root_dir=ROOT)
 
         if not len(tarballs) == 1:
             raise RuntimeError(
@@ -280,25 +279,25 @@ if __name__ == "__main__":
                 "scripts/package-featomic.sh"
             )
 
-        FEATOMIC_SRC = os.path.realpath(tarballs[0])
+        FEATOMIC_SRC = pathlib.Path(tarballs[0]).resolve()
         subprocess.run(
             ["cmake", "-E", "tar", "xf", FEATOMIC_SRC],
             cwd=ROOT,
             check=True,
         )
 
-        FEATOMIC_SRC = ".".join(FEATOMIC_SRC.split(".")[:-2])
+        FEATOMIC_SRC = pathlib.Path(".".join(str(FEATOMIC_SRC).split(".")[:-2]))
 
-    with open(os.path.join(ROOT, "AUTHORS")) as fd:
+    with open(ROOT / "AUTHORS") as fd:
         authors = fd.read().splitlines()
 
     extras_require = {}
 
     # when packaging a sdist for release, we should never use local dependencies
     FEATOMIC_NO_LOCAL_DEPS = os.environ.get("FEATOMIC_NO_LOCAL_DEPS", "0") == "1"
-    if not FEATOMIC_NO_LOCAL_DEPS and os.path.exists(FEATOMIC_TORCH_SRC):
+    if not FEATOMIC_NO_LOCAL_DEPS and FEATOMIC_TORCH_SRC.exists():
         # we are building from a git checkout
-        extras_require["torch"] = f"featomic-torch @ file://{FEATOMIC_TORCH_SRC}"
+        extras_require["torch"] = f"featomic-torch @ {FEATOMIC_TORCH_SRC.as_uri()}"
     else:
         # we are building from a sdist/installing from a wheel
         extras_require["torch"] = "featomic-torch"
