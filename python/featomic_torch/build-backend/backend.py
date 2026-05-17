@@ -2,12 +2,13 @@
 # dependencies to featomic, using the local version if it exists, and otherwise
 # falling back to the one on PyPI.
 import os
+import pathlib
 
 from setuptools import build_meta
 
 
-ROOT = os.path.realpath(os.path.join(os.path.dirname(__file__), ".."))
-FEATOMIC_SRC = os.path.realpath(os.path.join(ROOT, "..", "featomic"))
+ROOT = pathlib.Path(__file__).parent.parent.resolve()
+FEATOMIC_SRC = (ROOT / ".." / "featomic").resolve()
 FORCED_FEATOMIC_VERSION = os.environ.get("FEATOMIC_TORCH_BUILD_WITH_FEATOMIC_VERSION")
 
 FEATOMIC_NO_LOCAL_DEPS = os.environ.get("FEATOMIC_NO_LOCAL_DEPS", "0") == "1"
@@ -17,9 +18,9 @@ if FORCED_FEATOMIC_VERSION is not None:
     # from a sdist on a non-released version
     FEATOMIC_DEP = f"featomic =={FORCED_FEATOMIC_VERSION}"
 
-elif not FEATOMIC_NO_LOCAL_DEPS and os.path.exists(FEATOMIC_SRC):
+elif not FEATOMIC_NO_LOCAL_DEPS and FEATOMIC_SRC.exists():
     # we are building from a git checkout
-    FEATOMIC_DEP = f"featomic @ file://{FEATOMIC_SRC}"
+    FEATOMIC_DEP = f"featomic @ {FEATOMIC_SRC.as_uri()}"
 else:
     # we are building from a sdist
     FEATOMIC_DEP = "featomic >=0.6.6rc1,<0.7"
