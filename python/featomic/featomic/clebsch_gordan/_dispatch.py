@@ -383,6 +383,20 @@ def max(array):
         raise TypeError(UNKNOWN_ARRAY_TYPE)
 
 
+def min(array):
+    """
+    Takes the smallest value of the array.
+    This function has the same behavior as
+    ``np.min(array)`` or ``torch.min(array)``.
+    """
+    if isinstance(array, TorchTensor):
+        return torch.min(array)
+    elif isinstance(array, np.ndarray):
+        return np.min(array)
+    else:
+        raise TypeError(UNKNOWN_ARRAY_TYPE)
+
+
 def any(array):
     """Test whether any array elements along a given axis evaluate to True.
 

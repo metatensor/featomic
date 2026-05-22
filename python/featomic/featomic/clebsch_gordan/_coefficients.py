@@ -582,6 +582,103 @@ def _cg_couple_dense(
     return _dispatch.tensordot(array, cg_l1l2lam[0, ..., 0], axes=([2, 1], [1, 0]))
 
 
+def cg_uncouple(
+    arrays: List[Array],
+    l1: int,
+    l2: int,
+    o3_lambdas: List[int],
+    cg_coefficients: TensorMap,
+    cg_backend: str,
+) -> Array:
+    """
+    Exact inverse of :py:func:`cg_couple`.
+
+    Go from a coupled basis that behaves like a single spherical harmonic back to the
+    uncoupled product basis that behaves like a product of two spherical harmonics of
+    degrees ``l1`` and ``l2``.
+
+    The coupling performed by :py:func:`cg_couple` is the orthogonal transformation
+
+    ``T^{L}_{M} = \\sum_{m1 m2} (-1)^{l1 + l2 + L} <l1 m1 l2 m2|L M> T^{l1}_{m1}
+    T^{l2}_{m2}``
+
+    Because the (real) Clebsch-Gordan coefficients are orthogonal and complete over the
+    full set of ``L`` in ``range(|l1 - l2|, l1 + l2 + 1)``, this can be inverted exactly
+    by applying the transpose:
+
+    ``T^{l1}_{m1} T^{l2}_{m2} = \\sum_{L M} (-1)^{l1 + l2 + L} <l1 m1 l2 m2|L M>
+    T^{L}_{M}``
+
+    The same sign convention and the same cached coefficients as :py:func:`cg_couple`
+    are used, so ``cg_uncouple(cg_couple(...))`` recovers the original array (summing
+    over whichever ``o3_lambdas`` are provided).
+
+    :param arrays: list of arrays, one for each entry in ``o3_lambdas``, each with shape
+        ``[n_s, 2 * o3_lambda + 1, n_q]``. ``n_s`` and ``n_q`` must be the same for all
+        the arrays.
+    :param l1: degree of the first spherical harmonic to recover
+    :param l2: degree of the second spherical harmonic to recover
+    :param o3_lambdas: degrees of the coupled spherical harmonics given in ``arrays``,
+        in the same order as ``arrays``. For an exact inversion this should contain all
+        of ``range(|l1 - l2|, l1 + l2 + 1)``; any missing degree is treated as a block of
+        zeros.
+    :param cg_coefficients: CG coefficients as returned by
+        :py:func:`calculate_cg_coefficients` with the same ``cg_backend`` given to this
+        function
+    :param cg_backend: ``"python-dense"`` or ``"python-sparse"``
+
+    :return: array with shape ``[n_s, 2 * l1 + 1, 2 * l2 + 1, n_q]``
+    """
+    assert len(arrays) == len(o3_lambdas)
+    assert len(arrays) > 0
+
+    n_s = arrays[0].shape[0]
+    n_q = arrays[0].shape[2]
+
+    output = _dispatch.zeros_like(arrays[0], (n_s, 2 * l1 + 1, 2 * l2 + 1, n_q))
+
+    if cg_backend == "python-sparse":
+        for o3_lambda, array in zip(o3_lambdas, arrays):
+            cg_l1l2lam = cg_coefficients.block(
+                {"l1": l1, "l2": l2, "lambda": o3_lambda}
+            )
+            sign = (-1) ** (l1 + l2 + o3_lambda)
+            samples = cg_l1l2lam.samples
+            for i in range(len(samples)):
+                m1m2mu = samples.entry(i)
+                m1 = int(m1m2mu[0])
+                m2 = int(m1m2mu[1])
+                mu = int(m1m2mu[2])
+                output[:, m1, m2, :] += (
+                    array[:, mu, :] * sign * cg_l1l2lam.values[i, 0]
+                )
+
+        return output
+
+    elif cg_backend == "python-dense":
+        for o3_lambda, array in zip(o3_lambdas, arrays):
+            # cg block has shape (1, 2*l1 + 1, 2*l2 + 1, 2*o3_lambda + 1, 1)
+            cg_l1l2lam = (-1) ** (l1 + l2 + o3_lambda) * cg_coefficients.block(
+                {"l1": l1, "l2": l2, "lambda": o3_lambda}
+            ).values
+            # contract the `mu` axis of `array` with the `mu` axis of the coefficients
+            # array (n_s, 2*o3_lambda + 1, n_q) . (2*l1+1, 2*l2+1, 2*o3_lambda+1)
+            #   -> (n_s, n_q, 2*l1 + 1, 2*l2 + 1)
+            contribution = _dispatch.tensordot(
+                array, cg_l1l2lam[0, ..., 0], axes=([1], [2])
+            )
+            # -> (n_s, 2*l1 + 1, 2*l2 + 1, n_q)
+            output = output + _dispatch.permute(contribution, [0, 2, 3, 1])
+
+        return output
+
+    else:
+        raise ValueError(
+            f"invalid `cg_backend`, got '{cg_backend}', "
+            "only 'python-dense', or 'python-sparse' are supported"
+        )
+
+
 # ======================================================================= #
 # =============== Functions for performing CG tensor products =========== #
 # ======================================================================= #
