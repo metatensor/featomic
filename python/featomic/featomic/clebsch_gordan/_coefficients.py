@@ -620,8 +620,8 @@ def cg_uncouple(
     :param l2: degree of the second spherical harmonic to recover
     :param o3_lambdas: degrees of the coupled spherical harmonics given in ``arrays``,
         in the same order as ``arrays``. For an exact inversion this should contain all
-        of ``range(|l1 - l2|, l1 + l2 + 1)``; any missing degree is treated as a block of
-        zeros.
+        of ``range(|l1 - l2|, l1 + l2 + 1)``; any missing degree is treated as a block
+        of zeros.
     :param cg_coefficients: CG coefficients as returned by
         :py:func:`calculate_cg_coefficients` with the same ``cg_backend`` given to this
         function
@@ -638,7 +638,7 @@ def cg_uncouple(
     output = _dispatch.zeros_like(arrays[0], (n_s, 2 * l1 + 1, 2 * l2 + 1, n_q))
 
     if cg_backend == "python-sparse":
-        for o3_lambda, array in zip(o3_lambdas, arrays):
+        for o3_lambda, array in zip(o3_lambdas, arrays, strict=True):
             cg_l1l2lam = cg_coefficients.block(
                 {"l1": l1, "l2": l2, "lambda": o3_lambda}
             )
@@ -649,14 +649,12 @@ def cg_uncouple(
                 m1 = int(m1m2mu[0])
                 m2 = int(m1m2mu[1])
                 mu = int(m1m2mu[2])
-                output[:, m1, m2, :] += (
-                    array[:, mu, :] * sign * cg_l1l2lam.values[i, 0]
-                )
+                output[:, m1, m2, :] += array[:, mu, :] * sign * cg_l1l2lam.values[i, 0]
 
         return output
 
     elif cg_backend == "python-dense":
-        for o3_lambda, array in zip(o3_lambdas, arrays):
+        for o3_lambda, array in zip(o3_lambdas, arrays, strict=True):
             # cg block has shape (1, 2*l1 + 1, 2*l2 + 1, 2*o3_lambda + 1, 1)
             cg_l1l2lam = (-1) ** (l1 + l2 + o3_lambda) * cg_coefficients.block(
                 {"l1": l1, "l2": l2, "lambda": o3_lambda}

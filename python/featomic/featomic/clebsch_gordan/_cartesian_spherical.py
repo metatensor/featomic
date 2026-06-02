@@ -777,7 +777,9 @@ def _do_decoupling(
         )
 
         new_shape = (
-            list(shape[:mu_axis]) + [2 * l1 + 1, 2 * l2 + 1] + list(shape[mu_axis + 1:])
+            list(shape[:mu_axis])
+            + [2 * l1 + 1, 2 * l2 + 1]
+            + list(shape[mu_axis + 1 :])
         )
         values = uncoupled.reshape(new_shape)
 

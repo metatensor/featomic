@@ -1,4 +1,4 @@
-from ._cartesian_spherical import (    # noqa: F401
+from ._cartesian_spherical import (  # noqa: F401
     cartesian_to_spherical,
     spherical_to_cartesian,
 )
