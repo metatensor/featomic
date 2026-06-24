@@ -96,7 +96,9 @@ def _options_to_c(
         c_options.selected_properties.subset = selected_properties.as_mts_labels_t()
         c_options.__keepalive["selected_properties"] = selected_properties
     elif isinstance(selected_properties, TensorMap):
-        c_options.selected_properties.predefined = selected_properties.as_mts_tensormap_t()
+        c_options.selected_properties.predefined = (
+            selected_properties.as_mts_tensormap_t()
+        )
     else:
         raise ValueError(
             "expected selected properties to be either an `metatensor.Labels` "
