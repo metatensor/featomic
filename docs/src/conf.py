@@ -140,7 +140,7 @@ breathe_domain_by_extension = {
 }
 
 intersphinx_mapping = {
-    "ase": ("https://wiki.fysik.dtu.dk/ase/", None),
+    "ase": ("https://docs.ase-lib.org/", None),
     "chemfiles": ("https://chemfiles.org/chemfiles.py/latest/", None),
     "metatensor": ("https://docs.metatensor.org/latest/", None),
     "matplotlib": ("https://matplotlib.org/stable/", None),
