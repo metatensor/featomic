@@ -78,10 +78,10 @@ def _options_to_c(
         # nothing to do, all pointers are already NULL
         pass
     elif isinstance(selected_samples, Labels):
-        c_options.selected_samples.subset = selected_samples._as_mts_labels_t()
+        c_options.selected_samples.subset = selected_samples.as_mts_labels_t()
         c_options.__keepalive["selected_samples"] = selected_samples
     elif isinstance(selected_samples, TensorMap):
-        c_options.selected_samples.predefined = selected_samples._ptr
+        c_options.selected_samples.predefined = selected_samples.as_mts_tensormap_t()
     else:
         raise ValueError(
             "expected selected samples to be either an `metatensor.Labels` "
@@ -93,10 +93,10 @@ def _options_to_c(
         # nothing to do, all pointers are already NULL
         pass
     elif isinstance(selected_properties, Labels):
-        c_options.selected_properties.subset = selected_properties._as_mts_labels_t()
+        c_options.selected_properties.subset = selected_properties.as_mts_labels_t()
         c_options.__keepalive["selected_properties"] = selected_properties
     elif isinstance(selected_properties, TensorMap):
-        c_options.selected_properties.predefined = selected_properties._ptr
+        c_options.selected_properties.predefined = selected_properties.as_mts_tensormap_t()
     else:
         raise ValueError(
             "expected selected properties to be either an `metatensor.Labels` "
@@ -108,7 +108,7 @@ def _options_to_c(
         # nothing to do, all pointers are already NULL
         pass
     elif isinstance(selected_keys, Labels):
-        c_options.selected_keys = selected_keys._as_mts_labels_t()
+        c_options.selected_keys = selected_keys.as_mts_labels_t()
         c_options.__keepalive["selected_keys"] = selected_keys
     return c_options
 
@@ -308,4 +308,4 @@ class CalculatorBase:
             self, tensor_map_ptr, c_systems, c_systems._length_, c_options
         )
 
-        return TensorMap._from_ptr(tensor_map_ptr)
+        return TensorMap.unsafe_from_ptr(tensor_map_ptr)
