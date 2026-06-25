@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 from metatensor import Labels, TensorBlock, TensorMap
 
-from featomic.clebsch_gordan import cartesian_to_spherical
+from featomic.clebsch_gordan import cartesian_to_spherical, spherical_to_cartesian
 
 from .rotations import WignerDReal, cartesian_rotation
 
@@ -146,18 +146,70 @@ def test_cartesian_to_spherical_rank_3(cartesian):
 
 @pytest.mark.parametrize("cg_backend", ["python-dense", "python-sparse"])
 @pytest.mark.parametrize(
-    "components", [["xyz_1"], ["xyz_1", "xyz_12"], ["xyz_1", "xyz_2", "xyz_3"]]
+    "components", [["xyz_1"], ["xyz_1", "xyz_2"], ["xyz_1", "xyz_2", "xyz_3"]]
 )
 def test_cartesian_to_spherical_and_back(cartesian, components, cg_backend):
     spherical = cartesian_to_spherical(
         cartesian,
-        components=["xyz_1", "xyz_2", "xyz_3"],
+        components=components,
         keep_l_in_keys=True,
+        # keep every block so the transformation stays exactly invertible
+        remove_blocks_threshold=None,
         cg_backend=cg_backend,
     )
 
     assert "o3_lambda" in spherical.keys.names
-    # TODO: check for identity after spherical_to_cartesian
+
+    # going back to cartesian should recover the original tensor exactly
+    back = spherical_to_cartesian(spherical, cg_backend=cg_backend)
+
+    assert mts.equal_metadata(back, cartesian)
+    assert mts.allclose(back, cartesian)
+
+
+@pytest.mark.parametrize("cg_backend", ["python-dense", "python-sparse"])
+@pytest.mark.parametrize("rank", [1, 2, 3, 4])
+def test_spherical_to_cartesian_roundtrip(rank, cg_backend):
+    """
+    Self-contained round-trip test: a random cartesian tensor of the given ``rank`` is
+    transformed to spherical form and back, and must be recovered exactly.
+    """
+    rng = np.random.default_rng(0x5C1E)
+
+    n_samples, n_properties = 6, 3
+    shape = (n_samples,) + (3,) * rank + (n_properties,)
+    components = [Labels.range(f"xyz_{i}", 3) for i in range(1, rank + 1)]
+
+    cartesian = TensorMap(
+        keys=Labels.single(),
+        blocks=[
+            TensorBlock(
+                values=rng.random(shape),
+                samples=Labels.range("system", n_samples),
+                components=components,
+                properties=Labels.range("p", n_properties),
+            )
+        ],
+    )
+
+    component_names = [f"xyz_{i}" for i in range(1, rank + 1)]
+    spherical = cartesian_to_spherical(
+        cartesian,
+        components=component_names,
+        keep_l_in_keys=True,
+        remove_blocks_threshold=None,
+        cg_backend=cg_backend,
+    )
+
+    # the spherical representation should no longer contain cartesian components
+    assert "o3_mu" in spherical.component_names
+    for name in component_names:
+        assert name not in spherical.component_names
+
+    back = spherical_to_cartesian(spherical, cg_backend=cg_backend)
+
+    assert mts.equal_metadata(back, cartesian)
+    assert mts.allclose(back, cartesian)
 
 
 def test_cartesian_to_spherical_errors(cartesian):
