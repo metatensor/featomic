@@ -17,6 +17,13 @@ a changelog](https://keepachangelog.com/en/1.1.0/) format. This project follows
 ### Removed
 -->
 
+## [Version 0.6.7](https://github.com/metatensor/featomic/releases/tag/featomic-v0.6.7) - 2026-06-25
+
+### Added
+
+- `spherical_to_cartesian` python function, doing the inverse of
+  `cartesian_to_spherical`.
+
 ## [Version 0.6.6](https://github.com/metatensor/featomic/releases/tag/featomic-v0.6.6) - 2026-05-15
 
 ### Changed
