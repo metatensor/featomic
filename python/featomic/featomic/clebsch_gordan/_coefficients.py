@@ -11,7 +11,6 @@ import wigners
 
 from . import _dispatch
 from ._backend import (
-    BACKEND_IS_METATENSOR_TORCH,
     Array,
     Device,
     DType,
@@ -84,11 +83,7 @@ def calculate_cg_coefficients(
 
         complex_like = torch.empty(0, dtype=complex_dtype, device=device)
         real_like = torch.empty(0, dtype=dtype, device=device)
-        if BACKEND_IS_METATENSOR_TORCH:
-            labels_values_like = torch.empty(0, dtype=torch.int32, device=device)
-        else:
-            # we are using metatensor-core with torch arrays
-            labels_values_like = np.empty(0, dtype=np.int32)
+        labels_values_like = torch.empty(0, dtype=torch.int32, device=device)
     else:
         assert arrays_backend == "numpy"
         if dtype == np.float32:
@@ -110,7 +105,6 @@ def calculate_cg_coefficients(
     cg_coeff_dict = _build_dense_cg_coeff_dict(
         lambda_max,
         complex_like,
-        labels_values_like,
         arrays_backend=arrays_backend,
         dtype=dtype,
         device=device,
@@ -137,7 +131,6 @@ def calculate_cg_coefficients(
 def _build_dense_cg_coeff_dict(
     lambda_max: int,
     complex_like: Array,
-    labels_values_like: Array,
     arrays_backend: str,
     dtype: DType,
     device: Device,
@@ -575,9 +568,12 @@ def _cg_couple_dense(
     l1 = (array.shape[1] - 1) // 2
     l2 = (array.shape[2] - 1) // 2
 
-    cg_l1l2lam = (-1) ** (l1 + l2 + o3_lambda) * cg_coefficients.block(
-        {"l1": l1, "l2": l2, "lambda": o3_lambda}
-    ).values
+    key = Labels(
+        ["l1", "l2", "lambda"],
+        _dispatch.int_array_like([[l1, l2, o3_lambda]], cg_coefficients.keys.values),
+    )
+
+    cg_l1l2lam = (-1) ** (l1 + l2 + o3_lambda) * cg_coefficients.block(key).values
 
     return _dispatch.tensordot(array, cg_l1l2lam[0, ..., 0], axes=([2, 1], [1, 0]))
 

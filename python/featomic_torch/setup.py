@@ -346,8 +346,8 @@ if __name__ == "__main__":
 
     install_requires = [
         f"torch {torch_version}",
-        "metatensor-torch >=0.9.0,<0.10",
-        "metatomic-torch >=0.1.12,<0.2",
+        "metatensor-torch >=0.10.0,<0.11",
+        "metatomic-torch >=0.1.15,<0.2",
     ]
 
     # when packaging a sdist for release, we should never use local dependencies

@@ -53,5 +53,3 @@ except ImportError:
 Array = Union[np.ndarray, TorchTensor]
 DType = Union[np.dtype, TorchDType]
 Device = Union[str, TorchDevice]
-
-BACKEND_IS_METATENSOR_TORCH = False

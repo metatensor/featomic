@@ -17,6 +17,10 @@ a changelog](https://keepachangelog.com/en/1.1.0/) format. This project follows
 ### Removed
 -->
 
+### Changed
+
+- The code is now compatible with metatensor-torch v0.10
+
 ## [Version 0.7.4](https://github.com/metatensor/featomic/releases/tag/featomic-torch-v0.7.4) - 2026-05-15
 
 ### Changed

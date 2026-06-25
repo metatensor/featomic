@@ -635,7 +635,7 @@ public:
             options.as_featomic_calculation_options_t()
         ));
 
-        return metatensor::TensorMap(descriptor);
+        return metatensor::TensorMap::unsafe_from_ptr(descriptor);
     }
 
     /// Runs a calculation for multiple `systems`
@@ -669,7 +669,7 @@ public:
             options.as_featomic_calculation_options_t()
         ));
 
-        return metatensor::TensorMap(descriptor);
+        return metatensor::TensorMap::unsafe_from_ptr(descriptor);
     }
 
     /// Get the underlying pointer to a `featomic_calculator_t`.

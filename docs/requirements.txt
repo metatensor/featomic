@@ -11,8 +11,8 @@ myst-parser     # markdown => rst translation, used in extensions/featomic_json_
 # dependencies for the tutorials
 --extra-index-url https://download.pytorch.org/whl/cpu
 metatensor-operations >=0.5.0,<0.6
-metatensor-torch >=0.9.0,<0.10
-metatomic-torch >= 0.1.12,<0.2
+metatensor-torch >=0.10.0,<0.11
+metatomic-torch >= 0.1.15,<0.2
 torch
 chemfiles
 matplotlib
