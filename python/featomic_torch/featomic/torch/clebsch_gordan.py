@@ -23,8 +23,6 @@ module = importlib.util.module_from_spec(spec)
 # This module only exposes a handful of things, defined here. Any changes here MUST also
 # be made to the `featomic/clebsch_gordan/_backend.py` file, which is used in
 # non-TorchScript mode.
-module.__dict__["BACKEND_IS_METATENSOR_TORCH"] = True
-
 module.__dict__["Labels"] = metatensor.torch.Labels
 module.__dict__["TensorBlock"] = metatensor.torch.TensorBlock
 module.__dict__["TensorMap"] = metatensor.torch.TensorMap
