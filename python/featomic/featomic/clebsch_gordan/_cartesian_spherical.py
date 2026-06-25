@@ -324,16 +324,17 @@ def spherical_to_cartesian(
     cartesian product-basis tensor.
 
     The input keys must contain ``o3_lambda`` and ``o3_sigma``, and the single ``o3_mu``
-    component will be replaced by ``tensor_rank`` cartesian components (each with values
-    ``[0, 1, 2]``). For tensors of rank 3 and above the keys must also contain the
-    ``l_{i}`` and ``k_{i}`` dimensions describing the coupling history (these are added
-    automatically by :py:func:`cartesian_to_spherical`). For rank 1 and 2 tensors, the
-    missing ``l_{i}`` dimensions are re-created internally and assumed to be 1.
+    component will be replaced by a number of cartesian components (according to the
+    rank of the tensor, each with values ``[0, 1, 2]``). For tensors of rank 3 and above
+    the keys must also contain the ``l_{i}`` and ``k_{i}`` dimensions describing the
+    coupling history (these are added automatically by
+    :py:func:`cartesian_to_spherical`). For rank 1 and 2 tensors, the missing ``l_{i}``
+    dimensions are re-created internally and assumed to be 1.
 
     :param tensor: input tensor, using a spherical harmonics basis
     :param new_component_names: names to give to the reconstructed cartesian components.
-        There should be exactly ``tensor_rank`` of them. If ``None``, the components are
-        named ``xyz_1``, ``xyz_2``, ...
+        There should be as many of them as is the rank of the tensor. If ``None``, the
+        components are named ``xyz_1``, ``xyz_2``, ...
     :param cg_backend: Backend to use for Clebsch-Gordan calculations. This can be
         ``"python-dense"`` or ``"python-sparse"``. If ``None``, this is automatically
         determined.
