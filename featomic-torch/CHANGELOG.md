@@ -17,6 +17,10 @@ a changelog](https://keepachangelog.com/en/1.1.0/) format. This project follows
 ### Removed
 -->
 
+### Added
+
+- Added support for torch v2.13
+
 ## [Version 0.7.5](https://github.com/metatensor/featomic/releases/tag/featomic-torch-v0.7.5) - 2026-06-25
 
 ### Changed

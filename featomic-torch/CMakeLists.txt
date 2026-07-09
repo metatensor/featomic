@@ -122,7 +122,7 @@ find_package(Torch 2.3 REQUIRED)
 #
 # When updating METATENSOR_TORCH_FETCH_VERSION, you will also have to update the
 # SHA256 sum of the file in `FetchContent_Declare`.
-set(METATENSOR_TORCH_FETCH_VERSION "0.10.0")
+set(METATENSOR_TORCH_FETCH_VERSION "0.10.1")
 set(REQUIRED_METATENSOR_TORCH_VERSION "0.10")
 if (FEATOMIC_FETCH_METATENSOR_TORCH)
     message(STATUS "Fetching metatensor-torch from github")
@@ -132,7 +132,7 @@ if (FEATOMIC_FETCH_METATENSOR_TORCH)
     FetchContent_Declare(
         metatensor_torch
         URL      ${URL_ROOT}/metatensor-torch-v${METATENSOR_TORCH_FETCH_VERSION}/metatensor-torch-cxx-${METATENSOR_TORCH_FETCH_VERSION}.tar.gz
-        URL_HASH SHA256=a0a25e061ae4fbf2a563e9fcceed68ac79b4d857e4c9803a1614d301dc3fdfcd
+        URL_HASH SHA256=3df87a8e7c87246be534b2435fcfd257bf3296377f4ae1a3d925c1d429252989
     )
 
     FetchContent_MakeAvailable(metatensor_torch)
@@ -150,7 +150,7 @@ endif()
 #
 # When updating METATOMIC_TORCH_FETCH_VERSION, you will also have to update the
 # SHA256 sum of the file in `FetchContent_Declare`.
-set(METATOMIC_TORCH_FETCH_VERSION "0.1.15")
+set(METATOMIC_TORCH_FETCH_VERSION "0.1.16")
 set(REQUIRED_METATOMIC_TORCH_VERSION "0.1")
 if (FEATOMIC_FETCH_METATENSOR_TORCH)
     message(STATUS "Fetching metatomic-torch from github")
@@ -160,7 +160,7 @@ if (FEATOMIC_FETCH_METATENSOR_TORCH)
     FetchContent_Declare(
         metatomic_torch
         URL      ${URL_ROOT}/metatomic-torch-v${METATOMIC_TORCH_FETCH_VERSION}/metatomic-torch-cxx-${METATOMIC_TORCH_FETCH_VERSION}.tar.gz
-        URL_HASH SHA256=2fa4c94144164168834a90ff195ed7d788959c9d9ffd3ea4a85e2f470925c708
+        URL_HASH SHA256=18c360e527499c36d13b17793e963bf932dbf1cb19a4bb207e04bde6be006153
     )
 
     FetchContent_MakeAvailable(metatomic_torch)
@@ -195,7 +195,14 @@ add_library(featomic_torch SHARED
 )
 
 target_link_libraries(featomic_torch PUBLIC torch metatomic_torch metatensor_torch featomic)
-target_compile_features(featomic_torch PUBLIC cxx_std_17)
+
+if (${Torch_VERSION} VERSION_GREATER_EQUAL 2.13)
+    # Torch 2.13+ requires C++20
+    target_compile_features(featomic_torch PUBLIC cxx_std_20)
+else()
+    target_compile_features(featomic_torch PUBLIC cxx_std_17)
+endif()
+
 target_include_directories(featomic_torch PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
