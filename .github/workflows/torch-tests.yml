@@ -25,7 +25,7 @@ jobs:
 
           - os: ubuntu-24.04
             torch-version: "2.12"
-            python-version: "3.13"
+            python-version: "3.14"
             cargo-test-flags: --release
             do-valgrind: true
 
@@ -34,18 +34,18 @@ jobs:
             container: ubuntu:22.04
             extra-name: ", cmake 3.22"
             torch-version: "2.12"
-            python-version: "3.13"
+            python-version: "3.14"
             cargo-test-flags: ""
             cxx-flags: -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer -g
 
           - os: macos-15
             torch-version: "2.12"
-            python-version: "3.13"
+            python-version: "3.14"
             cargo-test-flags: --release
 
           - os: windows-2022
             torch-version: "2.12"
-            python-version: "3.13"
+            python-version: "3.14"
             cargo-test-flags: --release
 
     steps:
@@ -58,7 +58,7 @@ jobs:
           apt install -y cmake make gcc g++ git curl python3.10 python3.10-venv
           update-alternatives --install /usr/local/bin/python python /usr/bin/python3.10 1
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -74,7 +74,7 @@ jobs:
       # we get torch from pip to run the C++ test
       - name: setup Python
         if: matrix.container != 'ubuntu:22.04'
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
 
