@@ -1,7 +1,7 @@
 use log::{info, warn};
 
 use metatensor::TensorMap;
-use metatensor::{Labels, LabelsBuilder};
+use metatensor::Labels;
 
 use super::CalculatorBase;
 use crate::labels::{AtomicTypeFilter, SamplesBuilder};
@@ -101,11 +101,7 @@ impl CalculatorBase for DummyCalculator {
     }
 
     fn properties(&self, keys: &Labels) -> Vec<Labels> {
-        let mut properties = LabelsBuilder::new(self.property_names());
-        properties.add(&[1, 0]);
-        properties.add(&[0, 1]);
-        let properties = properties.finish();
-
+        let properties = Labels::new(self.property_names(), [[1, 0], [0, 1]]);
         return vec![properties; keys.count()];
     }
 
@@ -289,9 +285,9 @@ mod tests {
         }) as Box<dyn CalculatorBase>);
         let mut systems = test_systems(&["water"]);
 
-        let samples = Labels::new(["system", "atom"], &[[0, 1]]);
-        let properties = Labels::new(["index_delta", "x_y_z"], &[[0, 1]]);
-        let keys = Labels::new(["center_type"], &[[0], [1], [6], [-42]]);
+        let samples = Labels::new(["system", "atom"], [[0, 1]]);
+        let properties = Labels::new(["index_delta", "x_y_z"], [[0, 1]]);
+        let keys = Labels::new(["center_type"], [[0], [1], [6], [-42]]);
 
         crate::calculators::tests_utils::compute_partial(
             calculator, &mut systems, &keys, &samples, &properties

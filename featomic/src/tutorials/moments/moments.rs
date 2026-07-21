@@ -1,4 +1,5 @@
-use metatensor::{Labels, TensorMap, LabelsBuilder};
+use metatensor::{Labels, TensorMap};
+use ndarray::Array2;
 
 use crate::{System, Error};
 use crate::labels::{CenterSingleNeighborsTypesKeys, KeysBuilder};
@@ -90,12 +91,11 @@ impl CalculatorBase for GeometricMoments {
     }
 
     fn properties(&self, keys: &Labels) -> Vec<Labels> {
-        let mut builder = LabelsBuilder::new(self.property_names());
-        for k in 0..=self.max_moment {
-            builder.add(&[k]);
-        }
-        let properties = builder.finish();
-
+        let values = (0..=self.max_moment as i32).collect();
+        let properties = Labels::new(
+            self.property_names(),
+            Array2::from_shape_vec((self.max_moment + 1, 1), values).expect("wrong shape for properties"),
+        );
         return vec![properties; keys.count()];
     }
 
@@ -278,18 +278,15 @@ mod tests {
         // check the results
         assert_eq!(*descriptor.keys(), Labels::new(
             ["center_type", "neighbor_type"],
-            &[[-42, 1], [1, -42], [1, 1], [1, 6], [6, 1]]
+            [[-42, 1], [1, -42], [1, 1], [1, 6], [6, 1]]
         ));
 
-        let expected_properties = Labels::new(["k"], &[[0]]);
+        let expected_properties = Labels::new(["k"], [[0]]);
 
         /**********************************************************************/
         // O center, H neighbor
         let block = &descriptor.block_by_id(0);
-        assert_eq!(block.samples(), Labels::new(
-            ["system", "atom"],
-            &[[0, 0]]
-        ));
+        assert_eq!(block.samples(), Labels::new(["system", "atom"], [[0, 0]]));
 
         assert_eq!(block.properties(), expected_properties);
 
@@ -301,7 +298,7 @@ mod tests {
         let block = &descriptor.block_by_id(1);
         assert_eq!(block.samples(), Labels::new(
             ["system", "atom"],
-            &[[0, 1], [0, 2]]
+            [[0, 1], [0, 2]]
         ));
 
         assert_eq!(block.properties(), expected_properties);
@@ -314,7 +311,7 @@ mod tests {
         let block = &descriptor.block_by_id(2);
         assert_eq!(block.samples(), Labels::new(
             ["system", "atom"],
-            &[[0, 1], [0, 2]]
+            [[0, 1], [0, 2]]
         ));
 
         assert_eq!(block.properties(), expected_properties);
@@ -327,7 +324,7 @@ mod tests {
         let block = &descriptor.block_by_id(3);
         assert_eq!(block.samples(), Labels::new(
             ["system", "atom"],
-            &[[1, 1]]
+            [[1, 1]]
         ));
 
         assert_eq!(block.properties(), expected_properties);
@@ -340,7 +337,7 @@ mod tests {
         let block = &descriptor.block_by_id(4);
         assert_eq!(block.samples(), Labels::new(
             ["system", "atom"],
-            &[[1, 0]]
+            [[1, 0]]
         ));
 
         assert_eq!(block.properties(), expected_properties);
@@ -370,17 +367,17 @@ mod more_tests {
         // build a list of samples to compute
         let samples = Labels::new(
             ["system", "atom"],
-            &[[0, 1], [0, 2], [1, 0], [1, 2]]
+            [[0, 1], [0, 2], [1, 0], [1, 2]]
         );
 
         // create some properties. There is no need to order them in the same way
         // as the default calculator
-        let properties = Labels::new(["k"], &[[2], [1], [5]]);
+        let properties = Labels::new(["k"], [[2], [1], [5]]);
 
         // Some keys (more than the calculator would produce by default)
         let keys = Labels::new(
             ["center_type", "neighbor_type"],
-            &[[-42, 1], [1, 8], [1, -42], [8, 8], [1, 1], [1, 6], [6, 1]]
+            [[-42, 1], [1, 8], [1, -42], [8, 8], [1, 1], [1, 6], [6, 1]]
         );
 
         // this function will check that selecting keys/samples/properties will

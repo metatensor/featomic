@@ -119,7 +119,7 @@ impl System for &mut featomic_system_t {
 
         let mut value = 0;
         let status = unsafe {
-            function(self.user_data, &mut value)
+            function(self.user_data, &raw mut value)
         };
 
         if !status.is_success() {
@@ -140,7 +140,7 @@ impl System for &mut featomic_system_t {
 
         let mut ptr = std::ptr::null();
         let status = unsafe {
-            function(self.user_data, &mut ptr)
+            function(self.user_data, &raw mut ptr)
         };
 
         if !status.is_success() {
@@ -175,7 +175,7 @@ impl System for &mut featomic_system_t {
 
         let mut ptr = std::ptr::null();
         let status = unsafe {
-            function(self.user_data, &mut ptr)
+            function(self.user_data, &raw mut ptr)
         };
         if !status.is_success() {
             return Err(Error::External {
@@ -209,7 +209,7 @@ impl System for &mut featomic_system_t {
 
         let mut value = [[0.0; 3]; 3];
         let status = unsafe {
-            function(self.user_data, &mut value[0][0])
+            function(self.user_data, &raw mut value[0][0])
         };
 
         if !status.is_success() {
@@ -254,7 +254,7 @@ impl System for &mut featomic_system_t {
         let mut ptr = std::ptr::null();
         let mut count = 0;
         let status = unsafe {
-            function(self.user_data, &mut ptr, &mut count)
+            function(self.user_data, &raw mut ptr, &raw mut count)
         };
         if !status.is_success() {
             return Err(Error::External {
@@ -289,7 +289,7 @@ impl System for &mut featomic_system_t {
         let mut ptr = std::ptr::null();
         let mut count = 0;
         let status = unsafe {
-            function(self.user_data, atom, &mut ptr, &mut count)
+            function(self.user_data, atom, &raw mut ptr, &raw mut count)
         };
 
         if !status.is_success() {

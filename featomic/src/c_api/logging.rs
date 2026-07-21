@@ -1,8 +1,7 @@
 use std::ffi::CString;
-use std::sync::Mutex;
+use std::sync::{Mutex, LazyLock};
 
 use log::{Record, Metadata};
-use once_cell::sync::Lazy;
 
 use super::status::{featomic_status_t, catch_unwind};
 
@@ -38,7 +37,7 @@ pub const FEATOMIC_LOG_LEVEL_TRACE: i32 = 5;
 #[allow(non_camel_case_types)]
 pub type featomic_logging_callback_t = Option<unsafe extern "C" fn(level: i32, message: *const std::os::raw::c_char)>;
 
-static GLOBAL_CALLBACK: Lazy<Mutex<featomic_logging_callback_t>> = Lazy::new(|| Mutex::new(None));
+static GLOBAL_CALLBACK: LazyLock<Mutex<featomic_logging_callback_t>> = LazyLock::new(|| Mutex::new(None));
 
 /// Implementation of `log::Log` that forward all log messages to the global
 /// `featomic_logging_callback_t`.

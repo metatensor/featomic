@@ -9,7 +9,8 @@ use ndarray::parallel::prelude::*;
 use ouroboros::self_referencing;
 
 use metatensor::{EmptyArray, TensorBlock, TensorMap};
-use metatensor::{LabelsBuilder, Labels, LabelValue};
+use metatensor::{Labels, LabelValue};
+use ndarray::Array2;
 
 use crate::calculators::CalculatorBase;
 use crate::{CalculationOptions, Calculator, LabelsSelection};
@@ -145,22 +146,28 @@ impl SoapPowerSpectrum {
             }
         }
 
-        let mut keys_builder = LabelsBuilder::new(vec!["o3_lambda", "o3_sigma", "center_type", "neighbor_type"]);
+        let mut key_entries = Vec::new();
         let mut blocks = Vec::new();
         for (key, (samples, properties)) in requested_by_key {
-            keys_builder.add(&key);
+            key_entries.push(key);
 
-            let mut samples_builder = LabelsBuilder::new(vec!["system", "atom"]);
-            for entry in samples {
-                samples_builder.add(&entry);
-            }
-            let samples = samples_builder.finish_assume_unique();
+            let samples_values: Vec<i32> = samples.iter().flat_map(|&[a, b]| [a.i32(), b.i32()]).collect();
+            let samples = Labels::new_assume_unique(
+                ["system", "atom"],
+                Array2::from_shape_vec(
+                    (samples.len(), 2),
+                    samples_values,
+                ).expect("wrong shape for samples in selected_spx_labels"),
+            );
 
-            let mut properties_builder = LabelsBuilder::new(vec!["n"]);
-            for entry in properties {
-                properties_builder.add(&entry);
-            }
-            let properties = properties_builder.finish_assume_unique();
+            let properties_values: Vec<i32> = properties.iter().flat_map(|&[n]| [n.i32()]).collect();
+            let properties = Labels::new_assume_unique(
+                ["n"],
+                Array2::from_shape_vec(
+                    (properties.len(), 1),
+                    properties_values,
+                ).expect("wrong shape for properties in selected_spx_labels"),
+            );
 
             blocks.push(TensorBlock::new(
                 EmptyArray::new(vec![samples.count(), properties.count()]),
@@ -183,7 +190,7 @@ impl SoapPowerSpectrum {
             }
         }
         for key in missing_keys {
-            keys_builder.add(&key);
+            key_entries.push(key);
 
             let samples = Labels::empty(vec!["system", "atom"]);
             let properties = Labels::empty(vec!["n"]);
@@ -195,7 +202,15 @@ impl SoapPowerSpectrum {
             ).expect("invalid TensorBlock"));
         }
 
-        return TensorMap::new(keys_builder.finish(), blocks).expect("invalid TensorMap")
+        let key_values: Vec<i32> = key_entries.iter().flat_map(|k| k.iter().map(|&v| v.i32())).collect();
+        let keys = Labels::new_assume_unique(
+            ["o3_lambda", "o3_sigma", "center_type", "neighbor_type"],
+            Array2::from_shape_vec(
+                (key_entries.len(), 4),
+                key_values,
+            ).expect("wrong shape for keys"),
+        );
+        return TensorMap::new(keys, blocks).expect("invalid TensorMap")
     }
 
     /// Pre-compute the correspondance between samples of the spherical
@@ -543,28 +558,38 @@ impl CalculatorBase for SoapPowerSpectrum {
     fn properties(&self, keys: &metatensor::Labels) -> Vec<Labels> {
         match self.parameters.basis {
             SphericalExpansionBasis::TensorProduct(ref basis) => {
-                let mut properties = LabelsBuilder::new(self.property_names());
+                let mut entries = Vec::new();
                 for l in 0..=basis.max_angular {
                     for n1 in 0..basis.radial.size() {
                         for n2 in 0..basis.radial.size() {
-                            properties.add(&[l, n1, n2]);
+                            entries.push([l as i32, n1 as i32, n2 as i32]);
                         }
                     }
                 }
+                let values = Array2::from_shape_vec(
+                    (entries.len(), 3),
+                    entries.into_iter().flatten().collect(),
+                ).expect("wrong shape for TensorProduct power spectrum properties");
+                let properties = Labels::new_assume_unique(self.property_names(), values);
 
-                return vec![properties.finish_assume_unique(); keys.count()];
+                return vec![properties; keys.count()];
             }
             SphericalExpansionBasis::Explicit(ref basis) => {
-                let mut properties = LabelsBuilder::new(self.property_names());
+                let mut entries = Vec::new();
                 for (&l, radial) in &*basis.by_angular {
                     for n1 in 0..radial.size() {
                         for n2 in 0..radial.size() {
-                            properties.add(&[l, n1, n2]);
+                            entries.push([l as i32, n1 as i32, n2 as i32]);
                         }
                     }
                 }
+                let values = Array2::from_shape_vec(
+                    (entries.len(), 3),
+                    entries.into_iter().flatten().collect(),
+                ).expect("wrong shape for Explicit power spectrum properties");
+                let properties = Labels::new(self.property_names(), values);
 
-                return vec![properties.finish(); keys.count()];
+                return vec![properties; keys.count()];
             },
         }
     }
@@ -941,7 +966,7 @@ mod tests {
 
         let mut systems = test_systems(&["methane"]);
 
-        let properties = Labels::new(["l", "n_1", "n_2"], &[
+        let properties = Labels::new(["l", "n_1", "n_2"], [
             [0, 0, 1],
             [3, 3, 3],
             [2, 4, 3],
@@ -950,12 +975,12 @@ mod tests {
             [1, 1, 2],
         ]);
 
-        let samples = Labels::new(["system", "atom"], &[
+        let samples = Labels::new(["system", "atom"], [
             [0, 2],
             [0, 1],
         ]);
 
-        let keys = Labels::new(["center_type", "neighbor_1_type", "neighbor_2_type"], &[
+        let keys = Labels::new(["center_type", "neighbor_1_type", "neighbor_2_type"], [
             [1, 1, 1],
             [6, 6, 6],
             [1, 8, 6], // not part of the default keys
@@ -972,7 +997,7 @@ mod tests {
 
     #[test]
     fn compute_partial_per_key() {
-        let keys = Labels::new(["center_type", "neighbor_1_type", "neighbor_2_type"], &[
+        let keys = Labels::new(["center_type", "neighbor_1_type", "neighbor_2_type"], [
             [1, 1, 1],
             [1, 1, 6],
             [1, 6, 6],
@@ -985,7 +1010,7 @@ mod tests {
             EmptyArray::new(vec![1, 0]),
             &Labels::single(),
             &[],
-            &Labels::new::<i32, 3>(["l", "n_1", "n_2"], &[]),
+            &Labels::empty(["l", "n_1", "n_2"]),
         ).unwrap();
 
         let blocks = vec![
@@ -994,7 +1019,7 @@ mod tests {
                 EmptyArray::new(vec![1, 1]),
                 &Labels::single(),
                 &[],
-                &Labels::new(["l", "n_1", "n_2"], &[[2, 0, 0]]),
+                &Labels::new(["l", "n_1", "n_2"], [[2, 0, 0]]),
             ).unwrap(),
             // H, C-H
             empty_block.as_ref().try_clone().unwrap(),
@@ -1007,7 +1032,7 @@ mod tests {
                 EmptyArray::new(vec![1, 1]),
                 &Labels::single(),
                 &[],
-                &Labels::new(["l", "n_1", "n_2"], &[[3, 0, 0]]),
+                &Labels::new(["l", "n_1", "n_2"], [[3, 0, 0]]),
             ).unwrap(),
             // C, C-C
             empty_block,

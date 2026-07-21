@@ -1,7 +1,8 @@
 use std::collections::BTreeMap;
 
 use metatensor::{EmptyArray, TensorBlock, TensorMap};
-use metatensor::{LabelValue, Labels, LabelsBuilder};
+use metatensor::Labels;
+use ndarray::Array2;
 
 use crate::calculators::CalculatorBase;
 use crate::{CalculationOptions, Calculator, LabelsSelection};
@@ -107,16 +108,11 @@ impl SoapRadialSpectrum {
             ["center_type", "neighbor_type"]
         );
 
-        let mut keys_builder = LabelsBuilder::new(vec![
-            "o3_lambda",
-            "o3_sigma",
-            "center_type",
-            "neighbor_type",
-        ]);
+        let mut key_entries = Vec::new();
         let mut blocks = Vec::new();
         for (&[center, neighbor], block) in descriptor.keys().iter_fixed_size().zip(descriptor.blocks()) {
             // o3_lambda is always 0, o3_sigma always 1
-            keys_builder.add(&[LabelValue::new(0), LabelValue::new(1), center, neighbor]);
+            key_entries.push([0, 1, center.i32(), neighbor.i32()]);
 
             let block = block.data();
             blocks.push(
@@ -129,7 +125,13 @@ impl SoapRadialSpectrum {
             );
         }
 
-        return TensorMap::new(keys_builder.finish_assume_unique(), blocks).expect("invalid TensorMap");
+        let values = Array2::from_shape_vec(
+            (key_entries.len(), 4),
+            key_entries.into_iter().flatten().collect(),
+        ).expect("wrong shape for radial spectrum keys");
+        return TensorMap::new(Labels::new_assume_unique(
+            ["o3_lambda", "o3_sigma", "center_type", "neighbor_type"], values
+        ), blocks).expect("invalid TensorMap");
     }
 }
 
@@ -214,11 +216,15 @@ impl CalculatorBase for SoapRadialSpectrum {
     }
 
     fn properties(&self, keys: &metatensor::Labels) -> Vec<Labels> {
-        let mut properties = LabelsBuilder::new(self.property_names());
+        let mut entries = Vec::new();
         for n in 0..self.parameters.basis.radial.size() {
-            properties.add(&[n]);
+            entries.push([n as i32]);
         }
-        let properties = properties.finish_assume_unique();
+        let values = Array2::from_shape_vec(
+            (entries.len(), 1),
+            entries.into_iter().flatten().collect(),
+        ).expect("wrong shape for radial spectrum properties");
+        let properties = Labels::new_assume_unique(self.property_names(), values);
 
         return vec![properties; keys.count()];
     }
@@ -423,20 +429,15 @@ mod tests {
 
         let mut systems = test_systems(&["water", "methane"]);
 
-        let properties = Labels::new(["n"], &[
-            [0],
-            [3],
-            [4],
-            [1],
-        ]);
+        let properties = Labels::new(["n"], [[0], [3], [4], [1]]);
 
-        let samples = Labels::new(["system", "atom"], &[
+        let samples = Labels::new(["system", "atom"], [
             [1, 0],
             [0, 1],
             [0, 0],
         ]);
 
-        let keys = Labels::new(["center_type", "neighbor_type"], &[
+        let keys = Labels::new(["center_type", "neighbor_type"], [
             [1, 1],
             [9, 1], // not part of the default keys
             [-42, 1],

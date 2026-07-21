@@ -1,4 +1,5 @@
-use metatensor::{Labels, TensorMap, LabelsBuilder};
+use metatensor::{Labels, TensorMap};
+use ndarray::Array2;
 
 use crate::{System, Error};
 use crate::labels::{CenterSingleNeighborsTypesKeys, KeysBuilder};
@@ -117,12 +118,11 @@ impl CalculatorBase for GeometricMoments {
     }
 
     fn properties(&self, keys: &Labels) -> Vec<Labels> {
-        let mut builder = LabelsBuilder::new(self.property_names());
-        for k in 0..=self.max_moment {
-            builder.add(&[k]);
-        }
-        let properties = builder.finish();
-
+        let values = (0..=self.max_moment as i32).collect();
+        let properties = Labels::new(
+            self.property_names(),
+            Array2::from_shape_vec((self.max_moment + 1, 1), values).expect("wrong shape for properties"),
+        );
         return vec![properties; keys.count()];
     }
     // [CalculatorBase::properties]

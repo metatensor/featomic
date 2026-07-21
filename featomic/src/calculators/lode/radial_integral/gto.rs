@@ -177,7 +177,7 @@ impl LodeRadialIntegral for LodeRadialIntegralGto {
                     * f64::powf(2.0, (1.0 + n as f64 - exponent) / 2.0)
                     * smearing.powi(3 + n as i32 - exponent as i32)
                     * gamma(n_eff[n])
-                    * hyp2f1(1.0, n_eff[n], (exponent + 2.0) / 2.0, hyparg)
+                    * hyp2f1(1.0, n_eff[n], f64::midpoint(exponent, 2.0), hyparg)
                     * hyparg.powf(n_eff[n]);
             }
         }

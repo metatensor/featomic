@@ -32,37 +32,6 @@
    ...
    fun:pthread_create*
    ...
-   fun:_ZN10rayon_core8registry8Registry3new*
+   fun:_RINvMs4_NtCsfqiG3kluKzM_10rayon_core8registryNtB6_8Registry3newNtB6_12DefaultSpawnEB8_
    ...
-}
-
-{
-   <Global Rayon threadpool statx-1>
-   Memcheck:Param
-   statx(file_name)
-   fun:statx
-   ...
-   fun:_ZN8num_cpus5linux12get_num_cpus*
-   ...
-}
-
-{
-   <Global Rayon threadpool statx-2>
-   Memcheck:Param
-   statx(buf)
-   fun:statx
-   ...
-   fun:_ZN8num_cpus5linux12get_num_cpus*
-   ...
-}
-
-{
-   <Hashbrown HashMap alloc>
-   Memcheck:Leak
-   match-leak-kinds: possible
-   fun:malloc
-   ...
-   fun:_ZN9hashbrown3raw21RawTable$LT$T$C$A$GT$14reserve_rehash*
-   ...
-   fun:_ZN9hashbrown3raw21RawTable$LT$T$C$A$GT$6insert*
 }

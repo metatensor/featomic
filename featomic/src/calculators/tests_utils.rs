@@ -1,7 +1,7 @@
-use ndarray::Axis;
+use ndarray::{Array2, Axis};
 use approx::{assert_relative_eq, assert_ulps_eq};
 
-use metatensor::{Labels, TensorMap, LabelsBuilder};
+use metatensor::{Labels, TensorMap};
 
 use crate::calculator::LabelsSelection;
 use crate::{CalculationOptions, Calculator, Matrix3};
@@ -30,11 +30,16 @@ pub fn compute_partial(
     check_compute_partial_keys(&mut calculator, &mut *systems, &full, keys);
 
     assert!(keys.count() > 3, "selected keys should have more than 3 keys");
-    let mut subset_keys = LabelsBuilder::new(keys.names());
+    let mut subset = Vec::new();
     for key in keys.iter().take(3) {
-        subset_keys.add(key);
+        for v in key {
+            subset.push(v.i32());
+        }
     }
-    check_compute_partial_keys(&mut calculator, &mut *systems, &full, &subset_keys.finish());
+    let subset = Array2::from_shape_vec((3, keys.names().len()), subset).expect("wrong shape for subset keys");
+    let subset_keys = Labels::new(keys.names(), subset);
+
+    check_compute_partial_keys(&mut calculator, &mut *systems, &full, &subset_keys);
 
     check_compute_partial_properties(&mut calculator, &mut *systems, &full, properties);
     // check we can remove all properties
@@ -64,9 +69,9 @@ fn check_compute_partial_keys(
 
     assert_eq!(partial.keys(), keys);
     for key in keys {
-        let mut selected_key = LabelsBuilder::new(keys.names());
-        selected_key.add(key);
-        let selected_key = selected_key.finish();
+        let selected_key = key.iter().map(|v| v.i32()).collect::<Vec<_>>();
+        let selected_key = Array2::from_shape_vec((1, keys.size()), selected_key).expect("wrong shape for selected key");
+        let selected_key = Labels::new(keys.names(), selected_key);
 
         let partial = partial.block(&selected_key).expect("missing block in partial");
         let full = full.block(&selected_key);

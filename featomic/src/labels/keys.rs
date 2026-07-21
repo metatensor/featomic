@@ -1,6 +1,7 @@
 use std::collections::BTreeSet;
 
-use metatensor::{Labels, LabelsBuilder};
+use metatensor::Labels;
+use ndarray::Array2;
 
 use crate::{System, Error};
 
@@ -23,11 +24,12 @@ impl KeysBuilder for CenterTypesKeys {
             }
         }
 
-        let mut keys = LabelsBuilder::new(vec!["center_type"]);
-        for atomic_type in all_types {
-            keys.add(&[atomic_type]);
-        }
-        return Ok(keys.finish_assume_unique());
+        let values = Array2::from_shape_vec(
+            (all_types.len(), 1),
+            all_types.into_iter().collect::<Vec<i32>>(),
+        ).expect("wrong shape for CenterTypesKeys");
+
+        return Ok(Labels::new_assume_unique(["center_type"], values));
     }
 }
 
@@ -42,17 +44,17 @@ impl KeysBuilder for AllTypesPairsKeys {
         for system in systems {
             for &first_type in system.types()? {
                 for &second_type in system.types()? {
-                    all_types_pairs.insert((first_type, second_type));
+                    all_types_pairs.insert([first_type, second_type]);
                 }
             }
         }
 
-        let mut keys = LabelsBuilder::new(vec!["center_type", "neighbor_type"]);
-        for (center, neighbor) in all_types_pairs {
-            keys.add(&[center, neighbor]);
-        }
+        let values = Array2::from_shape_vec(
+            (all_types_pairs.len(), 2),
+            all_types_pairs.into_iter().flatten().collect(),
+        ).expect("wrong shape for AllTypesPairsKeys");
 
-        return Ok(keys.finish_assume_unique());
+        return Ok(Labels::new_assume_unique(["center_type", "neighbor_type"], values));
     }
 }
 
@@ -75,23 +77,23 @@ impl KeysBuilder for CenterSingleNeighborsTypesKeys {
 
             let types = system.types()?;
             for pair in system.pairs()? {
-                all_types_pairs.insert((types[pair.first], types[pair.second]));
-                all_types_pairs.insert((types[pair.second], types[pair.first]));
+                all_types_pairs.insert([types[pair.first], types[pair.second]]);
+                all_types_pairs.insert([types[pair.second], types[pair.first]]);
             }
 
             if self.self_pairs {
                 for &atomic_type in types {
-                    all_types_pairs.insert((atomic_type, atomic_type));
+                    all_types_pairs.insert([atomic_type, atomic_type]);
                 }
             }
         }
 
-        let mut keys = LabelsBuilder::new(vec!["center_type", "neighbor_type"]);
-        for (center, neighbor) in all_types_pairs {
-            keys.add(&[center, neighbor]);
-        }
+        let values = Array2::from_shape_vec(
+            (all_types_pairs.len(), 2),
+            all_types_pairs.into_iter().flatten().collect(),
+        ).expect("wrong shape for CenterSingleNeighborsTypesKeys");
 
-        return Ok(keys.finish_assume_unique());
+        return Ok(Labels::new_assume_unique(["center_type", "neighbor_type"], values));
     }
 }
 
@@ -143,17 +145,17 @@ impl KeysBuilder for CenterTwoNeighborsTypesKeys {
                             continue;
                         }
 
-                        keys.insert((center_type, neighbor_1_type, neighbor_2_type));
+                        keys.insert([center_type, neighbor_1_type, neighbor_2_type]);
                     }
                 }
             }
         }
 
-        let mut keys_builder = LabelsBuilder::new(vec!["center_type", "neighbor_1_type", "neighbor_2_type"]);
-        for (center_type, neighbor_1_type, neighbor_2_type) in keys {
-            keys_builder.add(&[center_type, neighbor_1_type, neighbor_2_type]);
-        }
+        let values = Array2::from_shape_vec(
+            (keys.len(), 3),
+            keys.into_iter().flatten().collect(),
+        ).expect("wrong shape for CenterTwoNeighborsTypesKeys");
 
-        return Ok(keys_builder.finish_assume_unique());
+        return Ok(Labels::new_assume_unique(["center_type", "neighbor_1_type", "neighbor_2_type"], values));
     }
 }

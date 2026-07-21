@@ -4,8 +4,9 @@ use rayon::prelude::*;
 
 use ndarray::ArrayViewMutD;
 
-use metatensor::{MtsArray, TensorBlock, TensorMap};
-use metatensor::{LabelsBuilder, LabelValue};
+use metatensor::{MtsArray, TensorBlock, TensorMap, Labels};
+use metatensor::LabelValue;
+use ndarray::Array2;
 
 use metatensor::data::{DLDataType, DLDevice, DLPackTensor, DLPackVersion};
 
@@ -149,7 +150,7 @@ pub fn split_tensor_map_by_system(descriptor: &mut TensorMap, n_systems: usize) 
             .map(|(((_, mut block), system_end), system_end_grad)| {
                 let block_data = block.data_mut();
 
-                let mut samples = LabelsBuilder::new(block_data.samples.names());
+                let mut sample_entries = Vec::new();
                 let mut samples_mapping = BTreeMap::new();
                 let mut system_per_sample = vec![LabelValue::new(-1); block_data.samples.count()];
 
@@ -159,7 +160,7 @@ pub fn split_tensor_map_by_system(descriptor: &mut TensorMap, n_systems: usize) 
 
                     if system.usize() == system_i {
                         // this sample is part of to the current system
-                        samples.add(&[system, atom]);
+                        sample_entries.push([system.i32(), atom.i32()]);
                         let new_sample = samples_mapping.len();
                         samples_mapping.insert(sample_i, new_sample);
 
@@ -175,7 +176,12 @@ pub fn split_tensor_map_by_system(descriptor: &mut TensorMap, n_systems: usize) 
 
                 let mut shape = Vec::new();
 
-                let samples = samples.finish_assume_unique();
+                let n_cols = block_data.samples.names().len();
+                let values = Array2::from_shape_vec(
+                    (sample_entries.len(), n_cols),
+                    sample_entries.into_iter().flatten().collect(),
+                ).expect("wrong shape for split samples");
+                let samples = Labels::new_assume_unique(block_data.samples.names(), values);
                 shape.push(samples.count());
 
                 for component in &*block_data.components {
@@ -217,15 +223,19 @@ pub fn split_tensor_map_by_system(descriptor: &mut TensorMap, n_systems: usize) 
                     };
                     let system_start_grad = *system_end_grad;
 
-                    let mut samples = LabelsBuilder::new(gradient.samples.names());
+                    let mut sample_entries = Vec::new();
+                    let n_grad_cols = gradient.samples.names().len();
                     for gradient_sample in gradient.samples.iter().skip(system_start_grad) {
                         let sample_i = gradient_sample[0].usize();
                         let system = system_per_sample[sample_i];
                         if system.usize() == system_i {
                             // this sample is part of to the current system
-                            let mut new_gradient_sample = gradient_sample.to_vec();
-                            new_gradient_sample[0] = samples_mapping[&sample_i].into();
-                            samples.add(&new_gradient_sample);
+                            let mut new_entry = Vec::with_capacity(n_grad_cols);
+                            new_entry.push(samples_mapping[&sample_i] as i32);
+                            for v in &gradient_sample[1..] {
+                                new_entry.push(v.i32());
+                            }
+                            sample_entries.push(new_entry);
 
                             *system_end_grad += 1;
                         } else if system.usize() > system_i {
@@ -239,7 +249,12 @@ pub fn split_tensor_map_by_system(descriptor: &mut TensorMap, n_systems: usize) 
 
                     let mut shape = Vec::new();
 
-                    let samples = samples.finish_assume_unique();
+                    let flat_values: Vec<i32> = sample_entries.into_iter().flatten().collect();
+                    let values = Array2::from_shape_vec(
+                        (flat_values.len() / n_grad_cols, n_grad_cols),
+                        flat_values,
+                    ).expect("wrong shape for split gradient samples");
+                    let samples = Labels::new_assume_unique(gradient.samples.names(), values);
                     shape.push(samples.count());
 
                     for component in &*gradient.components {

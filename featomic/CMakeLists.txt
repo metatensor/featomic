@@ -88,37 +88,7 @@ if(${FEATOMIC_MAIN_PROJECT} AND NOT "${CACHED_LAST_CMAKE_BUILD_TYPE}" STREQUAL $
     message(STATUS "Building featomic in ${CMAKE_BUILD_TYPE} mode")
 endif()
 
-find_program(CARGO_EXE "cargo" DOC "path to cargo (Rust build system)")
-if (NOT CARGO_EXE)
-    message(FATAL_ERROR
-        "could not find cargo, please make sure the Rust compiler is installed \
-        (see https://www.rust-lang.org/tools/install) or set CARGO_EXE"
-    )
-endif()
-
-execute_process(
-    COMMAND ${CARGO_EXE} "--version" "--verbose"
-    RESULT_VARIABLE CARGO_STATUS
-    OUTPUT_VARIABLE CARGO_VERSION_RAW
-)
-
-if(CARGO_STATUS AND NOT CARGO_STATUS EQUAL 0)
-    message(FATAL_ERROR
-        "could not run cargo, please make sure the Rust compiler is installed \
-        (see https://www.rust-lang.org/tools/install)"
-    )
-endif()
-
-if (CARGO_VERSION_RAW MATCHES "cargo ([0-9]+\\.[0-9]+\\.[0-9]+).*")
-    set(CARGO_VERSION "${CMAKE_MATCH_1}")
-else()
-    message(FATAL_ERROR "failed to determine cargo version, output was: ${CARGO_VERSION_RAW}")
-endif()
-if(NOT "${CACHED_LAST_CARGO_VERSION}" STREQUAL ${CARGO_VERSION})
-    set(CACHED_LAST_CARGO_VERSION ${CARGO_VERSION} CACHE INTERNAL "Last version of cargo used in configuration")
-    message(STATUS "Using cargo version ${CARGO_VERSION} at ${CARGO_EXE}")
-    set(CARGO_VERSION_CHANGED TRUE)
-endif()
+include(cmake/detect_cargo.cmake)
 
 # ============================================================================ #
 # determine Cargo flags
@@ -149,12 +119,6 @@ set(CARGO_BUILD_ARG "${CARGO_BUILD_ARG};--features=c-api")
 
 # Handle cross compilation with RUST_BUILD_TARGET
 if ("${RUST_BUILD_TARGET}" STREQUAL "")
-        if (CARGO_VERSION_RAW MATCHES "host: ([a-zA-Z0-9_\\-]*)\n")
-        set(RUST_HOST_TARGET "${CMAKE_MATCH_1}")
-    else()
-        message(FATAL_ERROR "failed to determine host target, output was: ${CARGO_VERSION_RAW}")
-    endif()
-
     if (${FEATOMIC_MAIN_PROJECT})
         message(STATUS "Compiling to host (${RUST_HOST_TARGET})")
     endif()
@@ -355,7 +319,7 @@ endif()
 add_custom_command(
     OUTPUT ${CARGO_OUTPUTS}
     COMMAND ${CMAKE_COMMAND} -E env ${CARGO_ENV}
-            cargo rustc ${CARGO_BUILD_ARG} -- ${CARGO_RUSTC_ARGS}
+            ${CARGO_EXE} rustc ${CARGO_BUILD_ARG} -- ${CARGO_RUSTC_ARGS}
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     DEPENDS ${ALL_RUST_SOURCES}
     COMMENT "Building ${FILE_CREATED_MESSAGE} with cargo"

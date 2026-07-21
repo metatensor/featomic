@@ -1,6 +1,7 @@
 use std::collections::BTreeSet;
 
-use metatensor::{Labels, LabelsBuilder};
+use metatensor::Labels;
+use ndarray::Array2;
 
 use crate::{Error, System};
 use super::{SamplesBuilder, AtomicTypeFilter};
@@ -30,7 +31,7 @@ impl SamplesBuilder for AtomCenteredSamples {
 
     fn samples(&self, systems: &mut [Box<dyn System>]) -> Result<Labels, Error> {
         assert!(self.cutoff > 0.0 && self.cutoff.is_finite(), "cutoff must be positive for AtomCenteredSamples");
-        let mut builder = LabelsBuilder::new(Self::sample_names());
+        let mut entries = Vec::new();
         for (system_i, system) in systems.iter_mut().enumerate() {
             system.compute_neighbors(self.cutoff)?;
             let types = system.types()?;
@@ -39,7 +40,7 @@ impl SamplesBuilder for AtomCenteredSamples {
                 AtomicTypeFilter::Any => {
                     for (center_i, &center_type) in types.iter().enumerate() {
                         if self.center_type.matches(center_type) {
-                            builder.add(&[system_i, center_i]);
+                            entries.push([system_i as i32, center_i as i32]);
                         }
                     }
                 }
@@ -62,7 +63,7 @@ impl SamplesBuilder for AtomCenteredSamples {
                             }
 
                             if requested_types.is_subset(&neighbor_types) {
-                                builder.add(&[system_i, atom_i]);
+                                entries.push([system_i as i32, atom_i as i32]);
                             }
                             neighbor_types.clear();
                         }
@@ -91,24 +92,29 @@ impl SamplesBuilder for AtomCenteredSamples {
                     }
 
                     for atom_i in matching_atoms {
-                        builder.add(&[system_i, atom_i]);
+                        entries.push([system_i as i32, atom_i as i32]);
                     }
                 }
             }
         }
 
-        return Ok(builder.finish_assume_unique());
+        let values = Array2::from_shape_vec(
+            (entries.len(), 2),
+            entries.into_iter().flatten().collect(),
+        ).expect("wrong shape for AtomCenteredSamples samples");
+
+        return Ok(Labels::new_assume_unique(["system", "atom"], values));
     }
 
     fn gradients_for(&self, systems: &mut [Box<dyn System>], samples: &Labels) -> Result<Labels, Error> {
         assert!(self.cutoff > 0.0 && self.cutoff.is_finite(), "cutoff must be positive for AtomCenteredSamples");
         assert_eq!(samples.names(), ["system", "atom"]);
-        let mut builder = LabelsBuilder::new(vec!["sample", "system", "atom"]);
+        let mut entries = Vec::new();
 
         // we could try to find a better way to estimate this, but in the worst
         // case this would only over-allocate a bit
         let average_neighbors_per_atom = 10;
-        builder.reserve(average_neighbors_per_atom * samples.count());
+        entries.reserve(average_neighbors_per_atom * samples.count());
 
         for (sample_i, [system_i, center_i]) in samples.iter_fixed_size().enumerate() {
             let system_i = system_i.usize();
@@ -141,11 +147,16 @@ impl SamplesBuilder for AtomCenteredSamples {
             }
 
             for neighbor in neighbors {
-                builder.add(&[sample_i, system_i, neighbor]);
+                entries.push([sample_i as i32, system_i as i32, neighbor as i32]);
             }
         }
 
-        return Ok(builder.finish_assume_unique());
+        let values = Array2::from_shape_vec(
+            (entries.len(), 3),
+            entries.into_iter().flatten().collect(),
+        ).expect("wrong shape for AtomCenteredSamples gradients_for");
+
+        return Ok(Labels::new_assume_unique(["sample", "system", "atom"], values));
     }
 }
 
@@ -167,13 +178,13 @@ mod tests {
         let samples = builder.samples(&mut systems).unwrap();
         assert_eq!(samples, Labels::new(
             ["system", "atom"],
-            &[[0, 0], [0, 1], [1, 0], [1, 1], [1, 2]],
+            [[0, 0], [0, 1], [1, 0], [1, 1], [1, 2]],
         ));
 
         let gradient_samples = builder.gradients_for(&mut systems, &samples).unwrap();
         assert_eq!(gradient_samples, Labels::new(
             ["sample", "system", "atom"],
-            &[
+            [
                 // gradients of atoms in CH
                 [0, 0, 0], [0, 0, 1],
                 [1, 0, 0], [1, 0, 1],
@@ -198,13 +209,13 @@ mod tests {
         let samples = builder.samples(&mut systems).unwrap();
         assert_eq!(samples, Labels::new(
             ["system", "atom"],
-            &[[0, 1], [1, 1], [1, 2]],
+            [[0, 1], [1, 1], [1, 2]],
         ));
 
         let gradient_samples = builder.gradients_for(&mut systems, &samples).unwrap();
         assert_eq!(gradient_samples, Labels::new(
             ["sample", "system", "atom"],
-            &[
+            [
                 // gradients of atoms in CH
                 [0, 0, 0], [0, 0, 1],
                 // gradients of atoms in water
@@ -227,13 +238,13 @@ mod tests {
         let samples = builder.samples(&mut systems).unwrap();
         assert_eq!(samples, Labels::new(
             ["system", "atom"],
-            &[[0, 0], [0, 1], [1, 0], [1, 1], [1, 2]],
+            [[0, 0], [0, 1], [1, 0], [1, 1], [1, 2]],
         ));
 
         let gradient_samples = builder.gradients_for(&mut systems, &samples).unwrap();
         assert_eq!(gradient_samples, Labels::new(
             ["sample", "system", "atom"],
-            &[
+            [
                 // gradients of atoms in CH w.r.t H atom only
                 [0, 0, 0], [0, 0, 1],
                 [1, 0, 1],
@@ -254,7 +265,7 @@ mod tests {
         let gradient_samples = builder.gradients_for(&mut systems, &samples).unwrap();
         assert_eq!(gradient_samples, Labels::new(
             ["sample", "system", "atom"],
-            &[
+            [
                 // gradients of atoms in CH w.r.t C and H atoms
                 [0, 0, 0], [0, 0, 1],
                 [1, 0, 0], [1, 0, 1],
@@ -268,7 +279,7 @@ mod tests {
 
     #[test]
     fn partial_gradients() {
-        let samples = Labels::new(["system", "atom"], &[
+        let samples = Labels::new(["system", "atom"], [
             [1, 0],
             [0, 0],
             [1, 1],
@@ -285,7 +296,7 @@ mod tests {
         let gradients = builder.gradients_for(&mut systems, &samples).unwrap();
         assert_eq!(gradients, Labels::new(
             ["sample", "system", "atom"],
-            &[[0, 1, 0], [2, 1, 0], [2, 1, 1]]
+            [[0, 1, 0], [2, 1, 0], [2, 1, 1]]
         ));
 
         let builder = AtomCenteredSamples {
@@ -297,7 +308,7 @@ mod tests {
         let gradients = builder.gradients_for(&mut systems, &samples).unwrap();
         assert_eq!(gradients, Labels::new(
             ["sample", "system", "atom"],
-            &[
+            [
                 // gradients of first sample, O in water
                 [0, 1, 0], [0, 1, 1], [0, 1, 2],
                 // gradients of second sample, C in CH

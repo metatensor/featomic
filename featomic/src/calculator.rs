@@ -1,12 +1,12 @@
 use std::collections::BTreeMap;
+use std::sync::LazyLock;
 
 use log::warn;
 use metatensor::c_api::MTS_INVALID_PARAMETER_ERROR;
-use once_cell::sync::Lazy;
 
-use metatensor::{Labels, LabelsBuilder};
+use metatensor::Labels;
 use metatensor::{TensorBlockRef, TensorBlock, TensorMap};
-use ndarray::ArrayD;
+use ndarray::{Array2, ArrayD};
 
 use crate::{System, Error};
 use crate::systems::SimpleSystem;
@@ -94,19 +94,26 @@ impl LabelsSelection<'_> {
 
                 let mut results = Vec::new();
                 for labels in default_labels {
-                    let mut builder = LabelsBuilder::new(default_names.clone());
-
                     // better error message in case of un-matched names
                     let matches = labels.select(selection)
                         .map_err(map_selection_error(&default_names, &selection.names(), label_kind))?;
 
-                    for entry in matches {
-                        builder.add(&labels[entry]);
+                    let n_cols = default_names.len();
+                    let mut values = Vec::with_capacity(matches.len() * n_cols);
+                    for &entry in &matches {
+                        for value in &labels[entry] {
+                            values.push(value.i32());
+                        }
                     }
+
+                    let values = Array2::from_shape_vec(
+                        (matches.len(), n_cols),
+                        values
+                    ).expect("wrong shape for selected labels");
 
                     // the labels entries are unique because they are a
                     // sub-selection of existing labels
-                    results.push(builder.finish_assume_unique());
+                    results.push(Labels::new_assume_unique(&default_names, values));
                 }
 
                 return Ok(results);
@@ -138,9 +145,13 @@ impl LabelsSelection<'_> {
 
                 let mut results = Vec::new();
                 for key in keys {
-                    let mut selection = LabelsBuilder::new(keys.names());
-                    selection.add(key);
-                    let block = tensor.block(&selection.finish()).expect("could not find a block in predefined selection");
+                    let key_values: Vec<i32> = key.iter().map(|v| v.i32()).collect();
+                    let array = Array2::from_shape_vec(
+                        (1, key_values.len()),
+                        key_values,
+                    ).expect("wrong shape for key selection");
+                    let selection = Labels::new_assume_unique(keys.names(), array);
+                    let block = tensor.block(&selection).expect("could not find a block in predefined selection");
                     let labels = get_from_block(block);
                     if labels.names() != default_names {
                         return Err(Error::InvalidParameter(format!(
@@ -298,13 +309,23 @@ impl Calculator {
                 } else if default_keys.names() == selection.names() {
                     selection.clone()
                 } else {
-                    let mut builder = LabelsBuilder::new(default_keys.names());
                     let matches = default_keys.select(selection)
                         .map_err(map_selection_error(&default_keys.names(), &selection.names(), "keys"))?;
-                    for entry in matches {
-                        builder.add(&default_keys[entry]);
+
+                    let n_cols = default_keys.names().len();
+                    let mut values = Vec::with_capacity(matches.len() * n_cols);
+                    for &entry in &matches {
+                        for value in &default_keys[entry] {
+                            values.push(value.i32());
+                        }
                     }
-                    builder.finish_assume_unique()
+
+                    let values = Array2::from_shape_vec(
+                        (matches.len(), n_cols),
+                        values,
+                    ).expect("wrong shape for selected keys");
+
+                    Labels::new_assume_unique(default_keys.names(), values)
                 }
             }
             None => default_keys,
@@ -362,11 +383,12 @@ impl Calculator {
 
             let mut cell_gradient_samples = Vec::new();
             for samples in &samples {
-                let mut builder = LabelsBuilder::new(vec!["sample"]);
-                for sample_i in 0..samples.count() {
-                    builder.add(&[sample_i]);
-                }
-                cell_gradient_samples.push(builder.finish_assume_unique());
+                let values = Array2::from_shape_vec(
+                    (samples.count(), 1),
+                    (0..samples.count() as i32).collect(),
+                ).expect("wrong shape for cell gradient samples");
+
+                cell_gradient_samples.push(Labels::new_assume_unique(["sample"], values));
             }
             Some(cell_gradient_samples)
         } else {
@@ -383,11 +405,12 @@ impl Calculator {
 
             let mut strain_gradient_samples = Vec::new();
             for samples in &samples {
-                let mut builder = LabelsBuilder::new(vec!["sample"]);
-                for sample_i in 0..samples.count() {
-                    builder.add(&[sample_i]);
-                }
-                strain_gradient_samples.push(builder.finish_assume_unique());
+                let values = Array2::from_shape_vec(
+                    (samples.count(), 1),
+                    (0..samples.count() as i32).collect(),
+                ).expect("wrong shape for strain gradient samples");
+
+                strain_gradient_samples.push(Labels::new_assume_unique(["sample"], values));
             }
             Some(strain_gradient_samples)
         } else {
@@ -409,10 +432,10 @@ impl Calculator {
         assert_eq!(keys.count(), components.len());
         assert_eq!(keys.count(), properties.len());
 
-        let xyz = Labels::new(["xyz"], &[[0], [1], [2]]);
-        let abc = Labels::new(["abc"], &[[0], [1], [2]]);
-        let xyz_1 = Labels::new(["xyz_1"], &[[0], [1], [2]]);
-        let xyz_2 = Labels::new(["xyz_2"], &[[0], [1], [2]]);
+        let xyz = Labels::new(["xyz"], [[0], [1], [2]]);
+        let abc = Labels::new(["abc"], [[0], [1], [2]]);
+        let xyz_1 = Labels::new(["xyz_1"], [[0], [1], [2]]);
+        let xyz_2 = Labels::new(["xyz_2"], [[0], [1], [2]]);
 
         let mut blocks = Vec::new();
         for (block_i, ((samples, components), properties)) in samples.into_iter().zip(components).zip(properties).enumerate() {
@@ -574,7 +597,7 @@ macro_rules! add_calculator {
 // this code is included in the calculator tutorial, the tags below indicate the
 // first/last line to include
 // [calculator-registration]
-static REGISTERED_CALCULATORS: Lazy<BTreeMap<&'static str, CalculatorCreator>> = Lazy::new(|| {
+static REGISTERED_CALCULATORS: LazyLock<BTreeMap<&'static str, CalculatorCreator>> = LazyLock::new(|| {
     let mut map = BTreeMap::new();
     add_calculator!(map, "atomic_composition", AtomicComposition);
     add_calculator!(map, "dummy_calculator", DummyCalculator);

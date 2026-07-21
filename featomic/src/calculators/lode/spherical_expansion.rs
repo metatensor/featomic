@@ -6,7 +6,7 @@ use thread_local::ThreadLocal;
 use ndarray::{Array1, Array2, Array3, s};
 
 use metatensor::TensorMap;
-use metatensor::{LabelsBuilder, Labels, LabelValue};
+use metatensor::Labels;
 
 use crate::calculators::shared::DensityKind::SmearedPowerLaw;
 use crate::calculators::shared::{Density, SphericalExpansionBasis};
@@ -466,14 +466,19 @@ impl CalculatorBase for LodeSphericalExpansion {
         let builder = AllTypesPairsKeys {};
         let keys = builder.keys(systems)?;
 
-        let mut builder = LabelsBuilder::new(vec!["o3_lambda", "o3_sigma", "center_type", "neighbor_type"]);
+        let mut entries = Vec::new();
         for &[center_type, neighbor_type] in keys.iter_fixed_size() {
             for o3_lambda in self.parameters.basis.angular_channels() {
-                builder.add(&[o3_lambda.into(), 1.into(), center_type, neighbor_type]);
+                entries.push([o3_lambda as i32, 1, center_type.i32(), neighbor_type.i32()]);
             }
         }
 
-        return Ok(builder.finish_assume_unique());
+        let values = Array2::from_shape_vec(
+            (entries.len(), 4),
+            entries.into_iter().flatten().collect(),
+        ).expect("wrong shape for LodeSphericalExpansion keys");
+
+        return Ok(Labels::new_assume_unique(["o3_lambda", "o3_sigma", "center_type", "neighbor_type"], values));
     }
 
     fn sample_names(&self) -> Vec<&str> {
@@ -548,12 +553,16 @@ impl CalculatorBase for LodeSphericalExpansion {
                 continue;
             }
 
-            let mut component = LabelsBuilder::new(vec!["o3_mu"]);
+            let mut component_entries = Vec::new();
             for m in -o3_lambda.i32()..=o3_lambda.i32() {
-                component.add(&[LabelValue::new(m)]);
+                component_entries.push([m]);
             }
-
-            let components = vec![component.finish_assume_unique()];
+            let values = Array2::from_shape_vec(
+                (component_entries.len(), 1),
+                component_entries.into_iter().flatten().collect(),
+            ).expect("wrong shape for o3_mu component");
+            let component = Labels::new_assume_unique(["o3_mu"], values);
+            let components = vec![component];
             component_by_l.insert(*o3_lambda, components);
         }
 
@@ -574,24 +583,31 @@ impl CalculatorBase for LodeSphericalExpansion {
 
         match self.parameters.basis {
             SphericalExpansionBasis::TensorProduct(ref basis) => {
-                let mut properties = LabelsBuilder::new(self.property_names());
+                let mut entries = Vec::new();
                 for n in 0..basis.radial.size() {
-                    properties.add(&[n]);
+                    entries.push([n as i32]);
                 }
+                let values = Array2::from_shape_vec(
+                    (entries.len(), 1),
+                    entries.into_iter().flatten().collect(),
+                ).expect("wrong shape for TensorProduct properties");
+                let properties = Labels::new_assume_unique(self.property_names(), values);
 
-                return vec![properties.finish_assume_unique(); keys.count()];
+                return vec![properties; keys.count()];
             }
             SphericalExpansionBasis::Explicit(ref basis) => {
                 let mut result = Vec::new();
                 for [o3_lambda, _, _, _] in keys.iter_fixed_size() {
-                    let mut properties = LabelsBuilder::new(self.property_names());
-
                     let radial = basis.by_angular.get(&o3_lambda.usize()).expect("missing o3_lambda");
+                    let mut entries = Vec::new();
                     for n in 0..radial.size() {
-                        properties.add(&[n]);
+                        entries.push([n as i32]);
                     }
-
-                    result.push(properties.finish_assume_unique());
+                    let values = Array2::from_shape_vec(
+                        (entries.len(), 1),
+                        entries.into_iter().flatten().collect(),
+                    ).expect("wrong shape for Explicit properties");
+                    result.push(Labels::new_assume_unique(self.property_names(), values));
                 }
                 return result;
             }
@@ -951,18 +967,14 @@ mod tests {
         let mut system = test_system("water");
         system.cell = UnitCell::cubic(3.0);
 
-        let properties = Labels::new(["n"], &[
-            [0],
-            [3],
-            [2],
-        ]);
+        let properties = Labels::new(["n"], [[0], [3], [2]]);
 
-        let samples = Labels::new(["system", "atom"], &[
+        let samples = Labels::new(["system", "atom"], [
             [0, 1],
             [0, 2],
         ]);
 
-        let keys = Labels::new(["o3_lambda", "o3_sigma", "center_type", "neighbor_type"], &[
+        let keys = Labels::new(["o3_lambda", "o3_sigma", "center_type", "neighbor_type"], [
             [0, 1, -42, -42],
             [0, 1, 6, 1], // not part of the default keys
             [2, 1, -42, -42],

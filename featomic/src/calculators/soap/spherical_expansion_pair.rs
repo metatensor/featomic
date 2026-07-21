@@ -4,7 +4,8 @@ use std::cell::RefCell;
 
 use thread_local::ThreadLocal;
 
-use metatensor::{Labels, LabelsBuilder, LabelValue, TensorMap, TensorBlockRefMut};
+use metatensor::{Labels, LabelValue, TensorMap, TensorBlockRefMut};
+use ndarray::Array2;
 
 use crate::{Error, System, Vector3D};
 
@@ -565,20 +566,19 @@ impl CalculatorBase for SphericalExpansionByPair {
             self_pairs: true,
         }.keys(systems)?;
 
-        let mut keys = LabelsBuilder::new(vec![
-            "o3_lambda",
-            "o3_sigma",
-            "first_atom_type",
-            "second_atom_type"
-        ]);
-
+        let mut entries = Vec::new();
         for &[first_type, second_type] in full_neighbors_list_keys.iter_fixed_size() {
             for o3_lambda in self.parameters.basis.angular_channels() {
-                keys.add(&[o3_lambda.into(), 1.into(), first_type, second_type]);
+                entries.push([o3_lambda as i32, 1, first_type.i32(), second_type.i32()]);
             }
         }
 
-        return Ok(keys.finish_assume_unique());
+        let values = Array2::from_shape_vec(
+            (entries.len(), 4),
+            entries.into_iter().flatten().collect(),
+        ).expect("wrong shape for SphericalExpansionByPair keys");
+
+        return Ok(Labels::new_assume_unique(["o3_lambda", "o3_sigma", "first_atom_type", "second_atom_type"], values));
     }
 
     fn sample_names(&self) -> Vec<&str> {
@@ -591,11 +591,12 @@ impl CalculatorBase for SphericalExpansionByPair {
         for &[_, _, first_type, second_type] in keys.iter_fixed_size() {
             types_keys.insert((first_type, second_type));
         }
-        let mut builder = LabelsBuilder::new(vec!["first_atom_type", "second_atom_type"]);
-        for (first_type, second_type) in types_keys {
-            builder.add(&[first_type, second_type]);
-        }
-        let types_keys = builder.finish_assume_unique();
+        let types_entries: Vec<[i32; 2]> = types_keys.iter().map(|&(a, b)| [a.i32(), b.i32()]).collect();
+        let values = Array2::from_shape_vec(
+            (types_entries.len(), 2),
+            types_entries.into_iter().flatten().collect(),
+        ).expect("wrong shape for types keys");
+        let types_keys = Labels::new_assume_unique(["first_atom_type", "second_atom_type"], values);
 
         // for l=0, we want to include self pairs in the samples
         let mut samples_by_types_l0: BTreeMap<_, Labels> = BTreeMap::new();
@@ -649,19 +650,24 @@ impl CalculatorBase for SphericalExpansionByPair {
         let mut results = Vec::new();
 
         for block_samples in samples {
-            let mut builder = LabelsBuilder::new(vec!["sample", "system", "atom"]);
+            let mut entries = Vec::new();
             for (sample_i, &[system_i, first, second, cell_a, cell_b, cell_c]) in block_samples.iter_fixed_size().enumerate() {
                 // self pairs do not contribute to gradients
                 if first == second && cell_a == 0 && cell_b == 0 && cell_c == 0 {
                     continue;
                 }
-                builder.add(&[sample_i.into(), system_i, first]);
+                entries.push([sample_i as i32, system_i.i32(), first.i32()]);
                 if first != second {
-                    builder.add(&[sample_i.into(), system_i, second]);
+                    entries.push([sample_i as i32, system_i.i32(), second.i32()]);
                 }
             }
 
-            results.push(builder.finish_assume_unique());
+            let values = Array2::from_shape_vec(
+                (entries.len(), 3),
+                entries.into_iter().flatten().collect(),
+            ).expect("wrong shape for SphericalExpansionByPair gradient samples");
+
+            results.push(Labels::new_assume_unique(["sample", "system", "atom"], values));
         }
 
         return Ok(results);
@@ -679,12 +685,17 @@ impl CalculatorBase for SphericalExpansionByPair {
             let components = match cache.entry(o3_lambda) {
                 Entry::Occupied(entry) => entry.get().clone(),
                 Entry::Vacant(entry) => {
-                    let mut component = LabelsBuilder::new(vec!["o3_mu"]);
+                    let mut entries = Vec::new();
                     for m in -o3_lambda.i32()..=o3_lambda.i32() {
-                        component.add(&[LabelValue::new(m)]);
+                        entries.push([m]);
                     }
+                    let values = Array2::from_shape_vec(
+                        (entries.len(), 1),
+                        entries.into_iter().flatten().collect(),
+                    ).expect("wrong shape for o3_mu component");
+                    let component = Labels::new_assume_unique(["o3_mu"], values);
 
-                    let components = vec![component.finish_assume_unique()];
+                    let components = vec![component];
                     entry.insert(components).clone()
                 }
             };
@@ -704,24 +715,31 @@ impl CalculatorBase for SphericalExpansionByPair {
 
         match self.parameters.basis {
             SphericalExpansionBasis::TensorProduct(ref basis) => {
-                let mut properties = LabelsBuilder::new(self.property_names());
+                let mut entries = Vec::new();
                 for n in 0..basis.radial.size() {
-                    properties.add(&[n]);
+                    entries.push([n as i32]);
                 }
+                let values = Array2::from_shape_vec(
+                    (entries.len(), 1),
+                    entries.into_iter().flatten().collect(),
+                ).expect("wrong shape for TensorProduct properties");
+                let properties = Labels::new_assume_unique(self.property_names(), values);
 
-                return vec![properties.finish_assume_unique(); keys.count()];
+                return vec![properties; keys.count()];
             }
             SphericalExpansionBasis::Explicit(ref basis) => {
                 let mut result = Vec::new();
                 for [o3_lambda, _, _, _] in keys.iter_fixed_size() {
-                    let mut properties = LabelsBuilder::new(self.property_names());
-
                     let radial = basis.by_angular.get(&o3_lambda.usize()).expect("missing o3_lambda");
+                    let mut entries = Vec::new();
                     for n in 0..radial.size() {
-                        properties.add(&[n]);
+                        entries.push([n as i32]);
                     }
-
-                    result.push(properties.finish_assume_unique());
+                    let values = Array2::from_shape_vec(
+                        (entries.len(), 1),
+                        entries.into_iter().flatten().collect(),
+                    ).expect("wrong shape for Explicit properties");
+                    result.push(Labels::new_assume_unique(self.property_names(), values));
                 }
                 return result;
             }
@@ -945,18 +963,14 @@ mod tests {
 
         let mut systems = test_systems(&["water"]);
 
-        let properties = Labels::new(["n"], &[
-            [0],
-            [3],
-            [2],
-        ]);
+        let properties = Labels::new(["n"], [[0], [3], [2]]);
 
-        let samples = Labels::new(["system", "first_atom", "second_atom"], &[
+        let samples = Labels::new(["system", "first_atom", "second_atom"], [
             [0, 1, 2],
             [0, 2, 1],
         ]);
 
-        let keys = Labels::new(["o3_lambda", "o3_sigma", "first_atom_type", "second_atom_type"], &[
+        let keys = Labels::new(["o3_lambda", "o3_sigma", "first_atom_type", "second_atom_type"], [
             [0, 1, -42, 1],
             [0, 1, -42, -42],
             [0, 1, 6, 1], // not part of the default keys

@@ -1,7 +1,8 @@
 use std::collections::BTreeSet;
 
 use metatensor::TensorMap;
-use metatensor::{Labels, LabelsBuilder, LabelValue};
+use metatensor::{Labels, LabelValue};
+use ndarray::Array2;
 
 use super::CalculatorBase;
 
@@ -113,24 +114,29 @@ impl CalculatorBase for NeighborList {
         let mut results = Vec::new();
 
         for block_samples in samples {
-            let mut builder = LabelsBuilder::new(vec!["sample", "system", "atom"]);
+            let mut entries = Vec::new();
             for (sample_i, &[system_i, first, second, cell_a, cell_b, cell_c]) in block_samples.iter_fixed_size().enumerate() {
                 // self pairs do not contribute to gradients
                 if first == second && cell_a == 0 && cell_b == 0 && cell_c == 0 {
                     continue;
                 }
-                builder.add(&[sample_i.into(), system_i, first]);
-                builder.add(&[sample_i.into(), system_i, second]);
+                entries.push([sample_i as i32, system_i.i32(), first.i32()]);
+                entries.push([sample_i as i32, system_i.i32(), second.i32()]);
             }
 
-            results.push(builder.finish_assume_unique());
+            let values = Array2::from_shape_vec(
+                (entries.len(), 3),
+                entries.into_iter().flatten().collect(),
+            ).expect("wrong shape for neighbor list gradient samples");
+
+            results.push(Labels::new_assume_unique(["sample", "system", "atom"], values));
         }
 
         return Ok(results);
     }
 
     fn components(&self, keys: &Labels) -> Vec<Vec<Labels>> {
-        let components = vec![Labels::new(["pair_xyz"], &[[0], [1], [2]])];
+        let components = vec![Labels::new(["pair_xyz"], [[0], [1], [2]])];
         return vec![components; keys.count()];
     }
 
@@ -139,10 +145,7 @@ impl CalculatorBase for NeighborList {
     }
 
     fn properties(&self, keys: &Labels) -> Vec<Labels> {
-        let mut properties = LabelsBuilder::new(self.property_names());
-        properties.add(&[LabelValue::new(0)]);
-        let properties = properties.finish();
-
+        let properties = Labels::new(self.property_names(), [[0]]);
         return vec![properties; keys.count()];
     }
 
@@ -191,26 +194,23 @@ impl HalfNeighborList {
             }
         }
 
-        let mut keys = LabelsBuilder::new(vec!["first_atom_type", "second_atom_type"]);
+        let mut all_entries = Vec::new();
         for (first, second) in all_types_pairs {
-            keys.add(&[first, second]);
+            all_entries.push([first, second]);
         }
+        let values = Array2::from_shape_vec(
+            (all_entries.len(), 2),
+            all_entries.into_iter().flatten().collect(),
+        ).expect("wrong shape for HalfNeighborList keys");
 
-        return Ok(keys.finish_assume_unique());
+        return Ok(Labels::new_assume_unique(["first_atom_type", "second_atom_type"], values));
     }
 
     fn samples(&self, keys: &Labels, systems: &mut [Box<dyn System>]) -> Result<Vec<Labels>, Error> {
         let mut results = Vec::new();
 
         for [first_atom_type, second_atom_type] in keys.iter_fixed_size() {
-            let mut builder = LabelsBuilder::new(vec![
-                "system",
-                "first_atom",
-                "second_atom",
-                "cell_shift_a",
-                "cell_shift_b",
-                "cell_shift_c"
-            ]);
+            let mut entries = Vec::new();
 
             for (system_i, system) in systems.iter_mut().enumerate() {
                 system.compute_neighbors(self.cutoff)?;
@@ -233,13 +233,8 @@ impl HalfNeighborList {
                     };
 
                     if type_i == first_atom_type.i32() && type_j == second_atom_type.i32() {
-                        builder.add(&[
-                            LabelValue::from(system_i),
-                            LabelValue::from(atom_i),
-                            LabelValue::from(atom_j),
-                            LabelValue::from(cell_a),
-                            LabelValue::from(cell_b),
-                            LabelValue::from(cell_c),
+                        entries.push([
+                            system_i as i32, atom_i as i32, atom_j as i32, cell_a, cell_b, cell_c
                         ]);
                     }
                 }
@@ -248,20 +243,23 @@ impl HalfNeighborList {
                 if self.self_pairs && first_atom_type == second_atom_type {
                     for center_i in 0..system.size()? {
                         if types[center_i] == first_atom_type.i32() {
-                            builder.add(&[
-                                system_i.into(),
-                                center_i.into(),
-                                center_i.into(),
-                                LabelValue::from(0),
-                                LabelValue::from(0),
-                                LabelValue::from(0),
+                            entries.push([
+                                system_i as i32, center_i as i32, center_i as i32, 0, 0, 0
                             ]);
                         }
                     }
                 }
             }
 
-            results.push(builder.finish_assume_unique());
+            let values = Array2::from_shape_vec(
+                (entries.len(), 6),
+                entries.into_iter().flatten().collect(),
+            ).expect("wrong shape for HalfNeighborList samples");
+
+            results.push(Labels::new_assume_unique(
+                ["system", "first_atom", "second_atom", "cell_shift_a", "cell_shift_b", "cell_shift_c"],
+                values
+            ));
         }
 
         return Ok(results);
@@ -392,26 +390,23 @@ impl FullNeighborList {
             }
         }
 
-        let mut keys = LabelsBuilder::new(vec!["first_atom_type", "second_atom_type"]);
+        let mut all_entries = Vec::new();
         for (first, second) in all_types_pairs {
-            keys.add(&[first, second]);
+            all_entries.push([first, second]);
         }
+        let values = Array2::from_shape_vec(
+            (all_entries.len(), 2),
+            all_entries.into_iter().flatten().collect(),
+        ).expect("wrong shape for FullNeighborList keys");
 
-        return Ok(keys.finish_assume_unique());
+        return Ok(Labels::new_assume_unique(["first_atom_type", "second_atom_type"], values));
     }
 
     pub(crate) fn samples(&self, keys: &Labels, systems: &mut [Box<dyn System>]) -> Result<Vec<Labels>, Error> {
         let mut results = Vec::new();
 
         for &[first_atom_type, second_atom_type] in keys.iter_fixed_size() {
-            let mut builder = LabelsBuilder::new(vec![
-                "system",
-                "first_atom",
-                "second_atom",
-                "cell_shift_a",
-                "cell_shift_b",
-                "cell_shift_c"
-            ]);
+            let mut entries = Vec::new();
 
             for (system_i, system) in systems.iter_mut().enumerate() {
                 system.compute_neighbors(self.cutoff)?;
@@ -426,43 +421,23 @@ impl FullNeighborList {
                         // same type for both atoms in the pair, add the pair
                         // twice in both directions.
                         if types[pair.first] == first_atom_type.i32() && types[pair.second] == second_atom_type.i32() {
-                            builder.add(&[
-                                LabelValue::from(system_i),
-                                LabelValue::from(pair.first),
-                                LabelValue::from(pair.second),
-                                LabelValue::from(cell_a),
-                                LabelValue::from(cell_b),
-                                LabelValue::from(cell_c),
+                            entries.push([
+                                system_i as i32, pair.first as i32, pair.second as i32, cell_a, cell_b, cell_c
                             ]);
 
-                            builder.add(&[
-                                LabelValue::from(system_i),
-                                LabelValue::from(pair.second),
-                                LabelValue::from(pair.first),
-                                LabelValue::from(-cell_a),
-                                LabelValue::from(-cell_b),
-                                LabelValue::from(-cell_c),
+                            entries.push([
+                                system_i as i32, pair.second as i32, pair.first as i32, -cell_a, -cell_b, -cell_c
                             ]);
                         }
                     } else {
                         // different types, find the right order for the pair
                         if types[pair.first] == first_atom_type.i32() && types[pair.second] == second_atom_type.i32() {
-                            builder.add(&[
-                                LabelValue::from(system_i),
-                                LabelValue::from(pair.first),
-                                LabelValue::from(pair.second),
-                                LabelValue::from(cell_a),
-                                LabelValue::from(cell_b),
-                                LabelValue::from(cell_c),
+                            entries.push([
+                                system_i as i32, pair.first as i32, pair.second as i32, cell_a, cell_b, cell_c
                             ]);
                         } else if types[pair.second] == first_atom_type.i32() && types[pair.first] == second_atom_type.i32() {
-                            builder.add(&[
-                                LabelValue::from(system_i),
-                                LabelValue::from(pair.second),
-                                LabelValue::from(pair.first),
-                                LabelValue::from(-cell_a),
-                                LabelValue::from(-cell_b),
-                                LabelValue::from(-cell_c),
+                            entries.push([
+                                system_i as i32, pair.second as i32, pair.first as i32, -cell_a, -cell_b, -cell_c
                             ]);
                         }
                     }
@@ -472,20 +447,23 @@ impl FullNeighborList {
                 if self.self_pairs && first_atom_type == second_atom_type {
                     for center_i in 0..system.size()? {
                         if types[center_i] == first_atom_type.i32() {
-                            builder.add(&[
-                                system_i.into(),
-                                center_i.into(),
-                                center_i.into(),
-                                LabelValue::from(0),
-                                LabelValue::from(0),
-                                LabelValue::from(0),
+                            entries.push([
+                                system_i as i32, center_i as i32, center_i as i32, 0, 0, 0
                             ]);
                         }
                     }
                 }
             }
 
-            results.push(builder.finish_assume_unique());
+            let values = Array2::from_shape_vec(
+                (entries.len(), 6),
+                entries.into_iter().flatten().collect(),
+            ).expect("wrong shape for FullNeighborList samples");
+
+            results.push(Labels::new_assume_unique([
+                "system", "first_atom", "second_atom",
+                "cell_shift_a", "cell_shift_b", "cell_shift_c",
+            ], values));
         }
 
         return Ok(results);
@@ -650,20 +628,20 @@ mod tests {
 
         assert_eq!(*descriptor.keys(), Labels::new(
             ["first_atom_type", "second_atom_type"],
-            &[[-42, 1], [1, 1]]
+            [[-42, 1], [1, 1]]
         ));
 
         // O-H block
         let block = descriptor.block_by_id(0);
-        assert_eq!(block.properties(), Labels::new(["distance"], &[[0]]));
+        assert_eq!(block.properties(), Labels::new(["distance"], [[0]]));
 
         assert_eq!(block.components().len(), 1);
-        assert_eq!(block.components()[0], Labels::new(["pair_xyz"], &[[0], [1], [2]]));
+        assert_eq!(block.components()[0], Labels::new(["pair_xyz"], [[0], [1], [2]]));
 
         assert_eq!(block.samples(), Labels::new(
             ["system", "first_atom", "second_atom", "cell_shift_a", "cell_shift_b", "cell_shift_c"],
             // we have two O-H pairs
-            &[[0, 0, 1, 0, 0, 0], [0, 0, 2, 0, 0, 0]]
+            [[0, 0, 1, 0, 0, 0], [0, 0, 2, 0, 0, 0]]
         ));
 
         let array = block.values().to_ndarray_lock::<f64>().read().unwrap();
@@ -679,7 +657,7 @@ mod tests {
             ["system", "first_atom", "second_atom", "cell_shift_a", "cell_shift_b", "cell_shift_c"],
             // we have one H-H pair in the main image, and one more with
             // periodic images
-            &[[0, 1, 2, 0, 0, 0], [0, 1, 2, 0, 1, 0]]
+            [[0, 1, 2, 0, 0, 0], [0, 1, 2, 0, 1, 0]]
         ));
 
         let array = block.values().to_ndarray_lock::<f64>().read().unwrap();
@@ -704,20 +682,20 @@ mod tests {
 
         assert_eq!(*descriptor.keys(), Labels::new(
             ["first_atom_type", "second_atom_type"],
-            &[[-42, 1], [1, -42], [1, 1]]
+            [[-42, 1], [1, -42], [1, 1]]
         ));
 
         // O-H block
         let block = descriptor.block_by_id(0);
-        assert_eq!(block.properties(), Labels::new(["distance"], &[[0]]));
+        assert_eq!(block.properties(), Labels::new(["distance"], [[0]]));
 
         assert_eq!(block.components().len(), 1);
-        assert_eq!(block.components()[0], Labels::new(["pair_xyz"], &[[0], [1], [2]]));
+        assert_eq!(block.components()[0], Labels::new(["pair_xyz"], [[0], [1], [2]]));
 
         assert_eq!(block.samples(), Labels::new(
             ["system", "first_atom", "second_atom", "cell_shift_a", "cell_shift_b", "cell_shift_c"],
             // we have two O-H pairs
-            &[[0, 0, 1, 0, 0, 0], [0, 0, 2, 0, 0, 0]]
+            [[0, 0, 1, 0, 0, 0], [0, 0, 2, 0, 0, 0]]
         ));
 
         let array = block.values().to_ndarray_lock::<f64>().read().unwrap();
@@ -729,15 +707,15 @@ mod tests {
 
         // H-O block
         let block = descriptor.block_by_id(1);
-        assert_eq!(block.properties(), Labels::new(["distance"], &[[0]]));
+        assert_eq!(block.properties(), Labels::new(["distance"], [[0]]));
 
         assert_eq!(block.components().len(), 1);
-        assert_eq!(block.components()[0], Labels::new(["pair_xyz"], &[[0], [1], [2]]));
+        assert_eq!(block.components()[0], Labels::new(["pair_xyz"], [[0], [1], [2]]));
 
         assert_eq!(block.samples(), Labels::new(
             ["system", "first_atom", "second_atom", "cell_shift_a", "cell_shift_b", "cell_shift_c"],
             // we have two H-O pairs
-            &[[0, 1, 0, 0, 0, 0], [0, 2, 0, 0, 0, 0]]
+            [[0, 1, 0, 0, 0, 0], [0, 2, 0, 0, 0, 0]]
         ));
 
         let array = block.values().to_ndarray_lock::<f64>().read().unwrap();
@@ -752,7 +730,7 @@ mod tests {
         assert_eq!(block.samples(), Labels::new(
             ["system", "first_atom", "second_atom", "cell_shift_a", "cell_shift_b", "cell_shift_c"],
             // we have one H-H pair, four times (including with periodic images)
-            &[
+            [
                 [0, 1, 2, 0, 0, 0], [0, 2, 1, 0, 0, 0],
                 [0, 1, 2, 0, 1, 0], [0, 2, 1, 0, -1, 0],
             ]
@@ -781,7 +759,7 @@ mod tests {
         let descriptor = calculator.compute(&mut systems, Default::default()).unwrap();
         assert_eq!(*descriptor.keys(), Labels::new(
             ["first_atom_type", "second_atom_type"],
-            &[[1, 1], [1, 6], [6, 6]]
+            [[1, 1], [1, 6], [6, 6]]
         ));
 
         // H-H block
@@ -789,7 +767,7 @@ mod tests {
         assert_eq!(block.samples(), Labels::new(
             ["system", "first_atom", "second_atom", "cell_shift_a", "cell_shift_b", "cell_shift_c"],
             // the pairs only differ in cell shifts
-            &[[0, 1, 1, 0, 0, 1], [0, 1, 1, 0, 1, 0], [0, 1, 1, 1, 0, 0]]
+            [[0, 1, 1, 0, 0, 1], [0, 1, 1, 0, 1, 0], [0, 1, 1, 1, 0, 0]]
         ));
 
         let array = block.values().to_ndarray_lock::<f64>().read().unwrap();
@@ -810,7 +788,7 @@ mod tests {
         let descriptor = calculator.compute(&mut systems, Default::default()).unwrap();
         assert_eq!(*descriptor.keys(), Labels::new(
             ["first_atom_type", "second_atom_type"],
-            &[[1, 1], [1, 6], [6, 1], [6, 6]]
+            [[1, 1], [1, 6], [6, 1], [6, 6]]
         ));
 
         // H-H block
@@ -818,7 +796,7 @@ mod tests {
         assert_eq!(block.samples(), Labels::new(
             ["system", "first_atom", "second_atom", "cell_shift_a", "cell_shift_b", "cell_shift_c"],
             // twice as many pairs
-            &[
+            [
                 [0, 1, 1, 0, 0, 1], [0, 1, 1, 0, 0, -1],
                 [0, 1, 1, 0, 1, 0], [0, 1, 1, 0, -1, 0],
                 [0, 1, 1, 1, 0, 0], [0, 1, 1, -1, 0, 0],
@@ -873,19 +851,12 @@ mod tests {
         }) as Box<dyn CalculatorBase>);
         let mut systems = test_systems(&["water", "methane"]);
 
-        let samples = Labels::new(
-            ["system", "first_atom"],
-            &[[0, 1]],
-        );
-
-        let properties = Labels::new(
-            ["distance"],
-            &[[0]],
-        );
+        let samples = Labels::new(["system", "first_atom"], [[0, 1]]);
+        let properties = Labels::new(["distance"], [[0]]);
 
         let keys = Labels::new(
             ["first_atom_type", "second_atom_type"],
-            &[[-42, 1], [1, -42], [1, 1], [1, 6], [6, 1], [6, 6]]
+            [[-42, 1], [1, -42], [1, 1], [1, 6], [6, 1], [6, 6]]
         );
 
         crate::calculators::tests_utils::compute_partial(
@@ -917,7 +888,7 @@ mod tests {
         // we have a block for O-O pairs (-42, -42)
         assert_eq!(descriptor.keys(), &Labels::new(
             ["first_atom_type", "second_atom_type"],
-            &[[-42, -42], [-42, 1], [1, -42], [1, 1]]
+            [[-42, -42], [-42, 1], [1, -42], [1, 1]]
         ));
 
         // H-H block
@@ -925,7 +896,7 @@ mod tests {
         let block = block.data();
         assert_eq!(*block.samples, Labels::new(
             ["system", "first_atom", "second_atom", "cell_shift_a", "cell_shift_b", "cell_shift_c"],
-            &[
+            [
                 // we have two H-H pair in the main cell, two self-pairs and two
                 // pairs between different periodic images.
                 [0, 1, 2, 0, 0, 0],
@@ -950,9 +921,6 @@ mod tests {
         let descriptor = calculator.compute(&mut systems, Default::default()).unwrap();
 
         // cutoff too low, TensorMap is empty!
-        assert_eq!(descriptor.keys(), &Labels::new::<i32,2>(
-            ["first_atom_type", "second_atom_type"],
-            &[],
-        ));
+        assert_eq!(descriptor.keys(), &Labels::empty(["first_atom_type", "second_atom_type"]));
     }
 }

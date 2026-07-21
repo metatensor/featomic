@@ -143,7 +143,7 @@ impl<D: ndarray::Dimension> HermitCubicSpline<D> {
             // should have the highest error in average.
             let mut new_points = Vec::new();
             for k in 0..(spline.len() - 1) {
-                let position = (positions[k] + positions[k + 1]) / 2.0;
+                let position = f64::midpoint(positions[k], positions[k + 1]);
 
                 let (values, derivatives) = function(position);
 

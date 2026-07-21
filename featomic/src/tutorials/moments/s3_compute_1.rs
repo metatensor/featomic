@@ -1,4 +1,5 @@
-use metatensor::{Labels, TensorMap, LabelsBuilder};
+use metatensor::{Labels, TensorMap};
+use ndarray::Array2;
 
 use crate::{System, Error};
 use crate::labels::{CenterSingleNeighborsTypesKeys, KeysBuilder};

@@ -21,12 +21,14 @@ jobs:
     strategy:
       matrix:
         include:
+          # test our MSRV, and the static C library build
           - os: ubuntu-24.04
-            rust-version: stable
+            rust-version: 1.88
             rust-target: x86_64-unknown-linux-gnu
             build-type: debug
             test-static-lib: true
             extra-name: / static C library
+            cargo: cargo
             working-directory: /home/runner/work/featomic/featomic/
 
           - os: ubuntu-24.04
@@ -36,27 +38,31 @@ jobs:
             cargo-build-flags: --release
             do-valgrind: true
             extra-name: / release valgrind
+            cargo: cargo
             working-directory: /home/runner/work/featomic/featomic/
 
-          # check the build on a stock Ubuntu 22.04, including cmake 3.22
+          # check the build on a stock Ubuntu 22.04, with cmake 3.22 and cargo from APT
           - os: ubuntu-24.04
-            rust-version: "1.74"
+            rust-version: from APT
             container: ubuntu:22.04
             rust-target: x86_64-unknown-linux-gnu
             build-type: debug
             extra-name: / cmake 3.22
+            cargo: cargo-1.89
             working-directory: /__w/featomic/featomic
 
           - os: macos-15
             rust-version: stable
             rust-target: aarch64-apple-darwin
             build-type: debug
+            cargo: cargo
             working-directory: /Users/runner/work/featomic/featomic/
 
           - os: windows-2022
             rust-version: stable
             rust-target: x86_64-pc-windows-msvc
             build-type: debug
+            cargo: cargo
             working-directory: C:\\featomic
 
     steps:
@@ -65,7 +71,12 @@ jobs:
         run: |
           apt update
           apt install -y software-properties-common
-          apt install -y cmake make gcc g++ git curl python3-pip python3-venv
+          apt install -y cmake make gcc g++ git curl python3-pip python3-venv cargo-1.89
+
+          # for some reason, cargo-1.89 from APT tries to find `rustdoc` and
+          # not `rustdoc-1.89`, so we force it to use the correct one
+          echo "RUSTDOC=rustdoc-1.89" >> "$GITHUB_ENV"
+
           ln -s /usr/bin/python3 /usr/bin/python
         working-directory: /
 
@@ -94,6 +105,7 @@ jobs:
 
       - name: setup rust
         uses: dtolnay/rust-toolchain@master
+        if: matrix.container == null
         with:
           toolchain: ${{ matrix.rust-version }}
           target: ${{ matrix.rust-target }}
@@ -106,10 +118,12 @@ jobs:
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
+        if: matrix.container == null
         with:
           version: "v0.10.0"
 
       - name: Setup sccache environnement variables
+        if: matrix.container == null
         run: |
           echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
           echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
@@ -117,18 +131,18 @@ jobs:
           echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
 
       - name: unit tests
-        run: cargo test --lib --target ${{ matrix.rust-target }} ${{ matrix.cargo-build-flags }}
+        run: ${{ matrix.cargo }} test --lib --target ${{ matrix.rust-target }} ${{ matrix.cargo-build-flags }}
 
       - name: documentation tests
         # we need rustc 1.78 to load libmetatensor.so in doctests
         if: matrix.rust-version == 'stable'
-        run: cargo test --doc --target ${{ matrix.rust-target }} ${{ matrix.cargo-build-flags }}
+        run: ${{ matrix.cargo }} test --doc --target ${{ matrix.rust-target }} ${{ matrix.cargo-build-flags }}
 
       - name: integration tests
         env:
           FEATOMIC_TEST_WITH_STATIC_LIB: ${{ matrix.test-static-lib || 0 }}
         run: |
-          cargo test --test "*" --package featomic --target ${{ matrix.rust-target }} ${{ matrix.cargo-build-flags }}
+          ${{ matrix.cargo }} test --test "*" --package featomic --target ${{ matrix.rust-target }} ${{ matrix.cargo-build-flags }}
 
   # second set of jobs checking that (non-test) code still compiles/run as expected
   prevent-bitrot:

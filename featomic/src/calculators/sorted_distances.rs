@@ -1,4 +1,5 @@
-use metatensor::{Labels, LabelsBuilder, TensorMap};
+use metatensor::{Labels, TensorMap};
+use ndarray::Array2;
 
 use super::CalculatorBase;
 
@@ -105,11 +106,11 @@ impl CalculatorBase for SortedDistances {
     }
 
     fn properties(&self, keys: &Labels) -> Vec<Labels> {
-        let mut properties = LabelsBuilder::new(self.property_names());
-        for i in 0..self.max_neighbors {
-            properties.add(&[i]);
-        }
-        let properties = properties.finish();
+        let values = Array2::from_shape_vec(
+            (self.max_neighbors, 1),
+            (0..self.max_neighbors as i32).collect()
+        ).expect("wrong shape for property values");
+        let properties = Labels::new(self.property_names(), values);
 
         return vec![properties; keys.count()];
     }
@@ -230,9 +231,9 @@ mod tests {
 
         let mut systems = test_systems(&["water"]);
 
-        let keys = Labels::new(["center_type"], &[[1], [6], [8], [-42]]);
-        let samples = Labels::new(["system", "atom"], &[[0, 1]]);
-        let properties = Labels::new(["neighbor"], &[[2], [0]]);
+        let keys = Labels::new(["center_type"], [[1], [6], [8], [-42]]);
+        let samples = Labels::new(["system", "atom"], [[0, 1]]);
+        let properties = Labels::new(["neighbor"], [[2], [0]]);
 
         crate::calculators::tests_utils::compute_partial(
             calculator, &mut systems, &keys, &samples, &properties

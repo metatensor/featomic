@@ -3,8 +3,9 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 use ndarray::s;
 use rayon::prelude::*;
 
-use metatensor::{LabelsBuilder, Labels, LabelValue, TensorBlockRefMut};
+use metatensor::{Labels, LabelValue, TensorBlockRefMut};
 use metatensor::TensorMap;
+use ndarray::Array2;
 
 use crate::{Error, System};
 
@@ -686,14 +687,19 @@ impl CalculatorBase for SphericalExpansion {
         };
         let keys = builder.keys(systems)?;
 
-        let mut builder = LabelsBuilder::new(vec!["o3_lambda", "o3_sigma", "center_type", "neighbor_type"]);
+        let mut entries = Vec::new();
         for &[center_type, neighbor_type] in keys.iter_fixed_size() {
             for o3_lambda in self.by_pair.parameters().basis.angular_channels() {
-                builder.add(&[o3_lambda.into(), 1.into(), center_type, neighbor_type]);
+                entries.push([o3_lambda as i32, 1, center_type.i32(), neighbor_type.i32()]);
             }
         }
 
-        return Ok(builder.finish_assume_unique());
+        let values = Array2::from_shape_vec(
+            (entries.len(), 4),
+            entries.into_iter().flatten().collect(),
+        ).expect("wrong shape for SphericalExpansion keys");
+
+        return Ok(Labels::new_assume_unique(["o3_lambda", "o3_sigma", "center_type", "neighbor_type"], values));
     }
 
     fn sample_names(&self) -> Vec<&str> {
@@ -772,12 +778,16 @@ impl CalculatorBase for SphericalExpansion {
                 continue;
             }
 
-            let mut component = LabelsBuilder::new(vec!["o3_mu"]);
+            let mut component_entries = Vec::new();
             for m in -o3_lambda.i32()..=o3_lambda.i32() {
-                component.add(&[LabelValue::new(m)]);
+                component_entries.push([m]);
             }
-
-            let components = vec![component.finish_assume_unique()];
+            let values = Array2::from_shape_vec(
+                (component_entries.len(), 1),
+                component_entries.into_iter().flatten().collect(),
+            ).expect("wrong shape for o3_mu component");
+            let component = Labels::new_assume_unique(["o3_mu"], values);
+            let components = vec![component];
             component_by_l.insert(*o3_lambda, components);
         }
 
@@ -798,24 +808,31 @@ impl CalculatorBase for SphericalExpansion {
 
         match self.by_pair.parameters.basis {
             SphericalExpansionBasis::TensorProduct(ref basis) => {
-                let mut properties = LabelsBuilder::new(self.property_names());
+                let mut entries = Vec::new();
                 for n in 0..basis.radial.size() {
-                    properties.add(&[n]);
+                    entries.push([n as i32]);
                 }
+                let values = Array2::from_shape_vec(
+                    (entries.len(), 1),
+                    entries.into_iter().flatten().collect(),
+                ).expect("wrong shape for TensorProduct properties");
+                let properties = Labels::new_assume_unique(self.property_names(), values);
 
-                return vec![properties.finish_assume_unique(); keys.count()];
+                return vec![properties; keys.count()];
             }
             SphericalExpansionBasis::Explicit(ref basis) => {
                 let mut result = Vec::new();
                 for [o3_lambda, _, _, _] in keys.iter_fixed_size() {
-                    let mut properties = LabelsBuilder::new(self.property_names());
-
                     let radial = basis.by_angular.get(&o3_lambda.usize()).expect("missing o3_lambda");
+                    let mut entries = Vec::new();
                     for n in 0..radial.size() {
-                        properties.add(&[n]);
+                        entries.push([n as i32]);
                     }
-
-                    result.push(properties.finish_assume_unique());
+                    let values = Array2::from_shape_vec(
+                        (entries.len(), 1),
+                        entries.into_iter().flatten().collect(),
+                    ).expect("wrong shape for Explicit properties");
+                    result.push(Labels::new_assume_unique(self.property_names(), values));
                 }
                 return result;
             }
@@ -874,8 +891,8 @@ impl CalculatorBase for SphericalExpansion {
 mod tests {
     use std::collections::BTreeMap;
 
-    use ndarray::ArrayD;
-    use metatensor::{Labels, TensorBlock, EmptyArray, LabelsBuilder, TensorMap};
+    use ndarray::{ArrayD, Array2};
+    use metatensor::{Labels, TensorBlock, EmptyArray, TensorMap};
 
     use crate::systems::test_utils::{test_systems, test_system};
     use crate::{Calculator, CalculationOptions, LabelsSelection};
@@ -1001,18 +1018,13 @@ mod tests {
 
         let mut systems = test_systems(&["water"]);
 
-        let properties = Labels::new(["n"], &[
-            [0],
-            [3],
-            [2],
-        ]);
-
-        let samples = Labels::new(["system", "atom"], &[
+        let properties = Labels::new(["n"], [[0], [3], [2]]);
+        let samples = Labels::new(["system", "atom"], [
             [0, 2],
             [0, 1],
         ]);
 
-        let keys = Labels::new(["o3_lambda", "o3_sigma", "center_type", "neighbor_type"], &[
+        let keys = Labels::new(["o3_lambda", "o3_sigma", "center_type", "neighbor_type"], [
             [0, 1, -42, -42],
             [0, 1, 6, 1], // not part of the default keys
             [2, 1, -42, -42],
@@ -1045,22 +1057,28 @@ mod tests {
         // center_type key.
         let block = TensorBlock::new(
             EmptyArray::new(vec![3, 1]),
-            &Labels::new(["system", "atom"], &[[0, 0], [0, 1], [0, 2]]),
+            &Labels::new(["system", "atom"], [[0, 0], [0, 1], [0, 2]]),
             &[],
             &Labels::single(),
         ).unwrap();
 
-        let mut keys = LabelsBuilder::new(vec!["o3_lambda", "o3_sigma", "center_type", "neighbor_type"]);
+        let mut key_entries = Vec::new();
         let mut blocks = Vec::new();
         for o3_lambda in parameters().basis.angular_channels() {
             for center_type in [1, -42] {
                 for neighbor_type in [1, -42] {
-                    keys.add(&[o3_lambda as i32, 1, center_type, neighbor_type]);
+                    key_entries.push([o3_lambda as i32, 1, center_type, neighbor_type]);
                     blocks.push(block.as_ref().try_clone().unwrap());
                 }
             }
         }
-        let select_all_samples = TensorMap::new(keys.finish_assume_unique(), blocks).unwrap();
+        let values = Array2::from_shape_vec(
+            (key_entries.len(), 4),
+            key_entries.into_iter().flatten().collect(),
+        ).expect("wrong shape for select all samples keys");
+        let select_all_samples = TensorMap::new(Labels::new_assume_unique(
+            ["o3_lambda", "o3_sigma", "center_type", "neighbor_type"], values
+        ), blocks).unwrap();
 
         let options = CalculationOptions {
             selected_samples: LabelsSelection::Predefined(&select_all_samples),
@@ -1076,7 +1094,7 @@ mod tests {
         let block = block.data();
 
         // entries centered on H atoms should be zero
-        assert_eq!(*block.samples, Labels::new(["system", "atom"], &[[0, 0], [0, 1], [0, 2]]));
+        assert_eq!(*block.samples, Labels::new(["system", "atom"], [[0, 0], [0, 1], [0, 2]]));
         let array = block.values.to_ndarray_lock::<f64>().read().unwrap();
         assert_eq!(array.index_axis(ndarray::Axis(0), 1), ArrayD::from_elem(vec![1, 6], 0.0));
         assert_eq!(array.index_axis(ndarray::Axis(0), 2), ArrayD::from_elem(vec![1, 6], 0.0));
@@ -1089,7 +1107,7 @@ mod tests {
         let block = block.data();
 
         // entries centered on O atoms should be zero
-        assert_eq!(*block.samples, Labels::new(["system", "atom"], &[[0, 0], [0, 1], [0, 2]]));
+        assert_eq!(*block.samples, Labels::new(["system", "atom"], [[0, 0], [0, 1], [0, 2]]));
         let array = block.values.to_ndarray_lock::<f64>().read().unwrap();
         assert_eq!(array.index_axis(ndarray::Axis(0), 0), ArrayD::from_elem(vec![1, 6], 0.0));
     }

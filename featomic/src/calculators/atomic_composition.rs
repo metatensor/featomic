@@ -1,4 +1,5 @@
-use metatensor::{Labels, LabelsBuilder, TensorMap};
+use metatensor::{Labels, TensorMap};
+use ndarray::Array2;
 
 use crate::{Error, System};
 
@@ -52,22 +53,32 @@ impl CalculatorBase for AtomicComposition {
         assert_eq!(keys.names(), ["center_type"]);
         let mut samples = Vec::new();
         for [center_type_key] in keys.iter_fixed_size() {
-            let mut builder = LabelsBuilder::new(self.sample_names());
-
-            for (system_i, system) in systems.iter_mut().enumerate() {
-                if self.per_system {
-                    builder.add(&[system_i]);
-                } else {
+            if self.per_system {
+                let mut entries = Vec::new();
+                for (system_i, _) in systems.iter_mut().enumerate() {
+                    entries.push([system_i as i32]);
+                }
+                let values = Array2::from_shape_vec(
+                    (entries.len(), 1),
+                    entries.into_iter().flatten().collect(),
+                ).expect("wrong shape for atomic composition samples");
+                samples.push(Labels::new_assume_unique(self.sample_names(), values));
+            } else {
+                let mut entries = Vec::new();
+                for (system_i, system) in systems.iter_mut().enumerate() {
                     let types = system.types()?;
-
                     for (center_i, &center_type) in types.iter().enumerate() {
                         if center_type_key.i32() == center_type {
-                            builder.add(&[system_i, center_i]);
+                            entries.push([system_i as i32, center_i as i32]);
                         }
                     }
                 }
+                let values = Array2::from_shape_vec(
+                    (entries.len(), 2),
+                    entries.into_iter().flatten().collect(),
+                ).expect("wrong shape for atomic composition samples");
+                samples.push(Labels::new_assume_unique(self.sample_names(), values));
             }
-            samples.push(builder.finish_assume_unique());
         }
 
         return Ok(samples);
@@ -101,10 +112,7 @@ impl CalculatorBase for AtomicComposition {
     }
 
     fn properties(&self, keys: &Labels) -> Vec<Labels> {
-        let mut properties = LabelsBuilder::new(self.property_names());
-        properties.add(&[0]);
-        let properties = properties.finish();
-
+        let properties = Labels::new(self.property_names(), [[0]]);
         return vec![properties; keys.count()];
     }
 
@@ -244,9 +252,9 @@ mod tests {
 
         let mut systems = test_systems(&["water"]);
 
-        let keys = Labels::new(["center_type"], &[[1], [6], [8], [-42]]);
-        let samples = Labels::new(["system", "atom"], &[[0, 1]]);
-        let properties = Labels::new(["count"], &[[0]]);
+        let keys = Labels::new(["center_type"], [[1], [6], [8], [-42]]);
+        let samples = Labels::new(["system", "atom"], [[0, 1]]);
+        let properties = Labels::new(["count"], [[0]]);
 
         crate::calculators::tests_utils::compute_partial(
             calculator,
