@@ -153,15 +153,17 @@ impl LodeRadialIntegral for LodeRadialIntegralGto {
 
 
         let n_eff: Vec<f64> = (0..radial_size)
-            .map(|n| 0.5 * (3.0 + n as f64))
+            .map(|n| f64::midpoint(3.0, n as f64))
             .collect();
 
         if exponent == 0.0 {
             let factor = std::f64::consts::PI.powf(-0.25) / (smearing * smearing).powf(0.75);
 
             for n in 0..radial_size {
-                let alpha = 0.5 * (1.0 / (smearing * smearing)
-                    + 1.0 / (self.gto_gaussian_widths[n] * self.gto_gaussian_widths[n]));
+                let alpha = f64::midpoint(
+                    1.0 / (smearing * smearing),
+                    1.0 / (self.gto_gaussian_widths[n] * self.gto_gaussian_widths[n])
+                );
                 contrib[n] = factor * gamma(n_eff[n]) / alpha.powf(n_eff[n]);
             }
         } else {

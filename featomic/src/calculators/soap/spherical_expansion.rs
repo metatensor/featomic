@@ -505,7 +505,7 @@ impl SphericalExpansion {
                 }
             } else {
                 // gradient w.r.t. the position of a neighboring atom
-                debug_assert!(types[neighbor_i] == neighbor_type);
+                debug_assert_eq!(types[neighbor_i], neighbor_type);
                 for pair_indices in &result.pairs_for_positions_gradient[&(center_i, neighbor_i)] {
                     let pair = pairs[pair_indices.pair_id];
                     let factor = if pair.first == center_i {
