@@ -801,9 +801,9 @@ impl CalculatorBase for LodeSphericalExpansion {
                                 let center_i = sample[1].usize();
 
                                 if center_i != neighbor_i {
-                                    assert!(types[neighbor_i] == neighbor_type);
+                                    assert_eq!(types[neighbor_i], neighbor_type);
                                 }
-                                assert!(types[center_i] == center_type);
+                                assert_eq!(types[center_i], center_type);
 
                                 let cosines = &structure_factors.real;
                                 let sines = &structure_factors.imag;

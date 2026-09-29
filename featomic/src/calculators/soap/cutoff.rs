@@ -57,7 +57,7 @@ impl Cutoff {
                     0.0
                 } else {
                     let s = std::f64::consts::PI * (r - self.radius + width) / width;
-                    0.5 * (1. + f64::cos(s))
+                    f64::midpoint(1.0, f64::cos(s))
                 }
             }
         }

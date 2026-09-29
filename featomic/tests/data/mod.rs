@@ -102,8 +102,8 @@ pub fn load_expected_values(path: impl AsRef<Path>) -> ArrayD<f64> {
     reader.read_to_end(&mut data_bytes).expect("failed to read data");
 
     let data: Vec<f64> = data_bytes
-        .chunks_exact(8)
-        .map(|chunk| f64::from_le_bytes(chunk.try_into().unwrap()))
+        .as_chunks::<8>().0.iter()
+        .map(|&chunk| f64::from_le_bytes(chunk))
         .collect();
 
     ArrayD::from_shape_vec(shape, data).expect("failed to create array")
