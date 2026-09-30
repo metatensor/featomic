@@ -98,7 +98,7 @@ class EquivariantPowerSpectrum(TorchModule):
     other calculator. The keys contain the symmetry information:
 
     >>> power_spectrum.keys
-    Labels(
+    Labels
         o3_lambda  o3_sigma  center_type
             0         1          11
             1         1          11
@@ -116,7 +116,6 @@ class EquivariantPowerSpectrum(TorchModule):
             3         1          17
             3         -1         17
             4         1          17
-    )
 
     The block properties contain the angular order of the combined blocks ("l_1",
     "l_2"), along with the neighbor types ("neighbor_1_type", "neighbor_2_type") and
