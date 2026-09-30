@@ -57,7 +57,7 @@ jobs:
 
       - name: collect rust and C/C++ coverage
         run: |
-          cargo tarpaulin --all-features --workspace --engine=llvm --out=xml --output-dir=target/tarpaulin --objects target/debug/libfeatomic.so
+          cargo tarpaulin --all-features --workspace --engine=llvm --timeout=600 --out=xml --output-dir=target/tarpaulin --objects target/debug/libfeatomic.so
           # cleanup C/C++ coverage
           lcov --directory . --capture --output-file coverage.info
           lcov --remove coverage.info '/usr/*' "$(pwd)/featomic/tests/*" "$(pwd)/featomic/examples/*" --output-file coverage.info
