@@ -70,7 +70,7 @@ class Model(torch.nn.Module):
 
         features = soap.block().values
 
-        if options.per_atom:
+        if options.sample_kind == "atom":
             samples = soap.block().samples
         else:
             features = soap.block().values.sum(dim=0, keepdim=True)

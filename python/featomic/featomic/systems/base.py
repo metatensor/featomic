@@ -86,6 +86,7 @@ class SystemBase:
     ...
     ...     def pairs_containing(self, atom):
     ...         raise NotImplementedError("this system does not have a neighbors list")
+    >>> np.random.seed(0)
     >>> system = SimpleSystem(
     ...     types=np.random.randint(2, size=25, dtype=np.int32),
     ...     positions=6 * np.random.uniform(size=(25, 3)),
@@ -101,11 +102,12 @@ class SystemBase:
     >>> # this works, and uses our new system
     >>> calculator.compute(system)
     TensorMap with 4 blocks
-    keys: center_type  neighbor_type
-               0             0
-               0             1
-               1             0
-               1             1
+        keys: [center_type, neighbor_type]
+        blocks:
+           0  0   => TensorBlock with shape (12, 4)
+           0  1   => TensorBlock with shape (12, 4)
+           1  0   => TensorBlock with shape (13, 4)
+           1  1   => TensorBlock with shape (13, 4)
     >>> # this does not work, since the code is trying to get a neighbors list
     >>> try:
     ...     calculator.compute(system, use_native_system=False)

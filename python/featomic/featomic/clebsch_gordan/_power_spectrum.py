@@ -105,17 +105,14 @@ class PowerSpectrum(TorchModule):
     other calculator
 
     >>> power_spectrum.keys
-    Labels(
+    Labels
         center_type
             11
             17
-    )
     >>> power_spectrum[0]
-    TensorBlock
-        samples (1): ['system', 'atom']
-        components (): []
-        properties (432): ['l', 'neighbor_1_type', 'n_1', 'neighbor_2_type', 'n_2']
-        gradients: None
+    TensorBlock with shape (1, 432)
+        samples: [system, atom]
+        properties: [l, neighbor_1_type, n_1, neighbor_2_type, n_2]
 
 
     .. seealso::
