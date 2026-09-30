@@ -11,7 +11,7 @@ from metatomic.torch import (
     ModelOutput,
     System,
 )
-from metatomic.torch.ase_calculator import MetatomicCalculator
+from metatomic_ase import MetatomicCalculator
 
 from featomic.torch import SoapPowerSpectrum
 
