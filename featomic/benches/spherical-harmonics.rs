@@ -1,13 +1,13 @@
 use featomic::Vector3D;
 use featomic::math::{SphericalHarmonics, SphericalHarmonicsArray};
 
-use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use criterion::{Criterion, criterion_group, criterion_main};
 
 fn spherical_harmonics(c: &mut Criterion) {
     let mut group = c.benchmark_group("spherical harmonics (per neighbor)");
     group.noise_threshold(0.05);
 
-    for &max_angular in black_box(&[1, 3, 5, 7, 13, 17, 21, 25]) {
+    for &max_angular in std::hint::black_box(&[1, 3, 5, 7, 13, 17, 21, 25]) {
         let mut values = SphericalHarmonicsArray::new(max_angular);
         let mut sph = SphericalHarmonics::new(max_angular);
         let mut directions = [
@@ -48,7 +48,7 @@ fn spherical_harmonics_with_gradients(c: &mut Criterion) {
     let mut group = c.benchmark_group("spherical harmonics with gradients (per neighbor)");
     group.noise_threshold(0.05);
 
-    for &max_angular in black_box(&[1, 3, 5, 7, 13, 17, 21, 25]) {
+    for &max_angular in std::hint::black_box(&[1, 3, 5, 7, 13, 17, 21, 25]) {
         let mut values = SphericalHarmonicsArray::new(max_angular);
         let mut gradients = [
             SphericalHarmonicsArray::new(max_angular),

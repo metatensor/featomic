@@ -51,7 +51,7 @@ fs_extra = "1"
 metatensor = { version = "0.5" }
 
 [dev-dependencies]
-criterion = "0.5"
+criterion = "0.8"
 which = "8"
 glob = "0.3"
 flate2 = "1"
